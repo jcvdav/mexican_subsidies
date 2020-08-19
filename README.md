@@ -4,12 +4,7 @@
 ## Repository structure 
 
 ```
--- data
--- diesel.csv
--- docs
--- gasolina.csv
--- mexican_subsidies.Rproj
--- raw_data
+-- README.md
 -- renv
 -- renv.lock
    |__activate.R
@@ -17,7 +12,20 @@
    |__settings.dcf
    |__staging
 -- scripts
+   |__00_setup.R
+   |__01_clean_diesel.R
+   |__01_cleaning
+   |__02_collection
 ```
+
+# Data sources
+
+- VMS: Global Fishing Watch
+- Permits: Conapesca [link](https://www.conapesca.gob.mx/wb/cona/permisos_de_pesca_comercial)
+- Landings: CONAPESCA "access to information"
+- Subsidies: PescandoDatos by CausaNatura [link](https://pescandodatos.org/base)
+
+# Steps
 
 --------- 
 
