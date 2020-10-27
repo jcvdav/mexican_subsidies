@@ -21,10 +21,10 @@ con <- connection_open(
 effort_query <- tbl(con, "messages_scored_*") %>% 
   filter(nnet_score == 1) %>%
   mutate(
-    year = sql("EXTRACT(YEAR FROM timestamp)"),                    # Extract the year from the date
+    year = sql("EXTRACT(YEAR FROM timestamp)"),               # Extract the year from the date
     lat = (floor(lat / 0.1) * 0.1 + 0.05),                    # Grid latitude
     lon = (floor(lon / 0.1) * 0.1 + 0.05),                    # Grid longitude
-    hours = 1                         # Adjust hours for length-based multipliers
+    hours = 1                                                 # VMS pings every hour, so this is our best estimate of time spent
   ) %>%
   group_by(ssvid, year, lon, lat, speed, puertobase, razonsocial, n_shipname, rnp) %>% 
   summarize(hours = sum(hours, na.rm = T)) %>% 
