@@ -6,6 +6,10 @@ library(tidyverse)
 subsidies <- 
   readRDS(file.path(project_path, "processed_data", "diesel_clean.rds"))          # Subsidies data
 
+effort <- readRDS(file.path(project_path, "processed_data", "effort.rds"))
+
+landings <- readRDS(file.path(.....)) 
+
 a <- subsidies %>% 
   left_join(landings, by = c("economic_unit", "year")) %>% 
   filter(!diesel_liters<100)
