@@ -29,13 +29,14 @@ landings <- readRDS(file.path(project_path, "raw_data", "conapesca.rds")) %>%
          !str_detect(fishing_site, "Acuacultura"),
          !str_detect(fishing_site, "Ac y tur"),
          !str_detect(fishing_site, "cuac")) %>% 
-  group_by(economic_unit, vessel_name, main_group, year) %>% 
-  summarize(landed_weight = sum(landed_weight_kg, na.rm = T)) %>% 
-  ungroup() %>% 
   mutate(type = stri_enc_mark(economic_unit)) %>% 
   filter(!type == "native") %>% 
   mutate(economic_unit = str_trim(economic_unit),
-         economic_unit = toupper(economic_unit))
+         economic_unit = toupper(economic_unit),
+         economic_unit = normalize_economic_unit(economic_unit)) %>% 
+  group_by(economic_unit, year) %>% 
+  summarize(landed_weight = sum(landed_weight_kg, na.rm = T)) %>% 
+  ungroup()
 
 # Vessel name cleaning here
 # plan(multiprocess, workers = 12)
@@ -75,6 +76,7 @@ normalize_economic_unit <- function(economic_unit) {
     stringr::str_remove(pattern = "SPR DE RI") %>%
     stringr::str_remove(pattern = "SRL DE CV") %>%
     stringr::str_remove(pattern = "SA DE C V") %>%
+    stringr::str_remove(pattern = "S A DE C V") %>% 
     stringr::str_remove(pattern = "S C DE RL") %>%
     stringr::str_remove(pattern = "S  DE C V") %>%
     stringr::str_remove(pattern = "SC DE RL") %>%
@@ -100,9 +102,11 @@ normalize_economic_unit <- function(economic_unit) {
     stringr::str_remove(pattern = "SRL") %>%
     stringr::str_remove(pattern = "SCL") %>%
     stringr::str_remove(pattern = "^SC") %>%
-    stringr::str_remove(patttern = "SSS") %>% 
+    stringr::str_remove(pattern = "SSS") %>% 
+    stringr::str_remove(pattern = "S DE S S") %>% 
     stringr::str_remove(pattern = " [:digit:]$") %>% 
-    stringr::str_trim()
+    stringr::str_trim() %>% 
+    stringr::str_squish()
   
   economic_unit[economic_unit == ""] <- NA
   
@@ -111,12 +115,10 @@ normalize_economic_unit <- function(economic_unit) {
 }
 
 
-landings %>% 
-  pull(economic_unit) %>% 
-  # head(1000) %>% 
-  normalize_economic_unit() %>% 
-  unique() %>% 
-  length()
+dictionary <- landings %>% 
+  count(economic_unit) %>%
+  ungroup() %>% 
+  mutate(economic_unit_normalized = normalize_economic_unit(economic_unit))
 
 
 
