@@ -2,7 +2,7 @@
 
 The [Make file](Makefile) shows dependencies, also shown below:
 
-![](workflow.pdf)
+![Dependency graph](workflow.png)
 
 ## Repository structure 
 
