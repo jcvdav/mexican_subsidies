@@ -1,0 +1,251 @@
+---
+title: "Summary stats on mexican subsidy, landings, and effort data"
+subtitle: "Disclaimer: I'm still getting to know and clean the data"
+author: "Juan Carlos Villaseñor-Derbez"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE)
+
+suppressPackageStartupMessages({
+  library(ggridges)
+  library(here)
+  library(tidyverse)
+})
+
+eu_panel <- readRDS(here("data", "economic_unit_subsidy_panel.rds"))
+theme_set(startR::ggtheme_plot())
+```
+
+# Subsidy data
+
+There are `r length(unique(eu_panel$rnpa))` "Economic units" (cooperatives, individuals, companies) that received a fuel subsidy at least once between 2011 and 2019.
+
+```{r}
+
+mean_sd <- function(x){
+  mean <- mean(x, na.rm = T)
+  sd <- sd(x, na.rm = T)
+  
+  c("y" = mean,
+    "ymin" = mean - sd,
+    "ymax" = mean + sd)
+}
+
+eu_panel %>% 
+  filter(subsidy_amount > 0) %>% 
+  ggplot(aes(x = year, y = subsidy_amount, group = year)) +
+  stat_summary(geom = "errorbar", fun.data = mean_sd, width = 0, size = 1) +
+  stat_summary(geom = "point", fun = mean, color = "black", fill = "steelblue", shape = 21, size = 3) +
+  facet_wrap(~fuel_type, ncol = 1, scale = "free_y") +
+  labs(x = "Year", y = "Awared subsidy (Mean +- SD)", title = "Mean annual subsidy amount, by fuel type")
+```
+
+
+```{r}
+non_zero_subsidy <- eu_panel %>% 
+  filter(subsidy_amount > 0) %>% 
+  group_by(rnpa, fishing_type) %>% 
+  summarize(n = n(),
+            mean_s = mean(subsidy_amount),
+            sd_s = sd(subsidy_amount))
+
+eu_panel %>% 
+  left_join(non_zero_subsidy, by = c("rnpa", "fishing_type")) %>% 
+  filter(subsidy_amount > 0) %>% 
+  mutate(norm_sub = subsidy_amount - mean_s) %>% 
+  ggplot(aes(x = year, y = norm_sub, group = year)) +
+  geom_jitter(height = 0, width = 0.25, alpha = 0.2, size = 0.1) +
+  facet_wrap(~fuel_type, ncol = 1) +
+  scale_y_continuous(limits = c(-1, 1) * 1e6) +
+  labs(x = "Year", y = expression(Subsidy[it]-mean[i]), title = "Vessel-level deviations from the mean")
+  
+  
+```
+
+
+```{r}
+eu_panel %>% 
+  filter(subsidy_amount > 0) %>% 
+  count(rnpa, fishing_type) %>% 
+  count(n) %>% 
+  ungroup() %>% 
+  mutate(pct = cumsum(nn) / sum(nn)) %>% 
+  ggplot(aes(x = n, y = nn)) +
+  geom_col() +
+  labs(x = "Number of times subsidied",
+       y = "Number of vessels",
+       title = "How many times was each vessel subsidised?")
+```
+
+
+```{r}
+eu_panel %>% 
+  filter(subsidy_amount > 0) %>% 
+  count(rnpa, fishing_type) %>% 
+  count(n) %>% 
+  ungroup() %>% 
+  arrange(desc(n)) %>% 
+  mutate(pct = cumsum(nn) / sum(nn)) %>% 
+  ggplot(aes(x = n, y = pct)) +
+  geom_line() +
+  geom_point(fill = "steelblue", size = 3, shape = 21) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_continuous(breaks = 0:11, labels = c(0:11)) +
+  labs(x = "Number of times subsidised",
+       y = "Number of vessels",
+       title = "Y vessels received a subsidy at least X times (for the subsidiesd ones)") 
+```
+
+
+# Landings data
+
+```{r}
+landings <- readRDS(here("data", "landings_clean.rds"))
+```
+
+```{r}
+a <- eu_panel %>% 
+  left_join(landings, by = c("year" = "ano_corte", "rnpa" = "rnpa_unidad_economica"))
+```
+
+
+A quick and dirty match says there are `r sum(!is.na(a$landings))` observations with a match and `r sum(is.na(a$landings))` observations without a match. That is a match of `r (1 - sum(is.na(a$landings)) / length(a$landings)) * 100`\%.
+
+```{r}
+
+hs <- function(x){
+  log(x + sqrt((x ^ 2 + 1)))
+}
+
+a %>% 
+  drop_na(landings, subsidy_amount) %>% 
+  ggplot(aes(x = hs(subsidy_amount), y = log(landings))) +
+  geom_point(alpha = 0.2) +
+  labs(x = "Subsidy (inverse-hyperbolic-sine transformed)", y = "Log (landings)",
+       title = "Years 2011 - 2018")
+```
+
+
+# Some regressions
+
+$$log_{10}(L_{i,t}) = \alpha + \beta_1 \mathrm{ihs}(S_{i,t}) + \gamma_tY_t + \phi_iRNPA + \epsilon_{it}$$
+```{r}
+
+list(fixest::feols(log10(landings) ~ hs(subsidy_amount) + fuel_type | as.factor(year) + as.factor(rnpa), data = a))%>% 
+  modelsummary::modelsummary(gof_omit = "Pseudo|Adj|With|IC|Log", stars = TRUE, statistic_vertical = FALSE, output = "latex")
+
+```
+
+
+# Effort data
+
+```{r}
+effort <- readRDS(here("data", "vessel_anual_effort.rds"))
+
+effort_ais <- readRDS(here("data", "vessel_anual_effort_AIS.rds"))
+```
+
+There are `r length(unique(effort$effort$ssvid))` vessels in the VMS dataset (1 ping per hour). There are `r length(unique(effort_ais$ssvid))` vessels in the AIS dataset (Many more pings).
+
+
+```{r}
+ggplot(effort, aes(x = year, y = hours)) +
+  stat_summary(geom = "errorbar", fun.data = mean_sd, width = 0, size = 1) +
+  stat_summary(geom = "point", fun = mean, color = "black", fill = "steelblue", shape = 21, size = 3) +
+  labs(x = "Year", y = "Fishing hours (Mean +- SD)", title = "Mean annual fishing hours (VMS, 2014 - 2016)")
+```
+
+```{r}
+ggplot(effort_ais, aes(x = year, y = fishing_hours)) +
+  stat_summary(geom = "errorbar", fun.data = mean_sd, width = 0, size = 1) +
+  stat_summary(geom = "point", fun = mean, color = "black", fill = "steelblue", shape = 21, size = 3) +
+  labs(x = "Year", y = "Fishing hours (mean +- SD)", title = "Mean annual fishing hours (VMS, 2014 - 2016)")
+```
+
+
+# Fuel prices
+
+I have not been able to find fuel prices per year, so I'm using crude oil prices from Mexican oil production. That will be fixed evenutally.
+
+```{r}
+fuel <- read.csv(here("data", "oil_prices.csv")) %>% 
+  pivot_longer(cols = c(Brent_price, WTI_price, MME_price), names_to = "mix", values_to = "price") %>% 
+  group_by(year) %>% 
+  summarize(price = mean(price, na.rm  = T))
+```
+
+```{r}
+fuel %>% 
+  ggplot(aes(x = year, y = price)) +
+  geom_line() +
+  geom_point(fill = "steelblue", size = 3, shape = 21) +
+  labs(x = "Year", y = "Price (USD / Bbl)")
+```
+
+
+```{r}
+effort %>% 
+  left_join(fuel, by = "year") %>% 
+  ggplot(aes(x = hours, y = price)) +
+  geom_point()
+```
+
+```{r}
+effort_ais %>% 
+  left_join(fuel, by = "year") %>% 
+  ggplot(aes(x = fishing_hours, y = price)) +
+  geom_point() +
+  labs(x = "Fishing hours (AIS)", y = "Oil price (USD / BBl)")
+```
+
+
+
+
+\clearpage
+
+## Preview of subsidy data
+
+```{r}
+eu_panel %>% 
+  select(year, rnpa, fishing_type, subsidy_amount, everything()) %>% 
+  head(20)
+```
+
+\clearpage
+
+
+We actually have these at the species-level but I'm combining it here. We also have the exvessel price of these landings.
+
+```{r}
+head(landings, 20)
+```
+
+\clearpage
+
+VMS data
+
+```{r}
+head(effort, 20)
+```
+
+\clearpage
+
+AIS data
+
+```{r}
+head(effort_ais, 20)
+```
+
+
+
+
+
+
+
+
+
+

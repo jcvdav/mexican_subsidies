@@ -3,7 +3,85 @@ library(startR)
 library(janitor)
 library(furrr)
 library(stringi)
+library(data.table)
 library(tidyverse)
+
+# New data reading process
+
+files <- list.files(path = file.path(project_path, "raw_data", "CONAPESCA_Avisos_2000_2019"),
+                    pattern = "*.csv",
+                    full.names = T)
+
+
+
+# I NEED TO FIX THIS
+
+# quick_clean <- function(file){
+#   file %>% 
+#     read.csv() %>% 
+#     mutate(tmp = CLAVE.LUGARCAPTURA,
+#            CLAVE.LUGARCAPTURA = ifelse(CLAVE.LUGARCAPTURA == "RIO EL CORTE", NOMBRE.LUGARCAPTURA, CLAVE.LUGARCAPTURA),
+#            NOMBRE.LUGARCAPTURA = ifelse(NOMBRE.LUGARCAPTURA == 20001016, tmp, NOMBRE.LUGARCAPTURA)) %>% 
+#     mutate(CLAVE.LUGARCAPTURA = as.numeric(CLAVE.LUGARCAPTURA)) %>% 
+#     write.csv(file, row.names = F)
+# }
+
+# files[15:19] %>% 
+#   map(quick_clean)
+
+# 
+# files[20] %>%
+#   read.csv() %>%
+#   filter(!str_detect(PRECIO, "[:alpha:]")) %>%
+#   write.csv(files[20], row.names = FALSE)
+
+# quick_clean(files[20])
+# 
+# files[20] %>%
+#   read.csv() %>%
+#   filter(!str_detect(CLAVE.LUGARCAPTURA, "[:alpha:]"))
+# 
+
+
+my_read <- function(path){
+  fread(path) %>% 
+    janitor::clean_names() %>% 
+    mutate(rnpa_unidad_economica = as.double(rnpa_unidad_economica)) 
+}
+
+dt <- map_dfr(files[1:19], my_read)
+
+setkey(dt, rnpa_unidad_economica, ano_corte)
+
+landings <- dt %>% 
+  .[!is.na(rnpa_unidad_economica)] %>% 
+  .[, .(landings = sum(peso_vivo, na.rm = T)),                # Calculate revenue as the sum product of catch and price
+   by = .(ano_corte, rnpa_unidad_economica)] %>% 
+  as_tibble()
+
+
+
+saveRDS(landings, here("data", "landings_clean.rds"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Read in data
 landings <- readRDS(file.path(project_path, "raw_data", "conapesca.rds")) %>% 
@@ -122,7 +200,7 @@ dictionary <- landings %>%
 
 
 
-
+saveRDS(landings, here("data", "landings_clean.rds"))
 
 
 
