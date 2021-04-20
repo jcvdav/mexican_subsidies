@@ -18,6 +18,6 @@ ds <- bq_dataset(project = "emlab-gcp",                       # Define project
 bq_vessel_registry <- bq_table(ds, "vessel_registry")         # Create a table in BQ
 bq_perform_upload(bq_vessel_registry,                         # Upload the data
                   vessel_registry)
-bq_table_exists(bq_vessel_registry)                           # Was the upload succesful?
+bq_table_exists(bq_vessel_registry)                           # Was the upload successful?
 
 # END OF SCRIPT ################################################################################
