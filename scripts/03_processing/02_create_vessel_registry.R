@@ -2,7 +2,7 @@
 #               create vessel registry               #
 ######################################################
 
-#### Set up
+#### Set up  ###############################################################################################################################################
 
 # Load packages
 library(here)
@@ -29,9 +29,7 @@ design_speed <- function(engine_power_hp) {
   10.4818 + (1.2e-3 * engine_power_kwh) - (3.84e-8 * engine_power_kwh ^ 2)  # Calculate design speed
 }
 
-
-
-## Load data
+## Load data  ###############################################################################################################################################
 # Maximum daily liters for each engine size and fuel type
 mdl_raw <-
   read_csv(file.path(project_path, "raw_data", "maximum_daily_liters.csv"))
@@ -57,14 +55,13 @@ vessel_engines_ls_raw <- read_excel(
 # Define a unique vector of engine power bins
 engine_power_bins <- c(0, unique(mdl_raw$engine_power_hp))                            # We add a 0 for those engines < smallest category
 
-
-## Selections
+## Selections  ###############################################################################################################################################
 # In this section we select the columns we wish to keep
 # from each of the data sets. We also clean column names
 # and then rename them into English. Whenever relevant,
 # the values stored in them are also converted into English
 
-
+# Vessel engines
 vessel_engines <- vessel_engines_ls_raw %>%
   clean_names() %>%                                                                      # Clean column names
   filter(principal == "SI") %>%                                                          # Keep only main engines
@@ -91,8 +88,6 @@ vessel_engines <- vessel_engines_ls_raw %>%
     # -c(serial_number, brand, model)                                                      # Remove serial number, brand, and model
   ) %>%
   distinct()
-
-
 
 # Clean assets
 plan("multisession")                   # It's faster to run in parallel
@@ -162,13 +157,13 @@ assets <- assets_raw %>%
 
 plan("sequential")
 
-## Combine tables
+## Combine tables  ###############################################################################################################################################
 vessel_registry <- assets %>%                            # Take the assets table
   left_join(vessel_engines, by = "vessel_rnpa") %>%      # And add its engine info
   drop_na(engine_power_hp)                               # Drop vessels for which we don't have engine info
 
 
-## Export data
+## Export data  ###############################################################################################################################################
 # Save RDS object for internals
 saveRDS(object = vessel_registry,
         file = here("data", "vessel_registry.rds"))
@@ -177,3 +172,5 @@ saveRDS(object = vessel_registry,
 write.csv(x = vessel_registry,
           file = here("data", "vessel_registry.csv"),
           row.names = F)
+
+# END OF SCRIPT ###############################################################################################################################################
