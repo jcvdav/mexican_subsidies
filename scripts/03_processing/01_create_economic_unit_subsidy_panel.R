@@ -1,16 +1,16 @@
 ######################################################
-#         create economic unit subsidy panel         #
+#       create economic unit subsidy panel          #
 ######################################################
 
-# Set up
+# Set up #####################################################################################################################
 ## Load packages
 library(here)
 library(tidyverse)
 
-## Load data
+## Load data #################################################################################################################
 all_fuel_clean <- readRDS(here("data", "all_fuel_clean.rds"))
 
-
+## Creat the panel ###########################################################################################################
 economic_unit_panel <- all_fuel_clean %>%
   filter(fuel_type == "Diesel") %>%                                     # Keep diesel only        
   group_by(                                                             # Define groups
@@ -34,8 +34,8 @@ economic_unit_panel <- all_fuel_clean %>%
          subsidy_liters = subsidy_pesos / 2,                            # Convert pesos to liters
          subsidy_liters_pv = subsidy_pesos_pv / 2)                      # Conver per vessel pesos to liters
 
-# Export the data
+# Export the data ##############################################################################################################
 saveRDS(economic_unit_panel,
         here("data", "economic_unit_subsidy_panel.rds"))
 
-# END OF SCRIPT
+# END OF SCRIPT ################################################################################################################
