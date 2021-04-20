@@ -4,7 +4,7 @@ The [Make file](Makefile) shows dependencies, also shown below:
 
 ## Dependency graph(-ish...)
 
-!()[workflow.png]
+![Dependency graph](workflow.png)
 
 --------- 
 
