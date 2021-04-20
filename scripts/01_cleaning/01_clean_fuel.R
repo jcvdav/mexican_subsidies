@@ -10,8 +10,20 @@ source(here("scripts", "00_setup.R"))
 
 # Read-in the Diesel subsidies data
 all_fuel_raw <-
-  read.csv(file.path(project_path, "raw_data", "B1_combustibles.csv"),
-           stringsAsFactors = F)
+  read_csv(file.path(project_path, "raw_data", "B1_combustibles.csv"),
+           col_types = cols(
+             .default = col_character(),
+             año = col_double(),
+             monto_conapesca = col_double(),
+             cve_ent = col_character(),
+             cve_mun = col_character(),
+             cve_loc = col_character(),
+             cve_inegi = col_character(),
+             no_emb_mayores = col_double(),
+             no_emb_menores = col_double(),
+             no_inst_acuicola = col_double(),
+             rnpa = col_character()
+           ))
 
 # Start cleaning the data
 all_fuel_clean <- all_fuel_raw %>%
