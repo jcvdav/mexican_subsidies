@@ -12,10 +12,10 @@ project_path <- paste0(sys_path,"Shared drives/emlab/projects/current-projects/m
 ggplot2::theme_set(startR::ggtheme_plot())
 
 ggplot2::theme_update(
-  axis.title.y = element_text(hjust = 1),
-  axis.title.x = element_text(hjust = 1),
-  axis.text.y = element_text(size = 12),
-  axis.text.x = element_text(size = 12)
+  axis.title.y = ggplot2::element_text(hjust = 1),
+  axis.title.x = ggplot2::element_text(hjust = 1),
+  axis.text.y = ggplot2::element_text(size = 12),
+  axis.text.x = ggplot2::element_text(size = 12)
 )
 
 
