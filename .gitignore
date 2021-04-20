@@ -4,3 +4,4 @@
 .Ruserdata
 word/*
 *.DS_Store
+scripts/00_exploratory/*
