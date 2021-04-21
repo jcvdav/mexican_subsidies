@@ -11,7 +11,7 @@ TBD
 Fuel subsidies:
 - Padrón de beneficiarios de Combustibles (2011-2019) publicado por CausaNatura. Consultado en [https://www.causanatura.org/assets/data/bases-de-datos/pescando-datos/subsidios/B1_combustibles.csv](https://www.causanatura.org/assets/data/bases-de-datos/pescando-datos/subsidios/B1_combustibles.csv) el 2021-04-21
 
-Padrón de beneficiarios de Modernización de Embarcaciones (2011-2019) publicado por CausaNatura. Consultado en [https://www.causanatura.org/assets/data/bases-de-datos/pescando-datos/subsidios/B2_modernizacion.csv](https://www.causanatura.org/assets/data/bases-de-datos/pescando-datos/subsidios/B2_modernizacion.csv) el 2021-04-21
+- Padrón de beneficiarios de Modernización de Embarcaciones (2011-2019) publicado por CausaNatura. Consultado en [https://www.causanatura.org/assets/data/bases-de-datos/pescando-datos/subsidios/B2_modernizacion.csv](https://www.causanatura.org/assets/data/bases-de-datos/pescando-datos/subsidios/B2_modernizacion.csv) el 2021-04-21
 
 ### Regulatory data
 
@@ -67,8 +67,8 @@ Padrón de beneficiarios de Modernización de Embarcaciones (2011-2019) publicad
 
 ## Vessel Tracking Data (VMS)
 
-Citation:
-"Localización Y Monitoreo Satelital De Embarcaciones Pesqueras" publicado por CONAPESCA. Consultado en https://datos.gob.mx/busca/dataset/localizacion-y-monitoreo-satelital-de-embarcaciones-pesqueras el 2021-04-21.
+Data:
+- "Localización Y Monitoreo Satelital De Embarcaciones Pesqueras" publicado por CONAPESCA. Consultado en [https://datos.gob.mx/busca/dataset/localizacion-y-monitoreo-satelital-de-embarcaciones-pesqueras](https://datos.gob.mx/busca/dataset/localizacion-y-monitoreo-satelital-de-embarcaciones-pesqueras) el 2021-04-21.
 
 Regulation:
 - Norma Oficial Mexicana NOM-062-PESC-2007, Para la utilización del sistema de localización y monitoreo satelital de embarcaciones pesqueras,SECRETARIA DE AGRICULTURA, GANADERIA, DESARROLLO RURAL, PESCA Y ALIMENTACION,
