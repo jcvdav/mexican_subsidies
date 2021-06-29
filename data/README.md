@@ -15,6 +15,14 @@ Fuel subsidies:
 
 ### Regulatory data
 
+2011:
+- Acuerdo por el que se dan a conocer las Reglas de Operación de los Programas de la Secretaría de Agricultura, Ganadería, Desarrollo Rural, Pesca y Alimentación (Continúa en la Sexta Sección),SECRETARIA DE AGRICULTURA, GANADERIA, DESARROLLO RURAL, PESCA Y ALIMENTACION,
+          Estados Unidos Mexicanos; DOF, 31 de diciembre 2010, [citado el 22-04-2021];
+          Disponible en versión HTML en internet: http://sidof.segob.gob.mx/notas/5173481
+- Acuerdo por el que se dan a conocer las Reglas de Operación de los Programas de la Secretaría de Agricultura, Ganadería, Desarrollo Rural, Pesca y Alimentación (Continúa de la Quinta Sección),SECRETARIA DE AGRICULTURA, GANADERIA, DESARROLLO RURAL, PESCA Y ALIMENTACION,
+          Estados Unidos Mexicanos; DOF, 31 de diciembre 2010, [citado el 22-04-2021];
+          Disponible en versión HTML en internet: http://sidof.segob.gob.mx/notas/5173483
+
 2014:
 
 2015:
@@ -70,7 +78,22 @@ Fuel subsidies:
 Data:
 - "Localización Y Monitoreo Satelital De Embarcaciones Pesqueras" publicado por CONAPESCA. Consultado en [https://datos.gob.mx/busca/dataset/localizacion-y-monitoreo-satelital-de-embarcaciones-pesqueras](https://datos.gob.mx/busca/dataset/localizacion-y-monitoreo-satelital-de-embarcaciones-pesqueras) el 2021-04-21.
 
-Regulation:
+Metadata:
+
+```
+Nombre: Nombre de la embarcación
+RNP: Registro Nacional de Pesca y Acuacultura de la embarcación	
+Descripción: Puerto base de la embarcación
+Permisionario o concesionario: Nombre o Razón Social del permisionario o concesionario
+Fecha: Fecha del reporte de posición
+Latitud: Posición geográfica en relación al norte o sur expresada en grados decimales
+Longitud: Posición geográfica en relación al este u oeste expresada en grados decimales	
+Velocidad: Velocidad de navegación en nudos
+Rumbo: Rumbo de la navegación
+
+```
+
+Regulation governing the use of VMS on boats:
 - Norma Oficial Mexicana NOM-062-PESC-2007, Para la utilización del sistema de localización y monitoreo satelital de embarcaciones pesqueras,SECRETARIA DE AGRICULTURA, GANADERIA, DESARROLLO RURAL, PESCA Y ALIMENTACION,
           Estados Unidos Mexicanos; DOF, 24 de abril 2008, [citado el 21-04-2021];
           Disponible en versión HTML en internet: http://sidof.segob.gob.mx/notas/5033406
