@@ -48,27 +48,36 @@ all_fuel_clean <- all_fuel_raw %>%
     location_code = cve_loc
   ) %>% 
   drop_na(rnpa) %>% 
+  filter(!target %in% c("CHARALES", "LANGOSTINOS", "RANAS", "PEJELAGARTOS")) %>% 
   mutate(                                                                     # Translate variable values
     fishing_type = case_when(
       fishing_type == "" ~ "Large scale",
       fishing_type == "PESCA RIBEREÑA" ~ "Small scale",
       T ~ NA_character_),
-    target = case_when(target == "NO DISPONIBLE" ~ NA_character_,
-                       target == "MULTIESPECIE" ~ "Multispecies",
-                       target == "ESCAMA" | target == "ESCAMAS" ~ "Finfish",
-                       target == "ALMEJAS" ~ "Clams",
-                       target == "CAMARONES" ~ "Shrimp",
-                       target == "CALAMARES" ~ "Squids",
-                       target == "JAIBAS" ~ "Swimming crab",
-                       target == "CANGREJO" ~ "Crabs",
-                       target == "CARACOLES" ~ "Snails",
-                       target == "Tiburones y Rayas" ~ "Sharks and rays"),
+    target = case_when(
+      target == "ALMEJAS" ~ "Clam",
+      target == "ATUNES" ~ "Tuna",
+      target == "CALAMARES" ~ "Squid",
+      target == "CAMARONES" ~ "Shrimp",
+      target == "CANGREJO" ~ "Crab",
+      target == "CARACOLES" ~ "Snail",
+      target %in% c("ESCAMA", "ESCAMAS") ~ "Finfish",
+      target == "JAIBAS" ~ "Swimming crab",
+      target == "LANGOSTAS" ~ "Lobster",
+      target == "MULTIESPECIE" ~ "Multispecies",
+      target == "NO DISPONIBLE" ~ NA_character_,
+      target == "OSTIONES" ~ "Oyster",
+      target == "OTROS" ~ "Others",
+      target == "PELAGICOS MENORES" ~ "Small pelagics",
+      target == "PULPOS" ~ "Octopus",
+      target == "SARDINAS" ~ "Sardines", 
+      target == "Tiburones y Rayas" ~ "Sharks and rays"),
     fuel_type = case_when(fuel_type == "DIESEL MARINO" ~ "Diesel",
                           fuel_type == "GASOLINA RIBEREÑA" ~ "Gasoline")
   )
 
 # Export a clean version
 saveRDS(object = all_fuel_clean,
-        file = here("data", "all_fuel_clean.rds"))
+        file = here("data", "economic_unit_subsidy_caps.rds"))
 
 
