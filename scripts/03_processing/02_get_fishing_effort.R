@@ -4,7 +4,6 @@
 
 ## Set up #############################################################################################################################################################################
 # Load packages
-library(here)
 library(startR)
 library(connections)
 library(bigrquery)
@@ -35,7 +34,7 @@ tracks <- tbl(mex_fisheries, "mex_vms") %>%
   filter(speed > 0) %>%                                                                                     # Filter positions that are within 100 m of the coast
   select(-economic_unit)
 
-  
+
 # tracks
 fuel_consumption <- tracks %>% 
   inner_join(vessel_registry, by = "vessel_rnpa") %>%                                                                              # Add vessel info from the registry
@@ -45,7 +44,7 @@ fuel_consumption <- tracks %>%
          fuel_grams = loading_factor * engine_power_hp * 0.7457 * sfc_gr_kwh,                                                # Calculate fuel consumption
          fuel_grams_max =  1.2 * engine_power_hp * 0.7457 * 280
   ) %>% 
-  group_by(vessel_rnpa, eu_rnpa, year, month, engine_power_hp, engine_power_bin_hp, species) %>%                # Group daily (with characteristics)
+  group_by(vessel_rnpa, eu_rnpa, year, engine_power_hp, engine_power_bin_hp, species) %>%                # Group daily (with characteristics)
   summarize(h = n(),
             fuel_grams = sum(fuel_grams, na.rm = T),
             fuel_grams_max = sum(fuel_grams_max, na.rm = T)) %>%                                                                        # Calculate total daily grams
@@ -58,8 +57,9 @@ fuel_consumption_local <- fuel_consumption %>%
   collect()
 
 ## Save data #############################################################################################################################################################################
-saveRDS(object = fuel_consumption_local,
-        file = here("data", "vms_monthly_fuel_consumption.rds"))
+write.csv(x = fuel_consumption_local,
+          file.path(project_path, "data", "processed_data", "vms_annual_fuel_consumption.csv"),
+          row.names = F)
 
 
 ## END OF SCRIPT #########################################################################################################################################################################
