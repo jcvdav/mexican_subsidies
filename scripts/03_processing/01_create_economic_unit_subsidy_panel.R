@@ -8,7 +8,8 @@ library(here)
 library(tidyverse)
 
 ## Load data #################################################################################################################
-fuel_caps <- readRDS(here("data", "economic_unit_subsidy_caps.rds"))
+fuel_caps <- read.csv(file.path(project_path, "data", "processed_data", "economic_unit_subsidy_caps.csv"),
+                      stringsAsFactors = F)
 
 ## Creat the panel ###########################################################################################################
 economic_unit_panel <- fuel_caps %>%
@@ -39,7 +40,8 @@ economic_unit_panel <- fuel_caps %>%
   rename(eu_rnpa = rnpa)
 
 # Export the data ##############################################################################################################
-saveRDS(economic_unit_panel,
-        here("data", "economic_unit_subsidy_panel.rds"))
+write.csv(x = economic_unit_panel,
+          file = file.path(project_path, "data", "processed_data", "economic_unit_subsidy_panel.csv"),
+          row.names = F)
 
 # END OF SCRIPT ################################################################################################################

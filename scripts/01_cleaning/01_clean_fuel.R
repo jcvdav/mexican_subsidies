@@ -6,11 +6,9 @@ library(janitor)
 library(startR)
 library(tidyverse)
 
-source(here("scripts", "00_setup.R"))
-
 # Read-in the Diesel subsidies data
 all_fuel_raw <-
-  read_csv(file.path(project_path, "raw_data", "B1_combustibles.csv"),
+  read_csv(file.path(project_path, "data", "raw_data", "B1_combustibles.csv"),
            col_types = cols(
              .default = col_character(),
              año = col_double(),
@@ -77,7 +75,8 @@ all_fuel_clean <- all_fuel_raw %>%
   )
 
 # Export a clean version
-saveRDS(object = all_fuel_clean,
-        file = here("data", "economic_unit_subsidy_caps.rds"))
+write.csv(x = all_fuel_clean,
+          file = file.path(project_path, "data", "processed_data", "economic_unit_subsidy_caps.csv"),
+          row.names = F)
 
 
