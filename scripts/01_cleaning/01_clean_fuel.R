@@ -32,7 +32,7 @@ all_fuel_clean <- all_fuel_raw %>%
     beneficiary = beneficiario,
     fuel_type = tipo_combustible,
     subsidy_amount = monto_conapesca,
-    rnpa,
+    eu_rnpa = rnpa,
     fishing_type = actividadproductiva,
     target = pesqueria_estandar,
     n_large_scale_vessels = no_emb_mayores,
@@ -45,7 +45,7 @@ all_fuel_clean <- all_fuel_raw %>%
     location = localidad,
     location_code = cve_loc
   ) %>% 
-  drop_na(rnpa) %>% 
+  drop_na(eu_rnpa) %>% 
   filter(!target %in% c("CHARALES", "LANGOSTINOS", "RANAS", "PEJELAGARTOS")) %>% 
   mutate(                                                                     # Translate variable values
     fishing_type = case_when(

@@ -44,7 +44,7 @@ fuel_consumption <- tracks %>%
          fuel_grams = loading_factor * engine_power_hp * 0.7457 * sfc_gr_kwh,                                                # Calculate fuel consumption
          fuel_grams_max =  1.2 * engine_power_hp * 0.7457 * 280
   ) %>% 
-  group_by(vessel_rnpa, eu_rnpa, year, engine_power_hp, engine_power_bin_hp, species) %>%                # Group daily (with characteristics)
+  group_by(vessel_rnpa, eu_rnpa, year, engine_power_hp, engine_power_bin_hp, species, fleet) %>%                # Group daily (with characteristics)
   summarize(h = n(),
             fuel_grams = sum(fuel_grams, na.rm = T),
             fuel_grams_max = sum(fuel_grams_max, na.rm = T)) %>%                                                                        # Calculate total daily grams

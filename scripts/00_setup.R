@@ -26,6 +26,14 @@ ggplot2::update_geom_defaults(geom = "point",
                                          shape = 21,
                                          size = 2))
 
+ggplot2::update_geom_defaults(geom = "col",
+                              new = list(color = "black",
+                                         fill = "steelblue"))
+
+ggplot2::update_geom_defaults(geom = "bar",
+                              new = list(color = "black",
+                                         fill = "steelblue"))
+
 
 # Turn off dplyr's anoying messages
 options(dplyr.summarise.inform = FALSE)
