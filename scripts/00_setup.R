@@ -37,3 +37,19 @@ ggplot2::update_geom_defaults(geom = "bar",
 
 # Turn off dplyr's anoying messages
 options(dplyr.summarise.inform = FALSE)
+
+# Functions
+
+statab <- function(data, var) {
+  count(data, {{var}}) %>% 
+    mutate(percent = n / sum(n),
+           cum = cumsum(percent) * 100)
+}
+
+get_alpha <- function(model){
+  beta <- coefficients(model)[1]
+  theta <- coefficients(model)[2]
+  
+  alpha <- round(1 + (theta/beta), 3)
+  return(alpha)
+}

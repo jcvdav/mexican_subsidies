@@ -27,7 +27,12 @@ mex_fisheries <- connection_open(
 
 
 # vessel registry
-vessel_registry <- tbl(mex_fisheries, "vessel_info")
+vessel_registry <- tbl(mex_fisheries, "vessel_info") %>% 
+  group_by(vessel_rnpa) %>% 
+  mutate(n = n()) %>% 
+  ungroup() %>% 
+  arrange(desc(n)) %>% 
+  filter(n == 1)
 
 # tracks, filtered
 tracks <- tbl(mex_fisheries, "mex_vms") %>% 
@@ -39,12 +44,12 @@ tracks <- tbl(mex_fisheries, "mex_vms") %>%
 fuel_consumption <- tracks %>% 
   inner_join(vessel_registry, by = "vessel_rnpa") %>%                                                                              # Add vessel info from the registry
   mutate(species = target_species,                                                                                           # Rename
-         eu_rnpa = as.character(eu_rnpa),                                                                                    # Rename and change class
+         # eu_rnpa = as.character(eu_rnpa),                                                                                    # Rename and change class
          loading_factor = 0.9 * ((((speed/design_speed_kt) ^ 3) + (0.2 / (0.9 - 0.2)))/(1 + (0.2 / (0.9 - 0.2)))),           # Calculate engine loading
          fuel_grams = loading_factor * engine_power_hp * 0.7457 * sfc_gr_kwh,                                                # Calculate fuel consumption
          fuel_grams_max =  1.2 * engine_power_hp * 0.7457 * 280
   ) %>% 
-  group_by(vessel_rnpa, eu_rnpa, year, engine_power_hp, engine_power_bin_hp, species, fleet) %>%                # Group daily (with characteristics)
+  group_by(vessel_rnpa, eu_rnpa, year, engine_power_hp, engine_power_bin_hp, species, fleet, fuel_type) %>%                # Group daily (with characteristics)
   summarize(h = n(),
             fuel_grams = sum(fuel_grams, na.rm = T),
             fuel_grams_max = sum(fuel_grams_max, na.rm = T)) %>%                                                                        # Calculate total daily grams
