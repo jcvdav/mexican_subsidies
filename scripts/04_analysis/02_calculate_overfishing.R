@@ -1,3 +1,8 @@
+library(startR)
+library(tidyverse)
+
+source(here::here("scripts", "00_setup.R"))
+
 model <- readRDS(file.path(project_path, "data", "output_data", "model.rds"))
 
 panel <- read.csv(file.path(project_path, "data", "processed_data", "estimation_panel.csv")) %>% 
@@ -10,7 +15,7 @@ panel <- read.csv(file.path(project_path, "data", "processed_data", "estimation_
   filter(phi < 10)
 
 sim_panel <- panel %>% 
-  expand_grid(alpha = seq(0, 1, by = 0.5)) %>% 
+  expand_grid(alpha = c(0, 1)) %>% 
   mutate(pp = ph - ((1 - alpha) * (ph - pl) * phi),
          p = case_when(!treated ~ ph,
                        treated & !D ~ pl,
@@ -28,7 +33,8 @@ sim_panel2 <- sim_panel %>%
             tot_fuel_cap_l = sum(subsidy_cap_l, na.rm = T),
             pct_tot_con = overfishing / tot_fuel_cons_l,
             pct_tot_cap = overfishing / tot_fuel_cap_l,
-            pct_tot_con_subs = overfishing / (sum(fuel_consumption_l * treated)))
+            pct_tot_con_subs = overfishing / (sum(fuel_consumption_l * treated))) %>% 
+  mutate(response = ifelse(alpha == 1, "Marginal", "Average"))
 
 sim_panel3 <- sim_panel %>% 
   filter(!D | phi == 0,
@@ -45,86 +51,74 @@ sim_panel3 <- sim_panel %>%
 
 # Totals
 abs <- ggplot(sim_panel2, aes(x = year, y = overfishing / 1e6)) + 
-  geom_line(aes(color = alpha, group = alpha)) +
-  geom_point(aes(size = tot_fuel_cap_l), fill = "transparent") +
-  geom_line(data = sim_panel3, linetype = "dashed") +
+  geom_line(aes(linetype = response)) +
+  geom_point(aes(size = tot_fuel_cap_l / 1e6), fill = "black") +
+  # geom_line(data = sim_panel3, linetype = "dashed") +
   labs(x = "Year",
        y = "Additional fishing effort (Million L)") +
-  scale_color_viridis_c() +
-  guides(color = guide_colorbar(title = bquote("Weight on\nmarginal"(alpha)),
-                                frame.colour = "black",
-                                ticks.colour = "black"),
-         size = guide_legend(title = "Total fuel\ncap (L)")) +
+  guides(linetype = guide_legend(title = "Response"),
+         size = guide_legend(title = "Total fuel\ncap (Million L)")) +
   scale_x_continuous(labels = 2011:2019, breaks = 2011:2019)
 
 rel <- ggplot(sim_panel2, aes(x = year, y = pct_tot_con)) + 
-  geom_line(aes(group = alpha, color = alpha)) +
-  
-  geom_point(aes(size = tot_fuel_cap_l), fill = "transparent") +
-  geom_line(data = sim_panel3, linetype = "dashed") +
+  geom_line(aes(linetype = response)) +
+  geom_point(aes(size = tot_fuel_cap_l/1e6), fill = "black") +
+  # geom_line(data = sim_panel3, linetype = "dashed") +
   labs(x = "Year",
        y = "Relative overfishing\n(Aditional / Counterfactual)") +
-  scale_y_continuous(labels = scales::percent) +
-  scale_color_viridis_c() +
-  guides(color = guide_colorbar(title = bquote("Weight on\nmarginal"(alpha)),
-                                frame.colour = "black",
-                                ticks.colour = "black"),
-         size = guide_legend(title = "Total fuel\ncap (L)")) +
-  labs(subtitle = "For all vessels") +
-  scale_x_continuous(labels = 2011:2019, breaks = 2011:2019)
+  guides(linetype = guide_legend(title = "Response"),
+         size = guide_legend(title = "Total fuel\ncap (Million L)")) +
+  scale_x_continuous(labels = 2011:2019, breaks = 2011:2019) +
+  scale_y_continuous(labels = scales::percent, breaks = seq(0, 0.03, by = 0.005), limits = c(0, 0.03)) 
 
 rel2 <- ggplot(sim_panel2, aes(x = year, y = pct_tot_cap)) + 
-  geom_line(aes(group = alpha, color = alpha)) +
-  geom_point(aes(size = tot_fuel_cap_l), fill = "transparent") +
-  geom_line(data = sim_panel3, linetype = "dashed") +
+  geom_line(aes(linetype = response)) +
+  geom_point(aes(size = tot_fuel_cap_l/1e6), fill = "black") +
+  # geom_line(data = sim_panel3, linetype = "dashed") +
   labs(x = "Year",
        y = "Relative overfishing\n(Additional / Total subsidized liters)") +
-  scale_y_continuous(labels = scales::percent) +
-  scale_color_viridis_c() +
-  guides(color = guide_colorbar(title = bquote("Weight on\nmarginal"(alpha)),
-                                frame.colour = "black",
-                                ticks.colour = "black"),
-         size = guide_legend(title = "Total fuel\ncap (L)")) +
-  scale_x_continuous(labels = 2011:2019, breaks = 2011:2019)
+  guides(linetype = guide_legend(title = "Response"),
+         size = guide_legend(title = "Total fuel\ncap (Million L)")) +
+  scale_x_continuous(labels = 2011:2019, breaks = 2011:2019) +
+  scale_y_continuous(labels = scales::percent, breaks = seq(0, 0.03, by = 0.005), limits = c(0, 0.03)) 
 
 rel3 <- ggplot(sim_panel2, aes(x = year, y = pct_tot_con_subs)) + 
-  geom_line(aes(group = alpha, color = alpha)) +
-  geom_point(aes(size = tot_fuel_cap_l), fill = "transparent") +
-  geom_line(data = sim_panel3, linetype = "dashed") +
+  geom_line(aes(linetype = response)) +
+  geom_point(aes(size = tot_fuel_cap_l/1e6), fill = "black") +
+  # geom_line(data = sim_panel3, linetype = "dashed") +
   labs(x = "Year",
        y = "Relative overfishing\n(Additional / Total subsidized liters)") +
-  scale_y_continuous(labels = scales::percent) +
-  scale_color_viridis_c() +
   guides(color = guide_colorbar(title = bquote("Weight on\nmarginal"(alpha)),
                                 frame.colour = "black",
                                 ticks.colour = "black"),
          size = guide_legend(title = "Total fuel\ncap (L)")) +
   labs(subtitle = "Only for subsidized vessels") +
-  scale_x_continuous(labels = 2011:2019, breaks = 2011:2019)
+  scale_x_continuous(labels = 2011:2019, breaks = 2011:2019) +
+  scale_y_continuous(labels = scales::percent, breaks = seq(0, 0.03, by = 0.005), limits = c(0, 0.03)) 
 
 
 ggsave(plot = abs,
        filename = file.path(project_path, "results", "figures", "overfishing_by_year.png"),
        width = 6,
-       height = 4,
+       height = 3,
        units = "in")
 
 ggsave(plot = rel,
        filename = file.path(project_path, "results", "figures", "relative_overfishing_by_year.png"),
        width = 6,
-       height = 4,
+       height = 3,
        units = "in")
 
 ggsave(plot = rel2,
        filename = file.path(project_path, "results", "figures", "relative_overfishing_by_year_caps.png"),
        width = 6,
-       height = 4,
+       height = 3,
        units = "in")
 
 ggsave(plot = rel3,
        filename = file.path(project_path, "results", "figures", "relative_overfishing_by_year_subs.png"),
        width = 6,
-       height = 4,
+       height = 3,
        units = "in")
 
 

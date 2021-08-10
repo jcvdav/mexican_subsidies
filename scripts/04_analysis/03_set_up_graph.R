@@ -165,12 +165,13 @@ data <- tibble(q = seq(1, 200, by = 1)) %>%
          pp = (0.5 * pm) + (0.5 * pa)) %>% 
   ungroup()
 
-demands <- tibble(id = 1:n,
+demands <- tibble(id = LETTERS[1:n],
                   slope = -50,
-                  int = c(626, 750)) %>% 
+                  int = c(630, 750)) %>% 
   expand_grid(price_tbl) %>% 
   mutate(pl = ph - 1,
-         qu = int + (slope * ph))
+         qu = int + (slope * ph),
+         ql = int + (slope * pl))
 
 demands_fcap <- demands %>% 
   # filter(id < 3) %>%
@@ -184,31 +185,146 @@ demands_fcap <- demands %>%
   filter(qm > 0, qu > 0, qp > 0)
 
 # Plot
-plot <- ggplot(data = data, aes(x = q, group = period)) +
-  geom_step(aes(y = pm), direction = "vh") +
-  geom_line(aes(y = pa), linetype = "dashed") +
-  geom_line(aes(y = pp), linetype = "dotted") +
-  geom_hline(yintercept = p_market, linetype = "dashed") +
-  geom_abline(data = demands_fcap, aes(intercept = -int / slope, slope = 1/slope)) +
-  geom_point(data = demands_fcap, aes(x = qa, y = pa), fill = "blue") +
-  geom_point(data = demands_fcap, aes(x = qp, y = pp), fill = "green") +
-  geom_point(data = demands_fcap, aes(x = qm, y = pm), fill = "red") +
-  geom_vline(aes(xintercept = cap), linetype = "dashed") +
-  labs(x = "Fuel consumption (L)", y = "Fuel price ($/L)") +
-  scale_x_continuous(limits = c(0, 200),
-                     expand = c(0, 0)) +
-  scale_y_continuous(limits = c(10.5, 13), labels = NULL, expand = c(0, 0)) +
-  geom_segment(x = 1, xend = 1, y = 0, yend = p_market, linetype = "dashed") +
-  geom_segment(x = 51, xend = 51, y = 0, yend = p_market - 1, linetype = "dashed") +
-  geom_segment(x = 125, xend = 125, y = 0, yend = p_market, linetype = "dashed") +
-  geom_segment(x = 139, xend = 139, y = 0, yend = 12.2, linetype = "dashed") +
-  geom_segment(x = 150, xend = 150, y = 0, yend = 12, linetype = "dashed")
+(
+  plot <- ggplot(data = demands_fcap, aes(x = q)) +
+    geom_abline(aes(intercept = -int / slope, slope = 1/slope, color = id)) +
+    scale_color_brewer(palette = "Set1") +
+    theme(legend.position = "None") +
+    labs(x = "Fuel consumption (L)", y = "Fuel price ($/L)") +
+    scale_x_continuous(limits = c(0, 200), expand = c(0, 0), labels = NULL, breaks = NULL) +
+    scale_y_continuous(limits = c(10, 13), labels = NULL, breaks = NULL, expand = c(0, 0)) +
+    geom_hline(yintercept = p_market, linetype = "dashed") +
+    geom_text(x = 20, y = 12.6, label = "Market price")
+)
 
+(
+  p2 <- plot +
+    geom_point(aes(x = qu, y = ph), fill = "black") +
+    geom_segment(aes(x = qu, xend = qu, y = 10, yend = ph), linetype = "dashed") +
+    scale_x_continuous(limits = c(0, 200), expand = c(0, 0),
+                       labels = c(expression(Q[au]), expression(Q[bu])), breaks = c(5, 125))
+)
+
+(p3 <- p2 +
+    geom_hline(yintercept = p_market - 1, linetype = "dashed") +
+    geom_text(x = 25, y = 11.6, label = "Subsidized price")
+)
+
+(
+  p4 <- p3 +
+    geom_step(data = data, aes(y = pm), direction = "vh", size = 1) +
+    geom_vline(xintercept = caps, linetype = "dashed") +
+    scale_x_continuous(limits = c(0, 200), expand = c(0, 0),
+                       labels = c(expression(Q[au]), expression(bar(Q)), expression(Q[bu])), breaks = c(5, caps, 125))
+)
+
+(
+  p5 <- p4 +
+    geom_point(aes(x = qm, y = pm), fill = "black") +
+    geom_segment(aes(x = qm, xend = qm, y = 10, yend = pm), linetype = "dashed") +
+    scale_x_continuous(limits = c(0, 200), expand = c(0, 0),
+                       labels = c(expression(Q[au]), expression(Q[as]) ,expression(bar(Q)), expression(Q[bu]~"="~Q[bs])),
+                       breaks = c(5, 55, caps, 125))
+)
+
+(
+  p6 <- demands_fcap %>% 
+    filter(int == max(int)) %>% 
+    ggplot(aes(x = q)) +
+    geom_abline(aes(intercept = -int / slope, slope = 1/slope), color = "steelblue") +
+    theme(legend.position = "None") +
+    labs(x = "Fuel consumption (L)", y = "Fuel price ($/L)") +
+    geom_step(data = data, aes(y = pm), direction = "vh", size = 1) +
+    geom_vline(xintercept = caps, linetype = "dashed") +
+    geom_point(aes(x = qm, y = pm), fill = "black") +
+    geom_segment(aes(x = qm, xend = qm, y = 10, yend = pm)) +
+    scale_y_continuous(limits = c(10, 13), labels = NULL, breaks = NULL, expand = c(0, 0)) +
+    scale_x_continuous(limits = c(0, 200), expand = c(0, 0),
+                       labels = c(expression(bar(Q)), expression(Q[bu]), expression(Q[ba])), breaks = c(75, 125, 150)) +
+    geom_line(data = data, aes(y = pa), size = 1, linetype = "dotted") +
+    geom_point(aes(x = qa, y = pa), fill = "black") +
+    geom_segment(aes(x = qa, xend = qa, y = 10, yend = pa), linetype = "dotted")
+)
+
+(
+  p7 <- p6 +
+    geom_line(data = data, aes(y = pp), size = 1, linetype = "dashed") +
+    geom_point(aes(x = qp, y = pp), fill = "black") +
+    geom_segment(aes(x = qp, xend = qp, y = 10, yend = pp), linetype = "dashed") +
+    scale_x_continuous(limits = c(0, 200), expand = c(0, 0),
+                       labels = c(expression(bar(Q)), expression(Q[bu]), expression(Q[bp]), expression(Q[ba])),
+                       breaks = c(75, 125, 139, 150))
+  )
+
+(
+  p8 <- ggplot(data = demands_fcap, aes(x = q)) +
+    geom_abline(aes(intercept = -int / slope, slope = 1/slope, color = id)) +
+    scale_color_brewer(palette = "Set1") +
+    theme(legend.position = "None") +
+    labs(x = "Fuel consumption (L)", y = "Fuel price ($/L)") +
+    geom_step(data = data, aes(y = pm), direction = "vh", size = 1) +
+    geom_vline(xintercept = caps, linetype = "dashed") +
+    geom_segment(aes(x = qu, xend = qu, y = 10, yend = ph)) +
+    geom_point(aes(x = qu, y = ph), fill = "white") +
+    scale_y_continuous(limits = c(10, 13), labels = NULL, breaks = NULL, expand = c(0, 0)) +
+    scale_x_continuous(limits = c(0, 200), expand = c(0, 0),
+                       labels = c(expression(Q[au]), expression(Q[as]), expression(bar(Q)), expression(Q[bu]~"="~Q[bs]), expression(Q[ba])),
+                       breaks = c(5, 55, 75, 125, 150)) +
+    geom_line(data = data, aes(y = pa), size = 1, linetype = "dotted") +
+    geom_point(aes(x = qa, y = pa), fill = "black") +
+    geom_segment(aes(x = qa, xend = qa, y = 10, yend = pa), linetype = "dotted") +
+    geom_segment(aes(x = qu, xend = qa, y = 10.1, yend = 10.1, group = id),
+                 arrow = arrow(lengt = unit(10, "pt"), ends = "first")) +
+    geom_text(x = 26, y = 10.35, label = "Additional\nconsumption by A") +
+    geom_text(x = 140, y = 10.35, label = "Additional\nconsumption by B")
+)
 
 ggsave(plot = plot,
-       filename = file.path(project_path, "results", "figures", "vanilla_POM.png"),
-       width = 6,
-       height = 4,
+       filename = file.path(project_path, "results", "figures", "mex_prog1.png"),
+       width = 5,
+       height = 3,
+       units = "in")
+
+ggsave(plot = p2,
+       filename = file.path(project_path, "results", "figures", "mex_prog2.png"),
+       width = 5,
+       height = 3,
+       units = "in")
+
+ggsave(plot = p3,
+       filename = file.path(project_path, "results", "figures", "mex_prog3.png"),
+       width = 5,
+       height = 3,
+       units = "in")
+
+ggsave(plot = p4,
+       filename = file.path(project_path, "results", "figures", "mex_prog4.png"),
+       width = 5,
+       height = 3,
+       units = "in")
+
+ggsave(plot = p5,
+       filename = file.path(project_path, "results", "figures", "mex_prog5.png"),
+       width = 5,
+       height = 3,
+       units = "in")
+
+ggsave(plot = p6,
+       filename = file.path(project_path, "results", "figures", "mex_prog6.png"),
+       width = 5,
+       height = 3,
+       units = "in")
+
+ggsave(plot = p7,
+       filename = file.path(project_path, "results", "figures", "mex_prog7.png"),
+       width = 5,
+       height = 3,
+       units = "in")
+
+ggsave(plot = p8,
+       filename = file.path(project_path, "results", "figures", "mex_prog8.png"),
+       width = 5,
+       height = 3,
        units = "in")
 
 

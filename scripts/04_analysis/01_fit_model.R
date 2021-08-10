@@ -16,7 +16,7 @@ est_panel <- panel  %>%
   filter(!D | phi == 0)
 
 model <- feols(fuel_consumption_l ~ act_price | eu_rnpa, data = est_panel)
-model2 <- feols(fuel_consumption_l ~ act_price | eu_rnpa + year, data = est_panel)
+model2 <- feols(log(fuel_consumption_l) ~ log(act_price) | eu_rnpa, data = est_panel)
 model3 <- feols(fuel_consumption_l ~ act_price | eu_rnpa, data = panel)
 
 modelsummary(model,
