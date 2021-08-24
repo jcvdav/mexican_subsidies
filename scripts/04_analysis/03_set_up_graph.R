@@ -1,6 +1,4 @@
 
-library(modelsummary)
-library(cowplot)
 library(tidyverse)
 
 
@@ -328,5 +326,63 @@ ggsave(plot = p8,
        units = "in")
 
 
+# Mexican program redesign
+
+demands_prd <- tibble(id = LETTERS[1:n],
+                      slope = -50,
+                      int = c(650, 750)) %>% 
+  expand_grid(tibble(cap = c(80, 40),
+                     p_red = c(1, 2),
+                     ph = 12.5,
+                     cap_title = c("Large cap", "Small cap"))) %>%
+  mutate(pl = ph - p_red,
+         qu = int + (slope * ph),
+         ql = int + (slope * pl)) %>% 
+  mutate(marginal_subsidy = pmap(.l = list(intercept = int, slope = slope, cap = cap, ph = ph, pl = pl),
+                                 pm_optim_wraper),
+         average_subsidy = pmap(.l = list(int, slope, cap, ph, pl),
+                                pa_optim_wraper)) %>% 
+  unnest(c(marginal_subsidy, average_subsidy)) %>% 
+  filter(qm > 0, qu > 0)
+
+data_prd <- tibble(q = seq(1, 200, by = 1)) %>% 
+  expand_grid(tibble(cap = c(80, 40),
+                     p_red = c(1, 2),
+                     ph = 12.5,
+                     cap_title = c("Large cap", "Small cap"))) %>% 
+  mutate(pl = ph - p_red,
+         pm = ifelse(q <= cap, pl, ph)) %>% 
+  group_by(ph, cap) %>% 
+  mutate(pa = cumsum(pm) / 1:length(q),
+         pp = (0.5 * pm) + (0.5 * pa)) %>% 
+  ungroup()
+
+(
+  p9 <- demands_prd %>% 
+    ggplot() +
+    geom_rect(aes(xmin = 0, xmax = cap, ymin = pl, ymax = ph), color="black", alpha=0.5) +
+    geom_abline(aes(intercept = -int / slope, slope = 1/slope, color = id)) +
+    scale_color_brewer(palette = "Set1") +
+    theme(legend.position = "None") +
+    labs(x = "Fuel consumption (L)", y = "Fuel price ($/L)") +
+    geom_step(data = data_prd, aes(x = q, y = pm), direction = "vh", size = 1) +
+    # geom_vline(aes(xintercept = cap), linetype = "dashed") +
+    geom_line(data = data_prd, aes(x = q, y = pa), size = 1, linetype = "dotted") +
+    geom_point(aes(x = qu, y = ph), fill = "white") +
+    # geom_point(aes(x = qm, y = pm), fill = "black") +
+    geom_point(aes(x = qa, y = pa), fill = "black") +
+    geom_segment(aes(x = qu, xend = qu, y = 4, yend = ph)) +
+    geom_segment(aes(x = qa, xend = qa, y = 4, yend = pa), linetype = "dotted") +
+    scale_y_continuous(limits = c(4, 15), labels = NULL, breaks = NULL, expand = c(0, 0)) +
+    scale_x_continuous(limits = c(0, 200), expand = c(0, 0),
+                       labels = NULL, breaks = NULL) +
+    facet_wrap(~cap_title, ncol = 1)
+)
+
+ggsave(plot = p9,
+       filename = file.path(project_path, "results", "figures", "redesign.png"),
+       width = 4,
+       height = 3,
+       units = "in")
 
 
