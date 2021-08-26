@@ -57,7 +57,7 @@ fuel_consumption_map <- tracks %>%
          lat_bin_center = (floor(lat / res) * res) + (0.5 * res),
          lon_bin_center = (floor(lon / res) * res) + (0.5 * res),
   ) %>% 
-  group_by(year, eu_rnpa, lat_bin_center, lon_bin_center) %>%                # Group daily (with characteristics)
+  group_by(species, year, eu_rnpa, lat_bin_center, lon_bin_center) %>%                # Group daily (with characteristics)
   summarize(h = n(),
             fuel_grams = sum(fuel_grams, na.rm = T),
             fuel_grams_max = sum(fuel_grams_max, na.rm = T)) %>%                                                                        # Calculate total daily grams

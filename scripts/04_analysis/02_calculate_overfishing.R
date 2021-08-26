@@ -27,7 +27,7 @@ sim_panel <- panel %>%
          overfishing = fuel_consumption_l - q_counter,
          pct = overfishing / fuel_consumption_l) %>% 
   filter(fuel_consumption_l > 0) %>% 
-  select(year, eu_rnpa, fuel_consumption_l, hours, subsidy_cap_l, alpha, act_price, p, pp, q_counter, overfishing, pct)
+  select(year, eu_rnpa, species, fuel_consumption_l, hours, subsidy_cap_l, alpha, act_price, p, pp, q_counter, overfishing, pct)
 
 sim_panel2 <- sim_panel %>% 
   group_by(year, alpha) %>% 
