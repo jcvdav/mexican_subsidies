@@ -5,6 +5,8 @@ source(here::here("scripts", "00_setup.R"))
 
 model <- readRDS(file.path(project_path, "data", "output_data", "model.rds"))
 
+response <- model$coefficients
+
 panel <- read.csv(file.path(project_path, "data", "processed_data", "estimation_panel.csv")) %>% 
   mutate(act_price = (fuel_consumption_l<=subsidy_cap_l)*(treated)*pl + 
            (fuel_consumption_l<=subsidy_cap_l)*(!treated)*ph +
@@ -21,10 +23,11 @@ sim_panel <- panel %>%
                        treated & !D ~ pl,
                        treated & D ~ pp),
          R = ph - p,
-         q_counter = pmax((fuel_consumption_l + (treated * model$coefficients * R)), 0),
+         q_counter = pmax((fuel_consumption_l + (treated * response * R)), 0),
          overfishing = fuel_consumption_l - q_counter,
          pct = overfishing / fuel_consumption_l) %>% 
-  filter(fuel_consumption_l > 0)
+  filter(fuel_consumption_l > 0) %>% 
+  select(year, eu_rnpa, fuel_consumption_l, hours, subsidy_cap_l, alpha, act_price, p, pp, q_counter, overfishing, pct)
 
 sim_panel2 <- sim_panel %>% 
   group_by(year, alpha) %>% 
@@ -46,6 +49,12 @@ sim_panel3 <- sim_panel %>%
             pct_tot_con = overfishing / tot_fuel_cons_l,
             pct_tot_cap = overfishing / tot_fuel_cap_l,
             pct_tot_con_subs = overfishing / (sum(fuel_consumption_l * treated)))
+
+
+
+# Export data
+
+saveRDS(sim_panel, file.path(project_path, "data", "output_data", "simulated_counterfactuals.rds"))
 
 
 
