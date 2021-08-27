@@ -41,7 +41,7 @@ fuel_prices <- read.csv(file.path(project_path, "data", "raw_data", "monthly_die
 ## PROCESSING ######################################################################################################################################
 # Fuel consumption
 fuel_consumption <- fuel_consumption_raw %>%
-  group_by(year, eu_rnpa, fleet, fuel_type) %>% 
+  group_by(year, eu_rnpa, fleet, species,fuel_type) %>% 
   summarize(total_hp = sum(engine_power_hp),
             n_vessels = n_distinct(vessel_rnpa),
             fuel_consumption_l = sum(fuel_consumption_l, na.rm = T),
