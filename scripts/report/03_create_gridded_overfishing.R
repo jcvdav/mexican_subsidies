@@ -7,7 +7,8 @@ library(cowplot)
 library(tidyverse)
 
 
-effort <- readRDS(file.path(project_path, "data", "processed_data", "gridded_annual_eurnpa_fuel_consumption.rds"))
+effort <- readRDS(file.path(project_path, "data", "processed_data", "gridded_annual_eurnpa_fuel_consumption.rds")) %>% 
+  replace_na(replace = list(species = "any"))
 
 overfishing <- readRDS(file.path(project_path, "data", "output_data", "simulated_counterfactuals.rds")) %>% 
   select(year, alpha, eu_rnpa, pct)
@@ -15,8 +16,8 @@ overfishing <- readRDS(file.path(project_path, "data", "output_data", "simulated
 america <- rnaturalearth::ne_countries(continent = c("North America", "South America"), returnclass = "sf") %>% 
   st_crop(xmin = -150, ymin = -25, xmax = -70, ymax = 40)
 
-coast <- rnaturalearth::ne_countries(country = "Mexico", returnclass = "sf", scale = "large") %>% 
-  st_make_valid()
+# coast <- rnaturalearth::ne_countries(country = "Mexico", returnclass = "sf", scale = "large") %>% 
+#   st_make_valid()
 
 mex_eez <- st_read(file.path(data_path, "marine-regions-eez-v11/World_EEZ_v11_20191118_gpkg/eez_v11.gpkg")) %>% 
   filter(ISO_TER1 == "MEX")
@@ -30,8 +31,6 @@ mex_seas <- seas %>%
 
 mex_seas_viz <- ms_simplify(mex_seas)
 
-high_seas <- seas %>% 
-  st_difference(mex_eez)
 
 effort_counterfactual <- left_join(effort, overfishing, by = c("year", "eu_rnpa")) %>% 
   filter(year == 2019) %>% 
@@ -40,7 +39,7 @@ effort_counterfactual <- left_join(effort, overfishing, by = c("year", "eu_rnpa"
   mutate(additional_fuel_consumption_l = fuel_consumption_l * pct) %>% 
   group_by(alpha, lat_bin_center, lon_bin_center) %>% 
   summarize(additional_fuel_consumption_l = sum(additional_fuel_consumption_l, na.rm = T),
-            fuel_consumption_l = sum(fuel_consumption_l)) %>% 
+            fuel_consumption_l = sum(fuel_consumption_l, na.rm = T)) %>% 
   ungroup() %>% 
   mutate(pct = (additional_fuel_consumption_l / fuel_consumption_l) * 100,
          response = ifelse(alpha == 1, "Marginal", "Average")) 
@@ -101,45 +100,5 @@ ggsave(spatial,
        filename = file.path(project_path, "results", "figures", "spatial_subsidy_footprint.png"),
        width = 8,
        height = 6)
-
-
-# Species-level
-
-species_counterfactual <- left_join(effort, overfishing, by = c("year", "eu_rnpa")) %>% 
-  replace_na(replace = list(pc = 0, alpha = 1)) %>%
-  filter(lat_bin_center < 90, lon_bin_center > -360) %>% 
-  drop_na(species) %>% 
-  mutate(species = case_when(species == "shrimp plus" ~ "shrimp",
-                             species == "any" ~ "finfish",
-                             T ~ species)) %>% 
-  mutate(additional_fuel_consumption_l = fuel_consumption_l * pct) %>% 
-  group_by(species, alpha, lat_bin_center, lon_bin_center) %>% 
-  summarize(additional_fuel_consumption_l = sum(additional_fuel_consumption_l, na.rm = T),
-            fuel_consumption_l = sum(fuel_consumption_l)) %>% 
-  ungroup() %>% 
-  mutate(pct = (additional_fuel_consumption_l / fuel_consumption_l) * 100,
-         response = ifelse(alpha == 1, "Marginal", "Average")) 
-
-ggplot(species_counterfactual) +
-  geom_sf(data = america, fill = "transparent") +
-  # geom_sf(data = coast, color = "black") +
-  geom_tile(aes(x = lon_bin_center, y = lat_bin_center, fill = pct)) +
-  geom_sf(data = mex_seas, fill = "transparent", color = "black") +
-  scale_fill_viridis_c(trans = "log10") +
-  facet_grid(response ~ species) +
-  theme_void(base_size = 14) +
-  scale_x_continuous(expand = c(0, 0), limits = c(-150, -70)) +
-  scale_y_continuous(expand = c(0, 0), limits = c(-20, 40)) +
-  theme(legend.position = "bottom",
-        strip.text.x=element_text(margin=margin(b = 2)),
-        strip.background = element_blank(),
-        panel.spacing = unit(10, "pt")) +
-  guides(fill = guide_colorbar(title = "% Effort caused by subsidy\n(log-10 scale)",
-                               direction = "horizontal",
-                               frame.colour = "black",
-                               ticks.colour = "black",
-                               barwidth = 10,
-                               title.position = "top"))  +
-  labs(x = "", y = "")
 
 

@@ -14,7 +14,7 @@ panel <- read_csv(file.path(project_path, "data", "processed_data", "estimation_
   # filter(eu_rnpa %in% c("203000922", "203004411")) %>%
   select(eu_rnpa, species, total_hp, fuel_consumption_l, treated, subsidy_cap_l, ph, pl, phi, D)
 
-pcts <- seq(0, 5, by = 0.25)
+pcts <- seq(0, 2, by = 0.25)
 
 sim_panel <- panel %>% 
   expand_grid(alpha = c(1),
@@ -85,7 +85,7 @@ summarized_simulations <- sim_panel %>%
   mutate(pct_additional = q_additional / q_counter)
 
 
-ggplot(summarized_simulations, aes(x = pct_q, y = pct_p, fill = pct_additional, size = govt_outlay / 1e6, z = govt_outlay)) +
+p <- ggplot(summarized_simulations, aes(x = pct_q, y = pct_p, fill = pct_additional, size = govt_outlay / 1e6, z = govt_outlay)) +
   geom_hline(yintercept = 1, linetype = "dashed") +
   geom_vline(xintercept = 1, linetype = "dashed") +
   geom_contour(show.legend = F, color = "black") +
@@ -101,6 +101,10 @@ ggplot(summarized_simulations, aes(x = pct_q, y = pct_p, fill = pct_additional, 
   guides(size = guide_legend("Cost of program\n(Million MXP)"),
          fill = guide_colorbar("% Additional fuel\nconsumption")) +
   theme(strip.text.x=element_text(margin=margin(b = 2)))
+
+ggsave(p, filename = file.path(project_path, "results", "figures", "program_redesign.png"), 
+       width = 8,
+       height = 6)
 
 
 summarized_simulations %>% 
