@@ -11,26 +11,17 @@ effort <- readRDS(file.path(project_path, "data", "processed_data", "gridded_ann
 overfishing <- readRDS(file.path(project_path, "data", "output_data", "simulated_counterfactuals.rds")) %>% 
   select(year, alpha, eu_rnpa, pct)
 
-america <- rnaturalearth::ne_countries(continent = c("North America", "South America"), returnclass = "sf") %>% 
-  st_crop(xmin = -150, ymin = -25, xmax = -70, ymax = 40)
-
-coast <- rnaturalearth::ne_countries(country = "Mexico", returnclass = "sf", scale = "large") %>% 
-  st_make_valid()
-
-mex_eez <- st_read(file.path(data_path, "marine-regions-eez-v11/World_EEZ_v11_20191118_gpkg/eez_v11.gpkg")) %>% 
-  filter(ISO_TER1 == "MEX")
-
 seas <- st_read(file.path(data_path, "world-seas-v3", "World_Seas_IHO_v3"), "World_Seas_IHO_v3") %>% 
   filter(NAME %in% c("Gulf of California", "Gulf of Mexico", "North Pacific Ocean", "Caribbean Sea", "South Pacific Ocean")) %>% 
   st_make_valid()
 
-mex_seas <- seas %>% 
-  st_intersection(mex_eez)
-
-mex_seas_viz <- ms_simplify(mex_seas)
-
-high_seas <- seas %>% 
-  st_difference(mex_eez)
+# mex_seas <- seas %>% 
+#   st_intersection(mex_eez)
+# 
+# mex_seas_viz <- ms_simplify(mex_seas)
+# 
+# high_seas <- seas %>% 
+#   st_difference(mex_eez)
 
 
 
@@ -87,11 +78,42 @@ stock_info <- read.csv(file.path(project_path, "data", "raw_data", "mangin_stock
 write.csv(stock_info, file = file.path(project_path, "data", "output_data", "effort_by_stock.csv"), row.names = FALSE)
 
 
-location	species	Scientific name	g	K	b_div_bmsy	k_div_kmsy
-gulf_of_california	sardine	Sardinops sagax	0.17	6980198.73	0.9	1.63
-gulf_of_california	shrimp	Litopenaeus stylirostris	0.2	75531.55	0.7	2.09
-north_pacific_ocean	tuna	Thunnus albacares	0.03	9155828.24	0.85	1.93
+DF_withSubsidy <- stock_info %>%
+  mutate(f=f_div_fmsy,b=b_div_bmsy,factor=additional_div_observed) %>%
+  select(stock,g,K,f,b,response,factor) %>%
+  mutate(phi=.188) %>%
+  mutate(bss = ((1+phi)*(1-f*phi/(1+phi)))^(1/phi)) %>%
+  mutate(Scenario = "With Subsidy")
 
+DF_noSubsidy <- stock_info %>%
+  mutate(f=f_div_fmsy,b=b_div_bmsy,factor=additional_div_observed) %>%
+  mutate(f=f*(1-factor)) %>%
+  select(stock,g,K,f,b,response,factor) %>%
+  mutate(phi=.188) %>%
+  mutate(bss = ((1+phi)*(1-f*phi/(1+phi)))^(1/phi)) %>%
+  mutate(Scenario = "No Subsidy")
+
+DF <- bind_rows(DF_withSubsidy,DF_noSubsidy) %>%
+  filter(response == "Average") %>% 
+  mutate(stock = str_replace_all(stock, "_", " "),
+         stock = str_to_sentence(stock))
+
+kobe <- ggplot(data = DF) +
+  geom_point(aes(x = bss, y = f, fill = stock, shape = Scenario), size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  geom_vline(xintercept = 1, linetype = "dashed") +
+  xlab("B/Bmsy") +
+  ylab("F/Fmsy") +
+  xlim(0,1.3) +
+  ylim(0.5,2.2) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Set1") +
+  scale_shape_manual(values = c(21, 24)) +
+  theme(legend.justification = c(0, 0),
+        legend.position = c(0, 0),
+        legend.background = element_blank())
+
+ggsave(kobe, filename = file.path(project_path, "results", "figures", "kobe_plot.png"), width = 5, height = 5)
 
 
 

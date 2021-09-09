@@ -1,3 +1,5 @@
+library(tidyverse)
+
 
 overfishing <- readRDS(file.path(project_path, "data", "output_data", "simulated_counterfactuals.rds")) %>% 
   select(year, species, alpha, eu_rnpa, fuel_consumption_l, q_counter, pct, overfishing) %>% 
