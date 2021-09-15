@@ -13,9 +13,13 @@ effort <- readRDS(file.path(project_path, "data", "processed_data", "gridded_ann
   distinct()
 
 overfishing <- readRDS(file.path(project_path, "data", "output_data", "simulated_counterfactuals.rds")) %>% 
-  select(year, alpha, eu_rnpa, pct) %>% 
   filter(year == 2019) %>% 
-  distinct()
+  group_by(alpha, eu_rnpa) %>% 
+  summarize(overfishing = sum(overfishing, na.rm = T),
+            fuel_consumption_l = sum(fuel_consumption_l, na.rm = T),
+            pct = overfishing / fuel_consumption_l) %>% 
+  distinct() %>% 
+  select(-fuel_consumption_l)
 
 america <- rnaturalearth::ne_countries(continent = c("North America", "South America"), returnclass = "sf") %>% 
   st_crop(xmin = -150, ymin = -25, xmax = -70, ymax = 40)
@@ -36,9 +40,9 @@ mex_seas <- seas %>%
 mex_seas_viz <- ms_simplify(mex_seas)
 
 
-effort_counterfactual <- inner_join(effort, overfishing, by = c("year", "eu_rnpa")) %>% 
-  filter(fuel_consumption_l > 0) %>% 
+effort_counterfactual <- inner_join(effort, overfishing, by = "eu_rnpa") %>% 
   replace_na(replace = list(pct = 0, alpha = 1)) %>%
+  filter(fuel_consumption_l > 0) %>% 
   filter(lat_bin_center < 90, lon_bin_center > -360) %>% 
   mutate(additional_fuel_consumption_l = fuel_consumption_l * pct) %>% 
   group_by(alpha, lat_bin_center, lon_bin_center) %>% 

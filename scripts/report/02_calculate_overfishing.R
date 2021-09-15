@@ -1,4 +1,5 @@
 library(startR)
+library(cowplot)
 library(tidyverse)
 
 source(here::here("scripts", "00_setup.R"))
@@ -37,18 +38,6 @@ sim_panel2 <- sim_panel %>%
             pct_tot_cap = overfishing / tot_fuel_cap_l) %>% 
   mutate(response = ifelse(alpha == 1, "Marginal", "Average"))
 
-sim_panel3 <- sim_panel %>% 
-  filter(!D | phi == 0,
-         alpha == 1) %>% 
-  group_by(year) %>% 
-  summarize(overfishing = sum(overfishing, na.rm = T),
-            tot_fuel_cons_l = sum(fuel_consumption_l, na.rm = T),
-            tot_fuel_cap_l = sum(subsidy_cap_l, na.rm = T),
-            pct_tot_con = overfishing / tot_fuel_cons_l,
-            pct_tot_cap = overfishing / tot_fuel_cap_l,
-            pct_tot_con_subs = overfishing / (sum(fuel_consumption_l * treated)))
-
-
 
 # Export data
 
@@ -65,7 +54,7 @@ abs <- ggplot(sim_panel2, aes(x = year, y = overfishing / 1e3, group = response)
        y = "Additional fishing effort\n(Thousand L)") +
   guides(linetype = guide_legend(title = "Response"),
          size = guide_legend(title = "Total fuel\ncap (Million L)")) +
-  scale_x_continuous(labels = c(2011, 2019, by = 2), breaks = c(2011, 2019, by = 2)) +
+  scale_x_continuous(labels = seq(2011, 2019, by = 2), breaks = seq(2011, 2019, by = 2)) +
   theme(legend.position = "None")
 
 rel <- ggplot(sim_panel2, aes(x = year, y = pct_tot_con)) + 
@@ -73,10 +62,10 @@ rel <- ggplot(sim_panel2, aes(x = year, y = pct_tot_con)) +
   geom_point(aes(size = tot_fuel_cap_l/1e6), fill = "black") +
   # geom_line(data = sim_panel3, linetype = "dashed") +
   labs(x = "Year",
-       y = "Relative overfishing\n(Aditional / Counterfactual)") +
+       y = "% Change in effort\n") +
   guides(linetype = guide_legend(title = "Response"),
          size = guide_legend(title = "Total fuel\ncap (Million L)")) +
-  scale_x_continuous(labels = c(2011, 2019, by = 2), breaks = c(2011, 2019, by = 2)) +
+  scale_x_continuous(labels = seq(2011, 2019, by = 2), breaks = seq(2011, 2019, by = 2)) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1), breaks = seq(0, 0.03, by = 0.005), limits = c(0, 0.03)) +
   theme(legend.justification = c(1, 1),
         legend.position = c(1, 1))
@@ -84,7 +73,9 @@ rel <- ggplot(sim_panel2, aes(x = year, y = pct_tot_con)) +
 
 addtl_effort <- plot_grid(abs, rel, ncol = 1)
 
-
+ggsave(plot = addtl_effort,
+       filename = file.path(project_path, "results", "figures", "annual_additional_effort.png"),
+       height = 8, width = 6)
 
 
 

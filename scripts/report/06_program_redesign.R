@@ -93,7 +93,7 @@ p <- ggplot(summarized_simulations, aes(x = pct_q, y = pct_p, fill = pct_additio
   geom_point(alpha = 0.9) +
   scale_x_continuous(labels = scales::percent) +
   scale_y_continuous(labels = scales::percent) +
-  scale_fill_viridis_c(labels = scales::percent) +
+  scale_fill_viridis_c(labels = scales::percent, limits = c(0, 0.02)) +
   # scale_fill_continuous(labels = scales::percent) +
   facet_wrap(~resp, ncol = 1) +
   labs(x = bquote("%"~bar(q)),
