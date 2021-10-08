@@ -147,8 +147,8 @@ pp_optim_wraper <- function(intercept, slope, cap, ph, pl, alpha){
 # SIMULATE DATA ##########################################################################################
 ##########################################################################################################
 
-n <- 2
-periods <- 1
+n <- 20
+periods <- 5
 set.seed(10)
 prices <- p_market + rnorm(n = periods, mean = 0, sd = 1)
 caps <- sample(seq(20, 80, by = 10), size = periods, replace = T)
@@ -213,7 +213,7 @@ ggplot(data = data, aes(x = q, group = period)) +
   geom_vline(aes(xintercept = cap), linetype = "dashed")
 
 d <- demands_fcap %>%
-  filter(id %in% c(1, 18, 25)) %>% 
+  # filter(id %in% c(1, 18, 25)) %>% 
   mutate(phi = cap / (qp),
          D = phi < 1L,
          R = ph - pl,
@@ -226,7 +226,7 @@ d2 <- d %>%
   mutate(vessel = case_when(id == 1 ~ "A",
                             id == 18 ~ "B",
                             T ~ "C")) %>% 
-  select(vessel, int, slope, period, cap, ph, qp, pp, term1, term2)
+  select(id, vessel, int, slope, period, cap, ph, qp, pp, term1, term2)
 
 ggplot(data = data, aes(x = q, group = period)) +
   geom_step(aes(y = pm), direction = "vh") +
@@ -244,10 +244,10 @@ ggplot(data = data, aes(x = q, group = period)) +
 knitr::kable(d2 %>% select(-slope), format = "pipe", digits = 2)
 
 t1 <- ggplot(d2, aes(x = term1, y = qp)) +
-  geom_path(aes(color = vessel))
+  geom_path(aes(color = id))
 
 t2 <- ggplot(d2, aes(x = term2, y = qp)) +
-  geom_path(aes(color = vessel))
+  geom_path(aes(color = id))
 
 cowplot::plot_grid(t1, t2)
 
