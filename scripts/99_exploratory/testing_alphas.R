@@ -14,19 +14,16 @@ panel <- read.csv(file.path(project_path, "data", "processed_data", "estimation_
   drop_na(phi) %>% 
   select(year, eu_rnpa, species, total_hp, fuel_consumption_l, subsidy_cap_l, act_price, ph, pl, phi)
 
-get_pa <- function(ph, pl, phi) {
-  pa <- ph - (ph - pl) * phi
-  
-  pa[phi >= 1] <- pl[phi >= 1]
-  
-  return(pa)
-  
-}
 
+get_pa <- function(ph, pl, cap, q){
+  p <- ph - ((ph - pl) * (cap / q))
+  p[q <= cap] <- pl[q <= cap]
+  return(p)
+}
 
 fit_fixed_alpha <- function(alpha, data) {
   d <- data %>% 
-    mutate(pa = get_pa(ph = ph, pl = pl, phi = phi),
+    mutate(pa = get_pa(ph = ph, pl = pl, cap = subsidy_cap_l, q = fuel_consumption_l),
            pp = (alpha * act_price) + ((1 - alpha) * pa))
   
   broom::glance(feols(fuel_consumption_l ~ pp + total_hp | eu_rnpa + species, data = d))

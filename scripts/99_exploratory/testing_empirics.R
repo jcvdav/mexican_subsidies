@@ -1,0 +1,468 @@
+
+library(modelsummary)
+library(cowplot)
+library(tidyverse)
+  
+
+# Define some basic variables
+p_market <- 12
+p_subsidy <- p_market - 2
+# cap <- 50
+
+# Define some functions
+get_demand <- function(intercept, slope, q){
+  d <- (-intercept/slope) + (1 / slope * q)
+  return(d)
+}
+
+get_pa <- function(ph, pl, cap, q){
+  p <- ph - ((ph - pl) * (cap / q))
+  p[q <= cap] <- pl
+  return(p)
+}
+
+
+get_pp <- function(ph, pl, cap, q, alpha = 0.7){
+  p <- ph - ((1-alpha) * (ph - pl) * (cap / q))
+  p[q <= cap] <- pl
+  return(p)
+}
+
+
+pm_opt_fun <- function(q, oth){
+  intercept <- oth$intercept
+  slope <- oth$slope
+  cap <- oth$cap
+  ph <- oth$ph
+  pl <- oth$pl
+  
+  pm <- ifelse(q <= cap, pl, ph)
+  d <- get_demand(intercept = intercept, slope = slope, q = q)
+  
+  dif <- (pm - d) ^ 2
+  return(dif)
+}
+
+pa_opt_fun <- function(q, oth){
+  intercept <- oth$intercept
+  slope <- oth$slope
+  cap <- oth$cap
+  ph <- oth$ph
+  pl <- oth$pl
+  
+  pa <- get_pa(ph = ph, pl = pl, cap = cap, q = q)
+  d <- get_demand(intercept = intercept, slope = slope, q = q)
+  
+  dif <- (pa - d) ^ 2
+  return(dif)
+}
+
+pp_opt_fun <- function(q, oth){
+  intercept <- oth$intercept
+  slope <- oth$slope
+  cap <- oth$cap
+  ph <- oth$ph
+  pl <- oth$pl
+  alpha <- oth$alpha
+  
+  pp <- get_pp(ph = ph, pl = pl, cap = cap, q = q, alpha = alpha)
+  d <- get_demand(intercept = intercept, slope = slope, q = q)
+  
+  dif <- (pp - d) ^ 2
+  return(dif)
+}
+
+pm_optim_wraper <- function(intercept, slope, cap, ph, pl){
+  # opt <- optim(par = cap,
+  #              fn = pm_opt_fun,
+  #              lower = 0,
+  #              upper = 1000,
+  #              method = "L-BFGS-B",
+  #              oth =  list(intercept = intercept,
+  #                          slope = slope,
+  #                          cap = cap,
+  #                          ph = ph,
+  #                          pl = pl))
+  
+  qm_h <- intercept + (slope * ph)
+  qm_l <- intercept + (slope * pl)
+  
+  qm <- min(cap, qm_l)
+  qm <- max(qm_h, qm)
+  
+  tibble(qm = qm,
+         pm = ifelse(qm <= cap, pl, ph))
+}
+
+pa_optim_wraper <- function(intercept, slope, cap, ph, pl){
+  opt <- optim(par = cap,
+               fn = pa_opt_fun,
+               lower = 0,
+               upper = 1000,
+               method = "L-BFGS-B",
+               oth =  list(intercept = intercept,
+                           slope = slope,
+                           cap = cap,
+                           ph = ph,
+                           pl = pl))
+  
+  qa <- opt$par
+  
+  tibble(qa = qa,
+         pa = get_pa(q = qa, cap = cap, ph = ph, pl = pl))
+}
+
+pp_optim_wraper <- function(intercept, slope, cap, ph, pl, alpha){
+  # browser()
+  opt <- optim(par = cap - 1,
+               fn = pp_opt_fun,
+               lower = 0,
+               upper = 1000,
+               method = "L-BFGS-B", 
+               oth =  list(intercept = intercept,
+                           slope = slope,
+                           cap = cap,
+                           ph = ph,
+                           pl = pl,
+                           alpha = alpha))
+  
+  qm <- opt$par
+  pp <- get_pp(q = qm, cap = cap, ph = ph, pl = pl, alpha = alpha)
+  
+  if(near(qm, cap, 0.01)){
+   pp <- get_demand(intercept = intercept, slope = slope, q = qm)
+  }
+
+  
+  tibble(qp = qm,
+         pp = pp)
+}
+
+
+
+
+
+
+##########################################################################################################
+# SIMULATE DATA ##########################################################################################
+##########################################################################################################
+
+n <- 2
+periods <- 1
+set.seed(10)
+prices <- p_market + rnorm(n = periods, mean = 0, sd = 1)
+caps <- sample(seq(20, 80, by = 10), size = periods, replace = T)
+
+price_tbl <- tibble(period = 1:periods,
+                    cap = caps,
+                    ph = prices)
+
+data <- tibble(q = seq(1, 300, by = 0.01)) %>% 
+  expand_grid(price_tbl) %>% 
+  mutate(pl = ph - 1,
+         pm = ifelse(q <= cap, pl, ph)) %>% 
+  group_by(ph, cap, period) %>% 
+  mutate(pa = cumsum(pm) / 1:length(q),
+         pp = (0.7 * pm) + (0.3 * pa)) %>% 
+  ungroup()
+
+demands <- tibble(id = 1:n,
+                  sub = sample(c(T, F), size = n, replace = T),
+                  slope = -25,
+                  intercept = 425,
+                  error = rnorm(n = n, mean = 0, sd = 50),
+                  int = intercept + error) %>% 
+  expand_grid(price_tbl) %>% 
+  mutate(pl = ph - 1,
+         qu = int + (slope * ph))
+
+demands_rcap <- demands %>% 
+  mutate(cap = cap + rnorm(cap, mean = 0, sd = 2),
+         marginal_subsidy = pmap(.l = list(intercept = int, slope = slope, cap = cap, ph = ph, pl = pl),
+                                 pm_optim_wraper),
+         average_subsidy = pmap(.l = list(int, slope, cap, ph, pl),
+                                pa_optim_wraper),
+         perceived_subsidy = pmap(.l = list(int, slope, cap, ph, pl, alpha = 0.7),
+                                  pp_optim_wraper)) %>% 
+  unnest(c(marginal_subsidy, average_subsidy, perceived_subsidy)) %>% 
+  filter(qm > 0, qu > 0, qp > 0)
+
+demands_fcap <- demands %>% 
+  # filter(id < 3) %>%
+  mutate(marginal_subsidy = pmap(.l = list(intercept = int, slope = slope, cap = cap, ph = ph, pl = pl),
+                                 pm_optim_wraper),
+         average_subsidy = pmap(.l = list(int, slope, cap, ph, pl),
+                                pa_optim_wraper),
+         perceived_subsidy = pmap(.l = list(int, slope, cap, ph, pl, alpha = 0.7),
+                                  pp_optim_wraper)) %>% 
+  unnest(c(marginal_subsidy, average_subsidy, perceived_subsidy)) %>% 
+  filter(qm > 0, qu > 0, qp > 0)
+
+# Plot
+ggplot(data = data, aes(x = q, group = period)) +
+  geom_step(aes(y = pm), direction = "vh") +
+  geom_line(aes(y = pa)) +
+  geom_line(aes(y = pp)) +
+  geom_abline(data = demands_fcap, aes(intercept = -int / slope, slope = 1/slope)) +
+  geom_point(data = demands_fcap, aes(x = qm, y = pm), color = "red") +
+  geom_point(data = demands_fcap, aes(x = qa, y = pa), color = "blue") +
+  geom_point(data = demands_fcap, aes(x = qp, y = pp), color = "green") +
+  lims(y = c(5, 20),
+       x = c(0, 500)) +
+  facet_wrap(~period, scales = "free") +
+  geom_vline(aes(xintercept = cap), linetype = "dashed")
+
+d <- demands_fcap %>%
+  filter(id %in% c(1, 18, 25)) %>% 
+  mutate(phi = cap / (qp),
+         D = phi < 1L,
+         R = ph - pl,
+         term1 = pl + (D * R),
+         term2 = phi * R  * D)  %>% 
+  mutate(o_term1 = (pl * (1 - D)) + (ph * D),
+         o_term2 = D * phi * (pl - ph))
+
+d2 <- d %>% 
+  mutate(vessel = case_when(id == 1 ~ "A",
+                            id == 18 ~ "B",
+                            T ~ "C")) %>% 
+  select(vessel, int, slope, period, cap, ph, qp, pp, term1, term2)
+
+ggplot(data = data, aes(x = q, group = period)) +
+  geom_step(aes(y = pm), direction = "vh") +
+  geom_line(aes(y = pa)) +
+  geom_line(aes(y = pp), color = "blue") +
+  geom_abline(data = d2, aes(intercept = -int / slope, slope = 1/slope, color = vessel)) +
+  # geom_point(data = d, aes(x = qm, y = pm), color = "red") +
+  # geom_point(data = d, aes(x = qa, y = pa), color = "blue") +
+  geom_point(data = d, aes(x = qp, y = pp), color = "red") +
+  lims(y = c(10, 13),
+       x = c(0, 300)) +
+  facet_wrap(~period, scales = "free") +
+  geom_vline(aes(xintercept = cap), linetype = "dashed")
+
+knitr::kable(d2 %>% select(-slope), format = "pipe", digits = 2)
+
+t1 <- ggplot(d2, aes(x = term1, y = qp)) +
+  geom_path(aes(color = vessel))
+
+t2 <- ggplot(d2, aes(x = term2, y = qp)) +
+  geom_path(aes(color = vessel))
+
+cowplot::plot_grid(t1, t2)
+
+mdl1 <- fixest::feols(qp ~ term1 + term2 | vessel, data = d2)
+mdl2 <- fixest::feols(qp ~ term1 + term2 | vessel, data = d2 %>% filter(!vessel == "B"))
+
+mods <- list(mdl1, mdl2)
+
+alphs <- c("weight on marginal", map_dbl(mods, get_alpha)) %>% 
+  magrittr::set_names(c("a", "b", "c")) %>% 
+  t() %>% 
+  as.data.frame()
+
+modelsummary(mods,
+             gof_omit = "IC|Adj|Ps|Wi|L|Nu|Std",
+             add_rows = alphs)
+
+mods %>% 
+  map_dfr(fixef, .id = "model") %>% 
+  rename(int = vessel) %>% 
+  mutate(vessel = c("A", "B", "C", "A", "C"),
+         model = paste0("Model", model)) %>% 
+  spread(model, int, fill = 0) %>% 
+  knitr::kable(format = "pipe")
+
+
+##########################################################################################################
+# Demands ################################################################################################
+##########################################################################################################
+
+get_alpha <- function(model){
+  beta <- coefficients(model)[1]
+  theta <- coefficients(model)[2]
+  
+  alpha <- round(1 + (theta/beta), 3)
+  return(alpha)
+}
+
+demands_fcap_fcon <- demands_fcap %>% 
+  filter(qp >= 0,
+         qu >= 0) %>% 
+  mutate(phi = cap / (qp),
+         D = phi <= 1L,
+         R = ph - pl,
+         term1 = pl + (D * R),
+         term2 = phi * R  * D)  %>% 
+  mutate(o_term1 = (pl * (1 - D)) + (ph * D),
+         o_term2 = D * phi * (pl - ph)) %>% 
+  # filter(D) %>%
+  add_count(id) %>% 
+  filter(n > 1) %>% 
+  group_by(id) %>% 
+  mutate(all = all(D),
+         all2 = all(!D),
+         wrong = !all & !all2) %>% 
+  filter(!wrong) %>% 
+  filter(!near(cap, qp, 0.5))
+
+demands_fcap_vcon <- demands_fcap %>% 
+  filter(qp >= 0,
+         qu >= 0) %>% 
+  mutate(qp = qp + rnorm(qp, 0, 0.001),
+         phi = cap / (qp),
+         D = phi <= 1L,
+         R = ph - pl,
+         term1 = pl + (D * R),
+         term2 = phi * R  * D) %>% 
+  mutate(o_term1 = (pl * (1 - D)) + (ph * D),
+         o_term2 = D * phi * (pl - ph)) %>% 
+  # filter(D) %>%
+  add_count(id) %>% 
+  filter(n > 1) %>% 
+  # group_by(id) %>% 
+  # mutate(all = all(D),
+         # all2 = all(!D),
+         # wrong = !all & !all2) %>% 
+  # filter(!wrong) #%>% 
+  filter(id %in% unique(demands_fcap_fcon$id))
+
+demands_rcap_fcon <- demands_rcap %>% 
+  filter(qp >= 0,
+         qu >= 0) %>% 
+  mutate(phi = cap / qp,
+         D = phi <= 1L,
+         R = ph - pl,
+         term1 = pl + (D * R),
+         term2 = phi * R  * D)  %>% 
+  mutate(o_term1 = (pl * (1 - D)) + (ph * D),
+         o_term2 = D * phi * (pl - ph)) %>% 
+  # filter(D) %>%
+  add_count(id) %>% 
+  filter(n > 1) %>% 
+  # group_by(id) %>% 
+  # mutate(all = all(D),
+         # all2 = all(!D),
+         # wrong = !all & !all2) %>% 
+  # filter(!wrong)# %>% 
+  filter(id %in% unique(demands_fcap_fcon$id))
+
+demands_rcap_vcon <- demands_rcap %>% 
+  filter(qp >= 0,
+         qu >= 0) %>% 
+  mutate(qp = qp + rnorm(qp, 0, 0.001),
+         phi = cap / (qp),
+         D = phi <= 1L,
+         R = ph - pl,
+         term1 = pl + (D * R),
+         term2 = phi * R  * D) %>% 
+  mutate(o_term1 = (pl * (1 - D)) + (ph * D),
+         o_term2 = D * phi * (pl - ph)) %>% 
+  # filter(D) %>%
+  add_count(id) %>% 
+  filter(n > 1)  %>% 
+  # group_by(id) %>% 
+  # mutate(all = all(D),
+         # all2 = all(!D),
+         # wrong = !all & !all2) %>% 
+  # filter(!wrong) #%>% 
+  filter(id %in% unique(demands_fcap_fcon$id))
+
+dat <- tibble(source = c("rcap_fcon", "rcap_vcon", "fcap_fcon", "fcap_vcon"),
+               data = list(demands_rcap_fcon, demands_rcap_vcon, demands_fcap_fcon, demands_fcap_vcon)) %>% 
+  unnest(data) %>% 
+  filter(!near(cap, qp, 0.5))
+
+
+ggplot(dat, aes(x = term1, y = qp)) +
+  # geom_point() +
+  geom_path(aes(group = id, color = factor(wrong)), size = 0.1) +
+  facet_wrap(~source) #+
+  # lims(y = c(9, 17),
+       # x = c(0, NA)) +
+  # geom_vline(aes(xintercept = cap))
+  
+ggplot(dat, aes(x = term2, y = qp)) +
+  # geom_point() +
+  geom_path(aes(group = id, color = factor(wrong)), size = 0.1) +
+  facet_wrap(~source) #+
+
+
+# 
+# 
+# 
+# 
+# model1 <- fixest::feols(qp ~ term1 + term2 | factor(id), data = demands2)
+# model2 <- fixest::feols(qp ~ o_term1 + o_term2 | factor(id), data = demands2)
+# model3 <- fixest::feols(qp ~ term1 + term2 | factor(id), data = demands3)
+# model4 <- fixest::feols(qp ~ o_term1 + o_term2 | factor(id), data = demands3)
+
+formulas <- c("qp ~ term1 + term2 | factor(id)",
+              "qp ~ o_term1 + o_term2 | factor(id)") %>% 
+  map(as.formula)
+
+models <- expand_grid(data = list(demands_fcap_fcon, demands_fcap_vcon, demands_rcap_fcon, demands_rcap_vcon),
+                      formula = formulas) %>% 
+  mutate(model = map2(formula, data, fixest::feols))
+
+# get_theta <- function(model){
+#   beta <- coefficients(model)[1]
+#   gamma <- coefficients(model)[2]
+#   
+#   theta <- 1 - (gamma / beta)
+#   return(theta)
+# }
+
+# models <- list(model1, model2, model3, model4)
+
+qbar <- c("$\\bar{Q_t} = Q_{t}$", "X", "X", "X", "X", "", "", "", "")
+error <- c("$\\epsilon_i \\neq 0$", "", "", "X", "X", "", "", "X", "X")
+model <- c("Econometrician", "Chris", "Olivier", "Chris", "Olivier", "Chris", "Olivier", "Chris", "Olivier")
+alphas <- c("weight on marginal", map_dbl(models$model, get_alpha))
+
+
+extra_rows <- rbind(alphas, qbar, error, model) %>% 
+  as_tibble()
+
+attr(extra_rows, 'position') <- c(5, 8, 9, 10, 11)
+
+models %>% 
+  pull(model) %>% 
+  modelsummary::modelsummary(stars = T, 
+                             gof_omit = "IC|Adj|Ps|Wi|L|Nu",
+                             add_rows = extra_rows,
+                             coef_map = c(term1 = "term1",
+                                          term2 = "term2",
+                                          o_term1 = "term1",
+                                          o_term2 = "term2"),
+                             notes = "By design, term1 has a slope of -25 and the weight on marginal is 0.7.")
+
+models %>% 
+  pull(model) %>% 
+  map_dfr(broom::tidy, .id = "model") %>% 
+  select(model, term, estimate, std.error) %>% 
+  mutate(term = str_remove(term, "o_")) %>% 
+  ggplot(aes(x = model, y = estimate, ymin = estimate-std.error, ymax = estimate+std.error)) +
+  facet_wrap(~term, scales = "free") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_pointrange()
+
+bmarks <- tibble(term = c("alpha", "beta"), val = c(0.7, -25))
+  
+models %>% 
+  pull(model) %>% 
+  map_dfr(broom::tidy, .id = "model") %>% 
+  mutate(term = str_remove(term, "o_")) %>% 
+  select(model, term, estimate, std.error) %>% 
+  pivot_wider(names_from = term, values_from = c(estimate, std.error)) %>% 
+  mutate(estimate_alpha = round(1 + (abs(estimate_term2) / estimate_term1), 3)) %>% 
+  pivot_longer(cols = c(estimate_term1, estimate_term2, estimate_alpha, std.error_term1, std.error_term2),
+               names_to = c(".value", "term"),
+               names_pattern = "(.+)_(.+)") %>% 
+  filter(term %in% c("term1", "alpha")) %>% 
+  mutate(term = ifelse(term == "term1", "beta", term)) %>% 
+  ggplot(aes(x = model, y = estimate, ymin = estimate-std.error, ymax = estimate+std.error)) +
+  facet_wrap(~term, scales = "free") +
+  geom_hline(data = bmarks, aes(yintercept = val), linetype = "dashed") +
+  geom_pointrange()
+
