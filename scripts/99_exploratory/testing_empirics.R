@@ -6,7 +6,7 @@ library(tidyverse)
   
 
 # Define some basic variables
-p_market <- 38
+p_market <- 31
 p_subsidy <- p_market - 2
 # cap <- 50
 
@@ -96,16 +96,16 @@ pm_optim_wraper <- function(intercept, slope, cap, ph, pl){
 }
 
 pa_optim_wraper <- function(intercept, slope, cap, ph, pl){
-  opt <- optim(par = cap,
-               fn = pa_opt_fun,
-               lower = 0,
-               upper = 1e6,
-               method = "L-BFGS-B",
-               oth =  list(intercept = intercept,
-                           slope = slope,
-                           cap = cap,
-                           ph = ph,
-                           pl = pl))
+  opt <- nlminb(objective = pa_opt_fun,
+                start = 0.5 * cap,
+                lower = 0,
+                upper = 1e6,
+                # method = "L-BFGS-B",
+                oth =  list(intercept = intercept,
+                            slope = slope,
+                            cap = cap,
+                            ph = ph,
+                            pl = pl))
   
   qa <- opt$par
   
@@ -130,7 +130,7 @@ pp_optim_wraper <- function(intercept, slope, cap, ph, pl, alpha){
   qm <- opt$par
   pp <- get_pp(q = qm, cap = cap, ph = ph, pl = pl, alpha = alpha)
   
-  if(near(qm, cap, 0.01)){
+  if(near(qm, cap, 0.001)){
    pp <- get_demand(intercept = intercept, slope = slope, q = qm)
   }
 
@@ -148,11 +148,11 @@ pp_optim_wraper <- function(intercept, slope, cap, ph, pl, alpha){
 # SIMULATE DATA ##########################################################################################
 ##########################################################################################################
 
-n <- 20
+n <- 200
 periods <- 5
 set.seed(10)
-prices <- p_market + rnorm(n = periods, mean = 0, sd = 2)
-caps <- sample(seq(0.3, 0.7, by = 0.2), size = periods, replace = T)
+prices <- p_market + rnorm(n = periods, mean = 0, sd = 6)
+caps <- sample(seq(0.3, 0.7, by = 0.1), size = periods, replace = F)
 
 price_tbl <- tibble(period = 1:periods,
                     cap = caps * 80000,
@@ -169,24 +169,24 @@ data <- tibble(q = seq(1, 3e5, by = 100)) %>%
 
 demands <- tibble(id = 1:n,
                   sub = sample(c(T, F), size = n, replace = T),
-                  slope = -5000,
-                  intercept = 2.5e5,
+                  slope = -5884,
+                  intercept = 3.4e5,
                   error = rnorm(n = n, mean = 0, sd = 5e4),
                   int = intercept + error) %>% 
   expand_grid(price_tbl) %>% 
-  mutate(pl = ph - 1,
+  mutate(pl = ph - 2,
          qu = int + (slope * ph))
 
-demands_rcap <- demands %>% 
-  mutate(cap = cap + rnorm(cap, mean = 0, sd = 2),
-         marginal_subsidy = pmap(.l = list(intercept = int, slope = slope, cap = cap, ph = ph, pl = pl),
-                                 pm_optim_wraper),
-         average_subsidy = pmap(.l = list(int, slope, cap, ph, pl),
-                                pa_optim_wraper),
-         perceived_subsidy = pmap(.l = list(int, slope, cap, ph, pl, alpha = 0.7),
-                                  pp_optim_wraper)) %>% 
-  unnest(c(marginal_subsidy, average_subsidy, perceived_subsidy)) %>% 
-  filter(qm > 0, qu > 0, qp > 0)
+# demands_rcap <- demands %>% 
+#   mutate(cap = cap + rnorm(cap, mean = 0, sd = 2),
+#          marginal_subsidy = pmap(.l = list(intercept = int, slope = slope, cap = cap, ph = ph, pl = pl),
+#                                  pm_optim_wraper),
+#          average_subsidy = pmap(.l = list(int, slope, cap, ph, pl),
+#                                 pa_optim_wraper),
+#          perceived_subsidy = pmap(.l = list(int, slope, cap, ph, pl, alpha = 0.7),
+#                                   pp_optim_wraper)) %>% 
+#   unnest(c(marginal_subsidy, average_subsidy, perceived_subsidy)) %>% 
+#   filter(qm > 0, qu > 0, qp > 0)
 
 demands_fcap <- demands %>% 
   mutate(marginal_subsidy = pmap(.l = list(intercept = int, slope = slope, cap = cap, ph = ph, pl = pl),
@@ -196,8 +196,9 @@ demands_fcap <- demands %>%
          perceived_subsidy = pmap(.l = list(int, slope, cap, ph, pl, alpha = 0.7),
                                   pp_optim_wraper)) %>% 
   unnest(c(marginal_subsidy, average_subsidy, perceived_subsidy)) %>% 
-  filter(qm > 0, qu > 0, qp > 0) %>% 
-  mutate(p)
+  filter(qm > 0, qu > 0, qp > 0,
+         pa <= pm,
+         pp <= pm)
 
 # Plot
 ggplot(data = data, aes(x = q, group = period)) +
@@ -205,39 +206,53 @@ ggplot(data = data, aes(x = q, group = period)) +
   geom_line(aes(y = pa)) +
   geom_line(aes(y = pp)) +
   geom_abline(data = demands_fcap, aes(intercept = -int / slope, slope = 1/slope)) +
-  geom_point(data = demands_fcap, aes(x = qm, y = pm), color = "red") +
-  geom_point(data = demands_fcap, aes(x = qa, y = pa), color = "blue") +
-  geom_point(data = demands_fcap, aes(x = qp, y = pp), color = "green") +
+  geom_point(data = demands_fcap, aes(x = qm, y = pm), fill = "red") +
+  geom_point(data = demands_fcap, aes(x = qa, y = pa), fill = "blue") +
+  geom_point(data = demands_fcap, aes(x = qp, y = pp), fill = "green") +
   lims(y = c(0, 50),
        x = c(0, 3e5)) +
   facet_wrap(~period, scales = "free") +
   geom_vline(aes(xintercept = cap), linetype = "dashed")
 
-d <- demands_fcap %>%
-  # filter(id %in% c(1, 18, 25)) %>% 
+d <- demands_fcap_vcon %>%
   mutate(phi = cap / (qp),
          D = phi < 1L,
          R = ph - pl,
          term1 = pl + (D * R),
          term2 = phi * R  * D)  %>% 
   mutate(o_term1 = (pl * (1 - D)) + (ph * D),
-         o_term2 = D * phi * (pl - ph))
+         o_term2 = D * phi * (pl - ph)) %>% 
+  add_count(id) %>% 
+  filter(n > 1)
 
 
-ggplot(data = data, aes(x = q, group = period)) +
-  geom_step(aes(y = pm), direction = "vh") +
-  geom_line(aes(y = pa)) +
-  geom_line(aes(y = pp), color = "blue") +
-  geom_abline(data = d, aes(intercept = -int / slope, slope = 1/slope, color = id)) +
-  # geom_point(data = d, aes(x = qm, y = pm), color = "red") +
-  # geom_point(data = d, aes(x = qa, y = pa), color = "blue") +
-  geom_point(data = d, aes(x = qp, y = pp), color = "red") +
-  lims(y = c(0, 50),
-       x = c(0, 3e5)) +
-  facet_wrap(~period, scales = "free") +
-  geom_vline(aes(xintercept = cap), linetype = "dashed")
+# Average vs Marginal above the kink
 
-knitr::kable(d2 %>% select(-slope), format = "pipe", digits = 2)
+ggplot(data = d, aes(x = pm, y = pa)) +
+  geom_point() +
+  coord_equal() +
+  geom_abline(slope = 1, intercept = 0)
+
+
+ggplot(data = d, aes(x = qu, y = ph)) + 
+  geom_point() +
+  geom_line(aes(group = id)) +
+  geom_rug()
+
+ggplot(data = d, aes(x = qm, y = pm)) + 
+  geom_point() +
+  geom_line(aes(group = id)) +
+  geom_rug()
+
+ggplot(data = d, aes(x = qa, y = pa)) + 
+  geom_point() +
+  geom_line(aes(group = id)) +
+  geom_rug()
+
+ggplot(data = d, aes(x = qp, y = pp)) + 
+  geom_point() +
+  geom_line(aes(group = id)) +
+  geom_rug()
 
 t1 <- ggplot(d, aes(x = term1, y = qp)) +
   geom_path(aes(color = id))
@@ -247,17 +262,56 @@ t2 <- ggplot(d, aes(x = term2, y = qp)) +
 
 
 dep_vars <- c("qu", "qm", "qa", "qp")
-indep_vars <- c("ph", "pl", "pm", "pa", "pp")
+indep_vars <- c("pm", "pa", "term1 + term2")
 
 
 mdls <- expand_grid(dep_vars, indep_vars) %>% 
   mutate(fml = paste(dep_vars, "~", indep_vars, " | id"),
-         model = map(fml, my_feols, data = d))
+         model = map(fml, my_feols, data = d)) %>% 
+  filter(dep_vars == "qp")
 
 a <- mdls$model
 names(a) <- mdls$dep_vars
 
-modelsummary(a, stars = T, statistic = "std.error")
+alphs <- c("weight on marginal", map_dbl(a, get_alpha)) %>%  
+  magrittr::set_names(mdls$dep_vars) %>% 
+  t() %>% 
+  as.data.frame()
+
+modelsummary(a, stars = T, statistic = "std.error",
+             gof_omit = "IC|Adj|Ps|Wi|L|Std",
+             add_rows = alphs,
+             statistic_vertical = F)
+
+
+mdls$model %>% 
+  map_dfr(broom::tidy) %>% 
+  filter(str_detect(term, "p|1")) %>% 
+  ggplot(aes(x = term, y = estimate)) +
+  geom_pointrange(aes(ymin = estimate - std.error, ymax = estimate + std.error)) +
+  geom_hline(yintercept = -5884, linetype = "dashed") 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 my_feols <- function(fml, data){
   fml <- as.formula(fml)
@@ -292,8 +346,8 @@ mods %>%
 ##########################################################################################################
 
 get_alpha <- function(model){
-  beta <- coefficients(model)[1]
-  theta <- coefficients(model)[2]
+  beta <- coefficients(model)["term1"]
+  theta <- coefficients(model)["term2"]
   
   alpha <- round(1 + (theta/beta), 3)
   return(alpha)
@@ -322,7 +376,7 @@ demands_fcap_fcon <- demands_fcap %>%
 demands_fcap_vcon <- demands_fcap %>% 
   filter(qp >= 0,
          qu >= 0) %>% 
-  mutate(qp = qp + rnorm(qp, 0, 0.001),
+  mutate(qp = qp + rnorm(qp, 0, 1000),
          phi = cap / (qp),
          D = phi <= 1L,
          R = ph - pl,
