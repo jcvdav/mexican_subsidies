@@ -1,11 +1,12 @@
 
 library(modelsummary)
+library(fixest)
 library(cowplot)
 library(tidyverse)
   
 
 # Define some basic variables
-p_market <- 12
+p_market <- 38
 p_subsidy <- p_market - 2
 # cap <- 50
 
@@ -98,7 +99,7 @@ pa_optim_wraper <- function(intercept, slope, cap, ph, pl){
   opt <- optim(par = cap,
                fn = pa_opt_fun,
                lower = 0,
-               upper = 1000,
+               upper = 1e6,
                method = "L-BFGS-B",
                oth =  list(intercept = intercept,
                            slope = slope,
@@ -117,7 +118,7 @@ pp_optim_wraper <- function(intercept, slope, cap, ph, pl, alpha){
   opt <- optim(par = cap - 1,
                fn = pp_opt_fun,
                lower = 0,
-               upper = 1000,
+               upper = 1e6,
                method = "L-BFGS-B", 
                oth =  list(intercept = intercept,
                            slope = slope,
@@ -150,16 +151,16 @@ pp_optim_wraper <- function(intercept, slope, cap, ph, pl, alpha){
 n <- 20
 periods <- 5
 set.seed(10)
-prices <- p_market + rnorm(n = periods, mean = 0, sd = 1)
-caps <- sample(seq(20, 80, by = 10), size = periods, replace = T)
+prices <- p_market + rnorm(n = periods, mean = 0, sd = 2)
+caps <- sample(seq(0.3, 0.7, by = 0.2), size = periods, replace = T)
 
 price_tbl <- tibble(period = 1:periods,
-                    cap = caps,
+                    cap = caps * 80000,
                     ph = prices)
 
-data <- tibble(q = seq(1, 300, by = 0.01)) %>% 
+data <- tibble(q = seq(1, 3e5, by = 100)) %>% 
   expand_grid(price_tbl) %>% 
-  mutate(pl = ph - 1,
+  mutate(pl = ph - 2,
          pm = ifelse(q <= cap, pl, ph)) %>% 
   group_by(ph, cap, period) %>% 
   mutate(pa = cumsum(pm) / 1:length(q),
@@ -168,9 +169,9 @@ data <- tibble(q = seq(1, 300, by = 0.01)) %>%
 
 demands <- tibble(id = 1:n,
                   sub = sample(c(T, F), size = n, replace = T),
-                  slope = -25,
-                  intercept = 425,
-                  error = rnorm(n = n, mean = 0, sd = 50),
+                  slope = -5000,
+                  intercept = 2.5e5,
+                  error = rnorm(n = n, mean = 0, sd = 5e4),
                   int = intercept + error) %>% 
   expand_grid(price_tbl) %>% 
   mutate(pl = ph - 1,
@@ -188,7 +189,6 @@ demands_rcap <- demands %>%
   filter(qm > 0, qu > 0, qp > 0)
 
 demands_fcap <- demands %>% 
-  # filter(id < 3) %>%
   mutate(marginal_subsidy = pmap(.l = list(intercept = int, slope = slope, cap = cap, ph = ph, pl = pl),
                                  pm_optim_wraper),
          average_subsidy = pmap(.l = list(int, slope, cap, ph, pl),
@@ -196,7 +196,8 @@ demands_fcap <- demands %>%
          perceived_subsidy = pmap(.l = list(int, slope, cap, ph, pl, alpha = 0.7),
                                   pp_optim_wraper)) %>% 
   unnest(c(marginal_subsidy, average_subsidy, perceived_subsidy)) %>% 
-  filter(qm > 0, qu > 0, qp > 0)
+  filter(qm > 0, qu > 0, qp > 0) %>% 
+  mutate(p)
 
 # Plot
 ggplot(data = data, aes(x = q, group = period)) +
@@ -207,8 +208,8 @@ ggplot(data = data, aes(x = q, group = period)) +
   geom_point(data = demands_fcap, aes(x = qm, y = pm), color = "red") +
   geom_point(data = demands_fcap, aes(x = qa, y = pa), color = "blue") +
   geom_point(data = demands_fcap, aes(x = qp, y = pp), color = "green") +
-  lims(y = c(5, 20),
-       x = c(0, 500)) +
+  lims(y = c(0, 50),
+       x = c(0, 3e5)) +
   facet_wrap(~period, scales = "free") +
   geom_vline(aes(xintercept = cap), linetype = "dashed")
 
@@ -222,48 +223,60 @@ d <- demands_fcap %>%
   mutate(o_term1 = (pl * (1 - D)) + (ph * D),
          o_term2 = D * phi * (pl - ph))
 
-d2 <- d %>% 
-  mutate(vessel = case_when(id == 1 ~ "A",
-                            id == 18 ~ "B",
-                            T ~ "C")) %>% 
-  select(id, vessel, int, slope, period, cap, ph, qp, pp, term1, term2)
 
 ggplot(data = data, aes(x = q, group = period)) +
   geom_step(aes(y = pm), direction = "vh") +
   geom_line(aes(y = pa)) +
   geom_line(aes(y = pp), color = "blue") +
-  geom_abline(data = d2, aes(intercept = -int / slope, slope = 1/slope, color = vessel)) +
+  geom_abline(data = d, aes(intercept = -int / slope, slope = 1/slope, color = id)) +
   # geom_point(data = d, aes(x = qm, y = pm), color = "red") +
   # geom_point(data = d, aes(x = qa, y = pa), color = "blue") +
   geom_point(data = d, aes(x = qp, y = pp), color = "red") +
-  lims(y = c(10, 13),
-       x = c(0, 300)) +
+  lims(y = c(0, 50),
+       x = c(0, 3e5)) +
   facet_wrap(~period, scales = "free") +
   geom_vline(aes(xintercept = cap), linetype = "dashed")
 
 knitr::kable(d2 %>% select(-slope), format = "pipe", digits = 2)
 
-t1 <- ggplot(d2, aes(x = term1, y = qp)) +
+t1 <- ggplot(d, aes(x = term1, y = qp)) +
   geom_path(aes(color = id))
 
-t2 <- ggplot(d2, aes(x = term2, y = qp)) +
+t2 <- ggplot(d, aes(x = term2, y = qp)) +
   geom_path(aes(color = id))
+
+
+dep_vars <- c("qu", "qm", "qa", "qp")
+indep_vars <- c("ph", "pl", "pm", "pa", "pp")
+
+
+mdls <- expand_grid(dep_vars, indep_vars) %>% 
+  mutate(fml = paste(dep_vars, "~", indep_vars, " | id"),
+         model = map(fml, my_feols, data = d))
+
+a <- mdls$model
+names(a) <- mdls$dep_vars
+
+modelsummary(a, stars = T, statistic = "std.error")
+
+my_feols <- function(fml, data){
+  fml <- as.formula(fml)
+  feols(fml, data)
+}
 
 cowplot::plot_grid(t1, t2)
 
-mdl1 <- fixest::feols(qp ~ term1 + term2 | vessel, data = d2)
-mdl2 <- fixest::feols(qp ~ term1 + term2 | vessel, data = d2 %>% filter(!vessel == "B"))
+mdl1 <- fixest::feols(qp ~ term1 + term2 | id, data = d)
 
-mods <- list(mdl1, mdl2)
+get_alpha(mdl)
 
 alphs <- c("weight on marginal", map_dbl(mods, get_alpha)) %>% 
   magrittr::set_names(c("a", "b", "c")) %>% 
   t() %>% 
   as.data.frame()
 
-modelsummary(mods,
-             gof_omit = "IC|Adj|Ps|Wi|L|Nu|Std",
-             add_rows = alphs)
+modelsummary(mdl1,
+             gof_omit = "IC|Adj|Ps|Wi|L|Nu|Std")
 
 mods %>% 
   map_dfr(fixef, .id = "model") %>% 
