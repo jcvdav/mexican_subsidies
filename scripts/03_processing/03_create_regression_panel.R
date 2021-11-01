@@ -51,7 +51,7 @@ fuel_consumption <- fuel_consumption_raw %>%
 
 # Fuel panel
 subsidy_panel <- subsidy_panel_raw %>% 
-  # filter(fuel_type == "Diesel") %>%
+  filter(fuel_type == "Diesel") %>%
   select(year,
          eu_rnpa,
          contains("subsidy"),
@@ -61,7 +61,8 @@ subsidy_panel <- subsidy_panel_raw %>%
   group_by(eu_rnpa) %>% 
   mutate(n = n_distinct(fuel_type)) %>% 
   ungroup() %>% 
-  filter(n == 1)
+  filter(n == 1) %>% 
+  select(-n)
 
 panel <- fuel_consumption %>% 
   left_join(subsidy_panel, by = c("eu_rnpa", "year", "fuel_type")) %>% 
@@ -72,10 +73,8 @@ panel <- fuel_consumption %>%
          phi = subsidy_cap_l / fuel_consumption_l,
          D = phi <= 1L,
          R = ph - pl,
-         c_term1 = pl + (D * R),
-         c_term2 = (phi * R  * D),
-         o_term1 = (pl * (1 - D)) + (ph * D),
-         o_term2 = D * phi * (pl - ph)) %>% 
+         term1 = pl + (D * R),
+         term2 = (phi * R  * D)) %>% 
   filter(fuel_consumption > 0) %>% 
   filter(year <= 2019)
 
