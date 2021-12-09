@@ -31,7 +31,7 @@ pct_n <- map_dbl(pct_q, n_within_p, data = panel)
 plot(pct_q, pct_n)
 
 
-model1 <- feols(fuel_consumption_l ~ c_term1 + c_term2 + total_hp| eu_rnpa + species, data = panel)
+model1 <- feols(fuel_consumption_l ~ term1 + term2 + total_hp| eu_rnpa + species, data = panel)
 
 
 modelsummary(list(model1, model2, model3),
