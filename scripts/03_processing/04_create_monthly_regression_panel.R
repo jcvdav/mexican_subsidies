@@ -33,14 +33,14 @@ fuel_prices <- read_csv(file.path(project_path, "data", "raw_data", "monthly_die
 ## PROCESSING ######################################################################################################################################
 # Fuel consumption
 
-
+# Aggregate every vessel's fuel consumption at the year-month-economic-unit level
 fuel_consumption <- fuel_consumption_raw %>%
   group_by(year, month, eu_rnpa, fleet, fuel_type) %>% 
   summarize(total_hp = sum(engine_power_hp, na.rm = T),
             n_vessels = n_distinct(vessel_rnpa, na.rm = T),
             fuel_consumption_l = sum(fuel_consumption_l, na.rm = T),
             fuel_consumption_max_l = sum(fuel_consumption_max_l, na.rm = T),
-            hours = sum(h, na.rm = T),
+            hours = sum(hours, na.rm = T),
             tuna = sum(tuna) > 0,
             sardine = sum(sardine) > 0,
             shrimp = sum(shrimp) > 0,
@@ -66,7 +66,7 @@ subsidy_panel <- subsidy_panel_raw %>%
 panel <- fuel_consumption %>% 
   left_join(subsidy_panel, by = c("eu_rnpa", "year", "fuel_type")) %>% 
   left_join(fuel_prices, by = c("year", "month", "fuel_type")) %>% 
-  replace_na(replace = list(subsidy_cap_l = 0, subsidy_cap_pv_l = 0, treated = F, applied = F)) %>%
+  replace_na(replace = list(subsidy_cap_l = 0, subsidy_cap_pv_l = 0, treated = F, applied = NA)) %>%
   group_by(year, eu_rnpa) %>% 
   arrange(month) %>% 
   mutate(fuel_consumption_to_date_l = cumsum(fuel_consumption_l),
@@ -79,8 +79,7 @@ panel <- fuel_consumption %>%
          R = ph - pl,
          term1 = pl + (D * R),
          term2 = (phi_to_date * R  * D)) %>% 
-  filter(fuel_consumption_l > 0) %>% 
-  filter(year <= 2019) %>% 
+  # filter(year <= 2019) %>% 
   select(year, month, date, eu_rnpa, fuel_consumption_l, fuel_consumption_to_date_l, subsidy_cap_l, subsidy_cap_pesos, exceeds_cap, ph, pl, phi_to_date, D, R, term1, term2, fleet, fuel_type, total_hp, n_vessels, tuna, sardine, shrimp, others, treated, applied)
 
 write.csv(x = panel,
