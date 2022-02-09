@@ -90,11 +90,10 @@ eu_panel <- eu_fuel_consumption %>%
          q_div_qbar = fuel_consumption_l / subsidy_cap_l,
          left_of_kink = fuel_consumption_l < subsidy_cap_l,
          pl = ph - 2,
-         p = ph - (2 * left_of_kink)) %>% 
+         p = ph - (2 * left_of_kink * treated)) %>% 
   select(-c(fleet, fuel_type))
 
 
-write.csv(x = eu_panel,
-          file = file.path(project_path, "data", "processed_data", "economic_unit_annual_panel.csv"),
-          row.names = F)
+write_csv(x = eu_panel,
+          file = file.path(project_path, "data", "processed_data", "economic_unit_annual_panel.csv"))
 
