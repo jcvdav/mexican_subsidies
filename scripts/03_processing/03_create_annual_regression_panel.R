@@ -67,7 +67,7 @@ vessel_subsidy_panel <- vessel_subsidy_panel_raw %>%
 eu_subsidy_panel <- eu_subsidy_panel_raw %>% 
   filter(fuel_type == "Diesel") %>% 
   select(year, eu_rnpa, subsidy_cap_l) %>% 
-  mutate(treated = T)
+  mutate(treated = subsidy_cap_l > 0)
 
 # Combine
 vessel_panel <- vessel_fuel_consumption %>% 
