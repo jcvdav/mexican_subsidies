@@ -1,16 +1,16 @@
-
+library(vip)
 library(tidymodels)
 library(tidyverse)
 
-full_panel <- read_csv(file.path(project_path, "data", "processed_data", "economic_unit_annual_panel.csv"))
+full_panel <- read_csv(file.path(project_path, "data", "processed_data", "shrimp_economic_unit_annual_panel.csv"))
 
 panel <- full_panel %>%
   filter(treated) %>% 
-  select(subsidy_cap_l, year, total_hp, n_vessels, tuna, sardine, shrimp, others, ph)
+  select(subsidy_cap_l, year, total_hp, n_vessels)
 
 set.seed(123)
 sub_split <- panel %>% 
-  initial_split(strata =year, prop = 0.60)
+  initial_split(strata = year, prop = 0.60)
 
 sub_train <- training(sub_split)
 sub_test  <- testing(sub_split)
@@ -27,8 +27,6 @@ rec <-
 #   count(year) %>% 
 #   mutate(pct = n / sum(n))
 
-folds <- vfold_cv(sub_train, v = 10)
-
 tune_spec <- 
   rand_forest(mtry = tune(),
               trees = tune(),
@@ -36,7 +34,7 @@ tune_spec <-
   set_engine("ranger", importance = "impurity") %>% 
   set_mode("regression")
 
-rf_grid <- grid_regular(mtry(range = c(1, 8)),
+rf_grid <- grid_regular(mtry(range = c(1, 3)),
                             trees(),
                             min_n(),
                             levels = 3)
@@ -68,30 +66,31 @@ final_fit <-
   last_fit(sub_split) 
 
 
-
-a <- rand_forest(mtry = 4,
-                 trees = 1000,
-                 min_n = 2) %>% 
-  set_engine("ranger", importance = "impurity") %>% 
-  set_mode("regression") %>% 
-  fit(subsidy_cap_l ~ ., panel)
-
-final_fit %>% 
+imp <- final_fit %>% 
   pluck(".workflow", 1) %>%   
   extract_fit_parsnip() %>% 
   vip(num_features = 20)
 
+
+a <- rand_forest(mtry = 3,
+                 trees = 2000,
+                 min_n = 21) %>% 
+  set_engine("ranger", importance = "impurity") %>% 
+  set_mode("regression") %>% 
+  fit(subsidy_cap_l ~ ., panel)
+
+
 predicted_panel <- full_panel %>% 
   mutate(predicted_subsidy_cap_l = predict(a, .)$.pred)
 
-predicted_panel %>% 
+fit <- predicted_panel %>% 
   mutate(predicted = subsidy_cap_l > 0,
          subsidy_cap_l = ifelse(subsidy_cap_l == 0, predicted_subsidy_cap_l, subsidy_cap_l)) %>% 
   ggplot(mapping = aes(x = subsidy_cap_l / 1e3, y = predicted_subsidy_cap_l / 1e3, fill = predicted)) + 
   geom_point() +
   scale_fill_brewer(palette = "Set1") +
   labs(title = "Random forest predictions",
-       subtitle = "Out-of-sample stats: R2 = 0.857, RMSE = 55756",
+       subtitle = "Out-of-sample stats: R2 = 0.82, RMSE = 244953",
        x = "Observed subsidy cap (1000 L)",
        y = "Predicted subsidy cap (1000 L)",
        fill = "Predicted") +
@@ -102,4 +101,4 @@ predicted_panel %>%
   coord_equal()
 
 write_csv(x = predicted_panel,
-          file = file.path(project_path, "data", "processed_data", "imputed_subsidy_economic_unit_annual_panel.csv"))
+          file = file.path(project_path, "data", "processed_data", "imputed_subsidy_economic_unit_annual_shrimp_panel.csv"))

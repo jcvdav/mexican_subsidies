@@ -93,7 +93,24 @@ eu_panel <- eu_fuel_consumption %>%
          p = ph - (2 * left_of_kink * treated)) %>% 
   select(-c(fleet, fuel_type))
 
+# Shrimp only
+shrimp_eus <- eu_panel %>% 
+  group_by(eu_rnpa) %>% 
+  summarize(shrimp = all(shrimp),
+            tuna = any(tuna),
+            sardine = any(sardine),
+            others = any(others),
+            n = n()) %>% 
+  filter(shrimp, !tuna, !sardine, !others, n >= 2) %>% 
+  pull(eu_rnpa)
+
+# Create panels of "unique fishers"
+shrimp <- eu_panel %>% 
+  filter(eu_rnpa %in% shrimp_eus)
+
 
 write_csv(x = eu_panel,
           file = file.path(project_path, "data", "processed_data", "economic_unit_annual_panel.csv"))
 
+write_csv(x = shrimp,
+          file = file.path(project_path, "data", "processed_data", "shrimp_economic_unit_annual_panel.csv"))
