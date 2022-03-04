@@ -8,24 +8,47 @@ library(tidyverse)
 shrimp <- read_csv(
   file = file.path(
   project_path, "data", "processed_data", "imputed_subsidy_economic_unit_annual_shrimp_panel.csv")) %>% 
-  filter(year <= 2019)
+  filter(year <= 2019,
+         year > 2011)
 
 
 # left of predicted
 left_pred <- shrimp %>% 
-  filter(fuel_consumption_l <= predicted_subsidy_cap_l | fuel_consumption_l <= subsidy_cap_l)
+  filter(fuel_consumption_l <= predicted_subsidy_cap_l)
 
 right_pred <- shrimp %>% 
-  filter(fuel_consumption_l > subsidy_cap_l | fuel_consumption_l > predicted_subsidy_cap_l)
+  filter(fuel_consumption_l > predicted_subsidy_cap_l)
 
 unsubs <- shrimp %>% 
-  filter(!treated)
+  filter(!treated, fuel_consumption_l <= predicted_subsidy_cap_l)
 
 shrimp %>% count(year, treated) %>% spread(treated, n) %>% mutate(n = `TRUE` + `FALSE`)
 left_pred %>% count(year, treated) %>% spread(treated, n) %>% mutate(n = `TRUE` + `FALSE`)
 right_pred %>% count(year, treated) %>% spread(treated, n) %>% mutate(n = `TRUE` + `FALSE`)
 unsubs %>% count(year, treated) %>% spread(treated, n)
 
+three <- shrimp %>% 
+  mutate(left = fuel_consumption_l < predicted_subsidy_cap_l) %>% 
+  filter(left,
+         year %in% seq(2012, 2017)) %>% 
+  mutate(event_time = factor(year - 2014)) 
+
+ggplot(three, aes(x = event_time, y = fuel_consumption_l, fill = treated, color = treated, linetype = left)) + 
+  stat_summary(geom = "point", fun = "mean") +
+  stat_summary(geom = "errorbar", fun.data = "mean_se", width = 0) +
+  scale_color_brewer(palette = "Set1")
+
+feols(fuel_consumption_l ~ i(treated, event_time) | eu_rnpa + event_time, three) %>% 
+  coefplot(style = "interaction")
+  
+
+feols(fuel_consumption_l ~ treated * event_time + p + total_hp + subsidy_cap_l |  eu_rnpa , three) %>% 
+  broom::tidy() %>% 
+  filter(str_detect(term, ":")) %>% 
+  mutate(term = str_remove(term, pattern = "treatedTRUE:event_time")) %>% 
+  ggplot(aes(x = term, y = estimate)) +
+  geom_point() +
+  geom_hline(yintercept = 0)
 
 
 
@@ -81,8 +104,8 @@ annual_left_plot <- ggplot(left_pred, aes(x = fuel_consumption_l, y = factor(yea
 plot_grid(agg_left_plot, annual_left_plot, ncol = 1)
 
 # What is the price elasticity of demand?
-pm1 <- feols(log(fuel_consumption_l) ~ log(p) + total_hp + n_vessels , unsubs)
-pm2 <- feols(log(fuel_consumption_l) ~ log(p) + total_hp + n_vessels| eu_rnpa, unsubs)
+pm1 <- feols(log(fuel_consumption_l) ~ log(p) + total_hp, unsubs)
+pm2 <- feols(log(fuel_consumption_l) ~ log(p) + total_hp | eu_rnpa, unsubs)
 
 pmods <- list("log(Fuel Cosnumption)" = pm1,
               "log(Fuel Cosnumption)" = pm2)
@@ -96,12 +119,11 @@ modelsummary(pmods,
                              "n_vessels" = "# Vessels"))
 
 # Left of kink
-lm1 <- feols(log(fuel_consumption_l) ~ treated + total_hp + n_vessels, left_pred)
-lm2 <- feols(log(fuel_consumption_l) ~ treated + total_hp + n_vessels | eu_rnpa, left_pred)
-lm3 <- feols(log(fuel_consumption_l) ~ treated + total_hp  + n_vessels| eu_rnpa + year, left_pred)
+lm1 <- feols(log(fuel_consumption_l) ~ treated + total_hp + predicted_subsidy_cap_l, left_pred)
+lm2 <- feols(log(fuel_consumption_l) ~  treated + total_hp + predicted_subsidy_cap_l| eu_rnpa, left_pred)
 
-lmods <- list(lm1, lm2, lm3)
-names(lmods) <- rep("log(Fuel Consumption)", 3)
+lmods <- list(lm1, lm2)
+names(lmods) <- rep("log(Fuel Consumption)", 2)
 
 modelsummary(lmods,
              stars = T,
@@ -113,12 +135,12 @@ modelsummary(lmods,
 
 
 # Right
-rm1 <- feols(log(fuel_consumption_l) ~ treated + total_hp + n_vessels, right_pred)
-rm2 <- feols(log(fuel_consumption_l) ~ treated + total_hp + n_vessels | eu_rnpa, right_pred)
-rm3 <- feols(log(fuel_consumption_l) ~ treated + total_hp + n_vessels | eu_rnpa + year, right_pred)
+rm1 <- feols(log(fuel_consumption_l) ~ treated + total_hp + predicted_subsidy_cap_l, right_pred)
+rm2 <- feols(log(fuel_consumption_l) ~ treated + total_hp + predicted_subsidy_cap_l | eu_rnpa, right_pred)
 
-rmods <- list(rm1, rm2, rm3)
-names(rmods) <- rep("log(Fuel Consumption)", 3)
+
+rmods <- list(rm1, rm2)
+names(rmods) <- rep("log(Fuel Consumption)", 2)
 
 modelsummary(rmods,
              stars = T,
