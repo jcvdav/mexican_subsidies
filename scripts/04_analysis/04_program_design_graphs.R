@@ -3,7 +3,7 @@ library(tidyverse)
 
 
 ####### RESPONSIVENESS
-
+n <- 10
 data <- tibble(id = LETTERS[1:n],
        slope = c(-5, -60),
        int = 800) %>% 

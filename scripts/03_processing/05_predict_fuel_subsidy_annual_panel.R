@@ -72,9 +72,9 @@ imp <- final_fit %>%
   vip(num_features = 20)
 
 
-a <- rand_forest(mtry = 3,
+a <- rand_forest(mtry = 2,
                  trees = 2000,
-                 min_n = 21) %>% 
+                 min_n = 2) %>% 
   set_engine("ranger", importance = "impurity") %>% 
   set_mode("regression") %>% 
   fit(subsidy_cap_l ~ ., panel)
@@ -96,8 +96,6 @@ fit <- predicted_panel %>%
        fill = "Predicted") +
   theme(legend.position = c(0, 1),
         legend.justification = c(0, 1)) +
-  scale_x_log10() +
-  scale_y_log10() +
   coord_equal()
 
 write_csv(x = predicted_panel,
