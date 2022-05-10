@@ -33,6 +33,7 @@ vessel_subsidy_panel_clean <- vessel_subsidy_panel_raw %>%
          program = programa,
          component = componente,
          admin_unit = unidad_administrativa,
+         state = entidad_ventanilla_de_reinscripcion,
          budget_code = clave_presupuestaria,
          vessel_rnpa = rnp_activo,
          subsidy_cap_l = volumen_asignado_en_litros,

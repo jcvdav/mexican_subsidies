@@ -11,7 +11,6 @@
 
 # Load packages
 library(here)
-library(startR)
 library(tidyverse)
 
 ## Read data
@@ -28,15 +27,26 @@ vessel_subsidy_panel_raw <-
 eu_subsidy_panel_raw <- 
   read.csv(file.path(project_path, "data", "processed_data", "economic_unit_subsidy_panel.csv"),
            stringsAsFactors = F)
+# These commented-out pirces are wrong
+# fuel_prices <- read.csv(file.path(project_path, "data", "raw_data", "monthly_diesel_prices.csv")) %>% 
+#   select(month = Month, price = Price) %>% 
+#   mutate(date = lubridate::mdy(month),
+#          month = lubridate::month(date),
+#          year = lubridate::year(date),
+#          fuel_type = "Diesel") %>% 
+#   group_by(year) %>% 
+#   summarize(mean_diesel_price_mxn_l = mean(price, na.rm = T))
 
-fuel_prices <- read.csv(file.path(project_path, "data", "raw_data", "monthly_diesel_prices.csv")) %>% 
-  select(month = Month, price = Price) %>% 
-  mutate(date = lubridate::mdy(month),
-         month = lubridate::month(date),
-         year = lubridate::year(date),
-         fuel_type = "Diesel") %>% 
-  group_by(year) %>% 
-  summarize(mean_price = mean(price, na.rm = T))
+fuel_prices <- 
+  readRDS(
+    file = file.path(
+      project_path,
+      "data",
+      "processed_data",
+      "annual_national_diesel_prices.rds"
+    )
+  )
+
 
 ## PROCESSING ######################################################################################################################################
 # Fuel consumption
@@ -61,7 +71,7 @@ eu_fuel_consumption <- fuel_consumption_raw %>%
 
 # Fuel panel
 vessel_subsidy_panel <- vessel_subsidy_panel_raw %>% 
-  select(year, vessel_rnpa, subsidy_cap_l) %>% 
+  select(year, vessel_rnpa, state, subsidy_cap_l) %>% 
   mutate(treated = T)
 
 eu_subsidy_panel <- eu_subsidy_panel_raw %>% 
@@ -74,7 +84,7 @@ vessel_panel <- vessel_fuel_consumption %>%
   left_join(vessel_subsidy_panel, by = c("eu_rnpa" = "vessel_rnpa", "year")) %>% 
   left_join(fuel_prices, by = "year") %>% 
   replace_na(replace = list(subsidy_cap_l = 0, treated = F)) %>%
-  rename(ph = mean_price) %>% 
+  rename(ph = mean_diesel_price_mxn_l) %>% 
   mutate(phi = subsidy_cap_l / fuel_consumption_l,
          q_div_qbar = fuel_consumption_l / subsidy_cap_l,
          left_of_kink = fuel_consumption_l < subsidy_cap_l,
@@ -85,7 +95,7 @@ eu_panel <- eu_fuel_consumption %>%
   left_join(eu_subsidy_panel, by = c("eu_rnpa", "year")) %>% 
   left_join(fuel_prices, by = "year") %>% 
   replace_na(replace = list(subsidy_cap_l = 0, treated = F)) %>%
-  rename(ph = mean_price) %>% 
+  rename(ph = mean_diesel_price_mxn_l) %>% 
   mutate(phi = subsidy_cap_l / fuel_consumption_l,
          q_div_qbar = fuel_consumption_l / subsidy_cap_l,
          left_of_kink = fuel_consumption_l < subsidy_cap_l,
