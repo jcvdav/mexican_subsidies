@@ -1,0 +1,26 @@
+\begin{table}
+
+\caption{\label{tab:}Price elasticity of demand for vessels that are not subsidized (2017 - 2019).}
+\centering
+\begin{tabular}[t]{lccccc}
+\toprule
+  & log(L) & log(L)  & log(L)   & log(L)    & log(L)    \\
+\midrule
+(Intercept) & \num{14.567}*** &  &  &  & \\
+ & (\num{1.975}) &  &  &  & \\
+Fuel price (MXN / L) & \num{-0.218}* & \num{-0.156}* & \num{-0.503} & \num{-0.578} & \\
+ & (\num{0.101}) & (\num{0.060}) & (\num{0.446}) & (\num{0.434}) & \\
+Total Capacity (HP) &  &  &  & \num{0.003}* & \num{0.003}*\\
+ &  &  &  & (\num{0.002}) & (\num{0.002})\\
+log(Fuel price [MXP / L]) &  &  &  &  & \num{-9.143}\\
+ &  &  &  &  & (\num{8.419})\\
+\midrule
+Num.Obs. & \num{150} & \num{150} & \num{150} & \num{150} & \num{150}\\
+R2 & \num{0.031} & \num{0.927} & \num{0.928} & \num{0.936} & \num{0.936}\\
+Std.Errors & IID & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa\\
+FE: eu_rnpa &  & X & X & X & X\\
+FE: year &  &  & X & X & X\\
+\bottomrule
+\multicolumn{6}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\end{tabular}
+\end{table}

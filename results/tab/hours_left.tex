@@ -2,27 +2,23 @@
 
 \caption{\label{tab:}Left of kink, effect on hours. The last column excludes vessels that were always subsidized.}
 \centering
-\begin{tabular}[t]{lllllll}
+\begin{tabular}[t]{lccccc}
 \toprule
-  & log(H) & log(H)  & log(H)   & log(H)    & log(H)     & log(H)     \\
+  & log(H) & log(H)  & log(H)   & log(H)    & log(H)    \\
 \midrule
-(Intercept) & 6.956*** &  &  &  &  & \\
- & (0.069) &  &  &  &  & \\
-Subsidized & 0.997*** & 0.604*** & 0.704*** & 0.705*** & 0.685*** & 0.697***\\
- & (0.077) & (0.178) & (0.129) & (0.128) & (0.128) & (0.129)\\
-Total Capacity (HP) & 0.000*** & 0.001* & 0.001*** & 0.001*** & 0.001*** & 0.002***\\
- & (0.000) & (0.000) & (0.000) & (0.000) & (0.000) & (0.000)\\
-Predicted subsidy cap (L) &  &  &  & 0.000* &  & \\
- &  &  &  & (0.000) &  & \\
-Distance from kink &  &  &  &  & 0.000*** & \\
- &  &  &  &  & (0.000) & \\
+(Intercept) & \num{7.204}*** &  &  &  & \\
+ & (\num{0.078}) &  &  &  & \\
+Subsidized & \num{1.202}*** & \num{0.644}*** & \num{0.782}*** & \num{0.707}*** & \num{0.700}***\\
+ & (\num{0.087}) & (\num{0.186}) & (\num{0.135}) & (\num{0.132}) & (\num{0.133})\\
+Total Capacity (HP) &  &  &  & \num{0.001}*** & \num{0.002}***\\
+ &  &  &  & (\num{0.000}) & (\num{0.000})\\
 \midrule
-Num.Obs. & 1490 & 1490 & 1490 & 1490 & 1490 & 880\\
-R2 & 0.311 & 0.622 & 0.801 & 0.801 & 0.804 & 0.718\\
-FE: eu\_rnpa &  & X & X & X & X & X\\
-FE: year &  &  & X & X & X & X\\
-Std. errors & Standard & Clustered (eu\_rnpa) & Clustered (eu\_rnpa) & Clustered (eu\_rnpa) & Clustered (eu\_rnpa) & Clustered (eu\_rnpa)\\
+Num.Obs. & \num{1455} & \num{1455} & \num{1455} & \num{1455} & \num{809}\\
+R2 & \num{0.115} & \num{0.627} & \num{0.795} & \num{0.807} & \num{0.730}\\
+Std.Errors & IID & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa\\
+FE: eu_rnpa &  & X & X & X & X\\
+FE: year &  &  & X & X & X\\
 \bottomrule
-\multicolumn{7}{l}{\textsuperscript{} * p < 0.1, ** p < 0.05, *** p < 0.01}\\
+\multicolumn{6}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
 \end{tabular}
 \end{table}

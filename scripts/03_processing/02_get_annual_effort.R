@@ -4,7 +4,6 @@
 
 ## Set up #############################################################################################################################################################################
 # Load packages
-library(startR)
 library(connections)
 library(bigrquery)
 library(tidyverse)
@@ -50,7 +49,7 @@ annual_fuel_consumption <- tracks %>%
          fuel_grams = hours * loading_factor * engine_power_hp * hp_kw * sfc_gr_kwh,                                                # Calculate fuel consumption
          fuel_grams_max =  1.2 * hours * engine_power_hp * hp_kw * 280
   ) %>% 
-  group_by(vessel_rnpa, eu_rnpa, year, engine_power_hp, engine_power_bin_hp, tuna, sardine, shrimp, others, fleet, fuel_type) %>%                # Group daily (with characteristics)
+  group_by(vessel_rnpa, eu_rnpa, state, year, engine_power_hp, engine_power_bin_hp, tuna, sardine, shrimp, others, fleet, fuel_type) %>%                # Group daily (with characteristics)
   summarize(hours = sum(hours, na.rm = T),
             fuel_grams = sum(fuel_grams, na.rm = T),
             fuel_grams_max = sum(fuel_grams_max, na.rm = T)) %>%                                                                        # Calculate total daily grams

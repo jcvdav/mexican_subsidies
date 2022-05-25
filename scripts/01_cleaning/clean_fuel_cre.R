@@ -43,11 +43,21 @@ monthly_state_diesel_prices <- cre_fuel_prices %>%
          diesel_price_mxn_l = disel_12,
          year = ao_reporte_13,
          month = mes_14) %>% 
-  mutate(date = lubridate::ymd(paste(year, month, "15", sep = "-"))) %>% 
+  mutate(date = lubridate::ymd(paste(year, month, "15", sep = "-")),
+         state = case_when(state == "Veracruz de Ignacio de la Llave" ~ "Veracruz",
+                           state == "Michoacn de Ocampo" ~ "Michoacan",
+                           state == "Nuevo Len" ~ "Nuevo Leon",
+                           state == "Ciudad de Mxico" ~ "Ciudad de Mexico",
+                           state == "Coahuila de Zaragoza" ~ "Coahuila",
+                           state == "Mxico" ~ "Mexico",
+                           state == "Quertaro" ~ "Queretaro",
+                           state == "San Luis Potos" ~ "San Luis Potosi",
+                           state == "Yucatn" ~ "Yucatan",
+                           T ~ state)) %>% 
   select(state, year, month, date, diesel_price_mxn_l) %>% 
   filter(year <= 2020)
 
-# Daily mean prices
+
 daily_national_diesel_prices <- cre_fuel_prices %>% 
   select(date = fecha_calendario,
          diesel_price_mxn_l = disel_19) %>% 

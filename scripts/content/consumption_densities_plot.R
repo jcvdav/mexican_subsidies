@@ -14,24 +14,24 @@ shrimp <- read_csv(
 agg_left_plot <-
   shrimp %>% 
   filter(fuel_consumption_l <= predicted_subsidy_cap_l) %>% 
-  ggplot(mapping = aes(x = fuel_consumption_l, fill = treated)) +
+  ggplot(mapping = aes(x = log(fuel_consumption_l), fill = treated)) +
   geom_density(alpha = 0.5) +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
-  lims(x = c(0, 1e6)) +
-  labs(x = "Fuel consumption (L)",
+  labs(x = "log(Fuel consumption)",
+       y = "Density",
        fill = "Subsidized",
        color = "Subsidized",
        subtitle = "Left of kink")
 
-agg_right_plot <- shrim %>% 
+agg_right_plot <- shrimp %>% 
   filter(fuel_consumption_l > predicted_subsidy_cap_l) %>% 
-  ggplot(mapping = aes(x = fuel_consumption_l, fill = treated)) +
+  ggplot(mapping = aes(x = log(fuel_consumption_l), fill = treated)) +
   geom_density(alpha = 0.5) +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
-  lims(x = c(0, 1e6)) +
-  labs(x = "Fuel consumption (L)",
+  labs(x = "log(Fuel consumption)",
+       y = "Density",
        fill = "Subsidized",
        color = "Subsidized",
        subtitle = "Right of kink")

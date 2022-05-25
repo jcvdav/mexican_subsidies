@@ -1,0 +1,28 @@
+\begin{table}
+
+\caption{\label{tab:}Using the real subsidy cap.}
+\centering
+\begin{tabular}[t]{lcccccc}
+\toprule
+  & log(L) & log(L)  & log(L)   & log(L)    & log(L)     & log(L)     \\
+\midrule
+(Intercept) & \num{10.946}*** &  &  &  &  & \\
+ & (\num{0.051}) &  &  &  &  & \\
+Subsidized & \num{1.038}*** & \num{0.457}*** & \num{0.484}*** & \num{0.452}*** &  & \num{0.520}***\\
+ & (\num{0.057}) & (\num{0.076}) & (\num{0.083}) & (\num{0.081}) &  & (\num{0.101})\\
+Total Capacity (HP) &  &  &  & \num{0.001}*** & \num{0.001}*** & \num{0.002}***\\
+ &  &  &  & (\num{0.000}) & (\num{0.000}) & (\num{0.000})\\
+Subsidized X Left &  &  &  &  & \num{0.348}*** & \\
+ &  &  &  &  & (\num{0.091}) & \\
+Subsidized X Right &  &  &  &  & \num{0.524}*** & \\
+ &  &  &  &  & (\num{0.077}) & \\
+\midrule
+Num.Obs. & \num{3009} & \num{3009} & \num{3009} & \num{3009} & \num{3009} & \num{1528}\\
+R2 & \num{0.100} & \num{0.755} & \num{0.780} & \num{0.791} & \num{0.793} & \num{0.686}\\
+Std.Errors & IID & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa\\
+FE: eu_rnpa &  & X & X & X & X & X\\
+FE: year &  &  & X & X & X & X\\
+\bottomrule
+\multicolumn{7}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\end{tabular}
+\end{table}

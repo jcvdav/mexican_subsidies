@@ -1,0 +1,29 @@
+\begin{table}
+
+\caption{\label{tab:}Estimates of price-elasticity of demand.
+             Columns 1-4 use 2017 - 2019 data.
+             Columns 1-3 use state-level prices. Column 4 uses national means.
+             Columns 5-8 use the entire data set (2011-2019).
+             Columns 5 and 6 use the price cap (in effect between 2011-2016) and mean national prices (2017-2019).
+             Columns 7 and 8 use the price cap (in effect between 2011-2016) and state-level prices (2017-2019)}
+\centering
+\begin{tabular}[t]{lcccccccc}
+\toprule
+  & log(L) & log(L)  & log(L)   & log(L)    & log(L)     & log(L)      & log(L)       & log(L)       \\
+\midrule
+log(p) & \num{-9.143} & \num{-2.490}* & \num{-2.375}* & \num{-2.438}* & \num{-2.291}*** & \num{-2.226}*** & \num{-2.289}*** & \num{-2.226}***\\
+ & (\num{8.419}) & (\num{1.132}) & (\num{1.129}) & (\num{1.103}) & (\num{0.474}) & (\num{0.476}) & (\num{0.474}) & (\num{0.477})\\
+Total Capacity (HP) & \num{0.003}* & \num{0.003}+ & \num{0.003}* & \num{0.003}+ & \num{0.003}*** & \num{0.003}*** & \num{0.003}*** & \num{0.003}***\\
+ & (\num{0.002}) & (\num{0.002}) & (\num{0.002}) & (\num{0.002}) & (\num{0.001}) & (\num{0.001}) & (\num{0.001}) & (\num{0.001})\\
+Nino 3.4 &  &  & \num{-0.257} &  &  & \num{-0.079} &  & \num{-0.079}\\
+ &  &  & (\num{0.225}) &  &  & (\num{0.098}) &  & (\num{0.098})\\
+\midrule
+Num.Obs. & \num{150} & \num{150} & \num{150} & \num{150} & \num{584} & \num{584} & \num{584} & \num{584}\\
+R2 & \num{0.936} & \num{0.934} & \num{0.935} & \num{0.934} & \num{0.692} & \num{0.692} & \num{0.693} & \num{0.693}\\
+Std.Errors & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa\\
+FE: eu_rnpa & X & X & X & X & X & X & X & X\\
+FE: year & X &  &  &  &  &  &  & \\
+\bottomrule
+\multicolumn{9}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\end{tabular}
+\end{table}

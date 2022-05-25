@@ -19,11 +19,6 @@ fuel_consumption_raw <-
   read.csv(file.path(project_path, "data", "processed_data", "vms_annual_fuel_consumption.csv"),
            stringsAsFactors = F)
 
-# Subsidy panel
-vessel_subsidy_panel_raw <- 
-  read.csv(file.path(project_path, "data", "processed_data", "vessel_subsidy_panel.csv"),
-           stringsAsFactors = F)
-
 eu_subsidy_panel_raw <- 
   read.csv(file.path(project_path, "data", "processed_data", "economic_unit_subsidy_panel.csv"),
            stringsAsFactors = F)
@@ -43,20 +38,17 @@ fuel_prices <-
       project_path,
       "data",
       "processed_data",
-      "annual_national_diesel_prices.rds"
+      "annual_state_diesel_prices.rds"
     )
-  )
+  ) %>% 
+  mutate(state = str_to_sentence(state))
 
 
 ## PROCESSING ######################################################################################################################################
 # Fuel consumption
-vessel_fuel_consumption <- fuel_consumption_raw %>%
-  filter(fleet == "large scale") %>% 
-  select(year, eu_rnpa, vessel_rnpa, fleet, engine_power_hp, engine_power_bin_hp, tuna, sardine, shrimp, others, fuel_type, hours, fuel_consumption_l, fuel_consumption_max_l)
-
 eu_fuel_consumption <- fuel_consumption_raw %>%
   filter(fleet == "large scale") %>% 
-  group_by(year, eu_rnpa, fleet, fuel_type) %>% 
+  group_by(year, state, eu_rnpa, fleet, fuel_type) %>% 
   summarize(total_hp = sum(engine_power_hp),
             n_vessels = n_distinct(vessel_rnpa),
             fuel_consumption_l = sum(fuel_consumption_l, na.rm = T),
@@ -66,34 +58,20 @@ eu_fuel_consumption <- fuel_consumption_raw %>%
             sardine = sum(sardine) > 0,
             shrimp = sum(shrimp) > 0,
             others = sum(others) > 0) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(state = str_to_sentence(state))
 
 
-# Fuel panel
-vessel_subsidy_panel <- vessel_subsidy_panel_raw %>% 
-  select(year, vessel_rnpa, state, subsidy_cap_l) %>% 
-  mutate(treated = T)
-
+# Fuel subsidypanel
 eu_subsidy_panel <- eu_subsidy_panel_raw %>% 
   filter(fuel_type == "Diesel") %>% 
   select(year, eu_rnpa, subsidy_cap_l) %>% 
   mutate(treated = subsidy_cap_l > 0)
 
 # Combine
-vessel_panel <- vessel_fuel_consumption %>% 
-  left_join(vessel_subsidy_panel, by = c("eu_rnpa" = "vessel_rnpa", "year")) %>% 
-  left_join(fuel_prices, by = "year") %>% 
-  replace_na(replace = list(subsidy_cap_l = 0, treated = F)) %>%
-  rename(ph = mean_diesel_price_mxn_l) %>% 
-  mutate(phi = subsidy_cap_l / fuel_consumption_l,
-         q_div_qbar = fuel_consumption_l / subsidy_cap_l,
-         left_of_kink = fuel_consumption_l < subsidy_cap_l,
-         pl = ph - 2,
-         p = ph - (2 * left_of_kink))
-
 eu_panel <- eu_fuel_consumption %>% 
   left_join(eu_subsidy_panel, by = c("eu_rnpa", "year")) %>% 
-  left_join(fuel_prices, by = "year") %>% 
+  left_join(fuel_prices, by = c("year", "state")) %>% 
   replace_na(replace = list(subsidy_cap_l = 0, treated = F)) %>%
   rename(ph = mean_diesel_price_mxn_l) %>% 
   mutate(phi = subsidy_cap_l / fuel_consumption_l,
@@ -105,7 +83,7 @@ eu_panel <- eu_fuel_consumption %>%
 
 # Shrimp only
 shrimp_eus <- eu_panel %>% 
-  group_by(eu_rnpa) %>% 
+  group_by(eu_rnpa, state) %>% 
   summarize(shrimp = all(shrimp),
             tuna = any(tuna),
             sardine = any(sardine),
@@ -116,7 +94,10 @@ shrimp_eus <- eu_panel %>%
 
 # Create panels of "unique fishers"
 shrimp <- eu_panel %>% 
-  filter(eu_rnpa %in% shrimp_eus)
+  filter(eu_rnpa %in% shrimp_eus) %>% 
+  mutate(region = case_when(state %in% c("Baja california", "Baja california sur", "Sinaloa", "Sonora", "Nayarit") ~ "GoC",
+                            state %in% c("Campeche", "Tamaulipas", "Veracruz", "Quintana roo") ~ "GoM",
+                            state %in% c("Chiapas", "Oaxaca") ~ "Pacific"))
 
 
 write_csv(x = eu_panel,

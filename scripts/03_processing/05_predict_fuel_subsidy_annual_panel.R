@@ -1,3 +1,4 @@
+library(here)
 library(vip)
 library(tidymodels)
 library(tidyverse)
@@ -72,7 +73,7 @@ imp <- final_fit %>%
   vip(num_features = 20)
 
 
-a <- rand_forest(mtry = 2,
+a <- rand_forest(mtry = 3,
                  trees = 2000,
                  min_n = 2) %>% 
   set_engine("ranger", importance = "impurity") %>% 
@@ -84,19 +85,24 @@ predicted_panel <- full_panel %>%
   mutate(predicted_subsidy_cap_l = predict(a, .)$.pred)
 
 fit <- predicted_panel %>% 
-  mutate(predicted = subsidy_cap_l > 0,
-         subsidy_cap_l = ifelse(subsidy_cap_l == 0, predicted_subsidy_cap_l, subsidy_cap_l)) %>% 
+  mutate(predicted = subsidy_cap_l > 0) %>% 
   ggplot(mapping = aes(x = subsidy_cap_l / 1e3, y = predicted_subsidy_cap_l / 1e3, fill = predicted)) + 
   geom_point() +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
   scale_fill_brewer(palette = "Set1") +
   labs(title = "Random forest predictions",
-       subtitle = "Out-of-sample stats: R2 = 0.82, RMSE = 244953",
+       subtitle = "Out-of-sample stats: R2 = 0.839, MSE = 2221312.6",
        x = "Observed subsidy cap (1000 L)",
        y = "Predicted subsidy cap (1000 L)",
        fill = "Predicted") +
   theme(legend.position = c(0, 1),
         legend.justification = c(0, 1)) +
   coord_equal()
+
+ggsave(plot = fit,
+       filename = here("results", "img", "rf_fit.pdf"),
+       width = 6,
+       height = 4.5)
 
 write_csv(x = predicted_panel,
           file = file.path(project_path, "data", "processed_data", "imputed_subsidy_economic_unit_annual_shrimp_panel.csv"))
