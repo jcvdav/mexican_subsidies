@@ -18,7 +18,7 @@ l_by_year <- left_pred %>%
   nest() %>% 
   mutate(m = map(data, by_year)) %>% 
   unnest(m) %>% 
-  filter(term == "treatedTRUE") %>% 
+  filter(term == "treated") %>% 
   mutate(source = "left")
 
 r_by_year <- right_pred %>% 
@@ -26,7 +26,7 @@ r_by_year <- right_pred %>%
   nest() %>% 
   mutate(m = map(data, by_year)) %>% 
   unnest(m) %>% 
-  filter(term == "treatedTRUE") %>% 
+  filter(term == "treated") %>% 
   mutate(source = "right")
 
 

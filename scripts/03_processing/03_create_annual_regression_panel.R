@@ -34,14 +34,12 @@ eu_subsidy_panel_raw <-
 
 fuel_prices <- 
   readRDS(
-    file = file.path(
+    file.path(
       project_path,
       "data",
       "processed_data",
-      "annual_state_diesel_prices.rds"
-    )
-  ) %>% 
-  mutate(state = str_to_sentence(state))
+      "annual_national_diesel_prices_2011_2020.rds")) %>% 
+  select(-rate)
 
 
 ## PROCESSING ######################################################################################################################################
@@ -71,7 +69,7 @@ eu_subsidy_panel <- eu_subsidy_panel_raw %>%
 # Combine
 eu_panel <- eu_fuel_consumption %>% 
   left_join(eu_subsidy_panel, by = c("eu_rnpa", "year")) %>% 
-  left_join(fuel_prices, by = c("year", "state")) %>% 
+  left_join(fuel_prices, by = "year") %>% 
   replace_na(replace = list(subsidy_cap_l = 0, treated = F)) %>%
   rename(ph = mean_diesel_price_mxn_l) %>% 
   mutate(phi = subsidy_cap_l / fuel_consumption_l,

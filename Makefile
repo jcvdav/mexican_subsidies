@@ -18,3 +18,6 @@ data/vms_daily_fuel_consumption.rds: data/vessel_registry.rds scripts/03_process
 	cd scripts;Rscript 00_setup.R
 	cd scripts/03_processing;Rscript 03_upload_vessel_registry_to_bigquery.R
 	cd scripts/03_processing;Rscript 04_get_fishing_effort.R
+
+results/img/%.pdf: scripts/content/%.R
+	cd $(<D); Rscript $(<F)

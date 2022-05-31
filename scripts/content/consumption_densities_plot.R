@@ -1,6 +1,4 @@
 library(here)
-library(fixest)
-library(modelsummary)
 library(ggridges)
 library(cowplot)
 library(tidyverse)
@@ -18,6 +16,7 @@ agg_left_plot <-
   geom_density(alpha = 0.5) +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
+  xlim(0, 16) +
   labs(x = "log(Fuel consumption)",
        y = "Density",
        fill = "Subsidized",
@@ -30,6 +29,7 @@ agg_right_plot <- shrimp %>%
   geom_density(alpha = 0.5) +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
+  xlim(0, 16) +
   labs(x = "log(Fuel consumption)",
        y = "Density",
        fill = "Subsidized",

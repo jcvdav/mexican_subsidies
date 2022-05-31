@@ -7,7 +7,9 @@
 ######################################################
 
 library(readxl)
+library(tidyverse)
 
+cpi_t <- readRDS(file.path(project_path, "data", "processed_data", "cpi_t_rates.rds"))
 
 str_2011_2015 <- read_excel("/Users/juancarlosvillasenorderbez/Downloads/anual_nacional_2011_2015.xls",
                             skip = 8) %>% 
@@ -38,15 +40,12 @@ nat_2017_2020 <- readRDS(
     "annual_national_diesel_prices.rds")) %>% 
   mutate()
 
-stat_2017_2020 <- readRDS(file.path(
-  project_path,
-  "data",
-  "processed_data",
-  "annual_state_diesel_prices.rds")) %>% 
-  mutate()
+
 
 annual_national_diesel_prices_2011_2020 <- rbind(str_2011_2015, str_2016, nat_2017_2020) %>% 
-  mutate(year = as.integer(year))
+  mutate(year = as.integer(year)) %>% 
+  left_join(cpi_t, by = "year") %>% 
+  mutate(mean_diesel_price_mxn_l = rate * mean_diesel_price_mxn_l)
 
 saveRDS(object = annual_national_diesel_prices_2011_2020,
         file = file.path(
@@ -55,9 +54,6 @@ saveRDS(object = annual_national_diesel_prices_2011_2020,
           "processed_data",
           "annual_national_diesel_prices_2011_2020.rds"))
 
-
-ggplot(annual_national_diesel_prices_2011_2020, aes(x = year, y = mean_diesel_price_mxn_l)) + 
-  geom_point()
 
 
 

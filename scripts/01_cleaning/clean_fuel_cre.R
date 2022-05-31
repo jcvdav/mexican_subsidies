@@ -54,6 +54,7 @@ monthly_state_diesel_prices <- cre_fuel_prices %>%
                            state == "San Luis Potos" ~ "San Luis Potosi",
                            state == "Yucatn" ~ "Yucatan",
                            T ~ state)) %>% 
+  mutate(state = str_to_sentence(state)) %>% 
   select(state, year, month, date, diesel_price_mxn_l) %>% 
   filter(year <= 2020)
 

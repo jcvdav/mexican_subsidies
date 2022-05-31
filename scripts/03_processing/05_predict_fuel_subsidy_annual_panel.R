@@ -91,7 +91,7 @@ fit <- predicted_panel %>%
   geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
   scale_fill_brewer(palette = "Set1") +
   labs(title = "Random forest predictions",
-       subtitle = "Out-of-sample stats: R2 = 0.839, MSE = 2221312.6",
+       subtitle = "Out-of-bag stats: R2 = 0.839, MSE = 48979279688",
        x = "Observed subsidy cap (1000 L)",
        y = "Predicted subsidy cap (1000 L)",
        fill = "Predicted") +
