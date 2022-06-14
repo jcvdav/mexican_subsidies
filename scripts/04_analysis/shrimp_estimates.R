@@ -265,7 +265,7 @@ modelsummary(s,
              Columns 1-3 use mean national fuel prices from 2012-2019.
              Columns 4-6 use mean annual state-level prices from 2017-2019.",
              stars = T,
-             add_rows = Htest, 
+             add_rows = Htest,
              gof_omit = "Adj|IC|Lo|Ps|Wi",
              coef_rename = c("ph" = "P",
                              "p_stat" = "P",
@@ -357,6 +357,21 @@ modelsummary(h_cm,
                              "treated:dist" = "Subsidized x Distance from kink",
                              "total_hp" = "Total Capacity (HP)",
                              "predicted_subsidy_cap_l" = "Predicted subsidy cap (L)"))
+
+
+
+# Pew summary table
+
+sum <- list(nev2,
+            loglin_nev2,
+            m4[[1]],
+            m4[[3]],
+            s2)
+
+
+modelsummary(sum)
+
+
 
 
 
