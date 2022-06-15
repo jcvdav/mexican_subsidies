@@ -1,0 +1,25 @@
+\begin{table}
+
+\caption{\label{tab:}Right of kink, effect on fuel consumption. The last column excludes vessels that were always subsidized.}
+\centering
+\begin{tabular}[t]{lccccc}
+\toprule
+  & log(L) & log(L)  & log(L)   & log(L)    & log(L)    \\
+\midrule
+(Intercept) & \num{11.622}*** &  &  &  & \\
+ & (\num{0.057}) &  &  &  & \\
+Subsidized & \num{0.690}*** & \num{0.236}*** & \num{0.048}+ & \num{0.050}+ & \num{-0.030}\\
+ & (\num{0.063}) & (\num{0.031}) & (\num{0.029}) & (\num{0.028}) & (\num{0.032})\\
+Total Capacity (HP) &  &  &  & \num{0.001}*** & \num{0.001}***\\
+ &  &  &  & (\num{0.000}) & (\num{0.000})\\
+\midrule
+Num.Obs. & \num{1554} & \num{1554} & \num{1554} & \num{1554} & \num{719}\\
+R2 & \num{0.072} & \num{0.949} & \num{0.962} & \num{0.964} & \num{0.947}\\
+R2 Within &  & \num{0.070} & \num{0.003} & \num{0.046} & \num{0.017}\\
+Std.Errors & IID & by: eu & by: eu & by: eu & by: eu\\
+FE: eu &  & X & X & X & X\\
+FE: year &  &  & X & X & X\\
+\bottomrule
+\multicolumn{6}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\end{tabular}
+\end{table}

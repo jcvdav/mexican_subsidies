@@ -1,0 +1,28 @@
+\begin{table}
+
+\caption{\label{tab:}Effect on fuel consumption by all economic units. The last column excludes vessels that were always subsidized.}
+\centering
+\begin{tabular}[t]{lccccc}
+\toprule
+  & log(L) & log(L)  & log(L)   & log(L)    & log(L)    \\
+\midrule
+(Intercept) & \num{11.622}*** &  &  &  & \\
+ & (\num{0.071}) &  &  &  & \\
+Left & \num{-1.265}*** & \num{-0.733}*** & \num{-0.934}*** & \num{-0.911}*** & \num{-0.993}***\\
+ & (\num{0.097}) & (\num{0.106}) & (\num{0.105}) & (\num{0.103}) & (\num{0.106})\\
+Subsidized X Left & \num{1.274}*** & \num{0.728}*** & \num{0.735}*** & \num{0.709}*** & \num{0.682}***\\
+ & (\num{0.075}) & (\num{0.129}) & (\num{0.121}) & (\num{0.118}) & (\num{0.123})\\
+Subsidized X Right & \num{0.637}*** & \num{0.235}*** & \num{0.112}* & \num{0.084}+ & \num{0.077}\\
+ & (\num{0.077}) & (\num{0.044}) & (\num{0.049}) & (\num{0.049}) & (\num{0.067})\\
+Total Capacity (HP) &  &  &  & \num{0.001}*** & \num{0.002}***\\
+ &  &  &  & (\num{0.000}) & (\num{0.000})\\
+\midrule
+Num.Obs. & \num{3009} & \num{3009} & \num{3009} & \num{3009} & \num{1528}\\
+R2 & \num{0.193} & \num{0.772} & \num{0.798} & \num{0.807} & \num{0.713}\\
+Std.Errors & IID & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa\\
+FE: eu_rnpa &  & X & X & X & X\\
+FE: year &  &  & X & X & X\\
+\bottomrule
+\multicolumn{6}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\end{tabular}
+\end{table}

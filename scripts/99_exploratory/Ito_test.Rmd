@@ -1,0 +1,386 @@
+---
+title: "Ito simulations"
+author: "Juan Carlos Villaseñor-Derbez"
+date: "5/19/2021"
+output: 
+  pdf_document: 
+    fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = F, message = F)
+
+suppressPackageStartupMessages({
+  library(modelsummary)
+  library(cowplot)
+  library(tidyverse)
+})
+
+```
+
+# Set up
+
+
+```{r}
+# Define some basic variables
+p_market <- 12
+p_subsidy <- p_market - 2
+# cap <- 50
+
+# Define some functions
+get_demand <- function(intercept, slope, q){
+  d <- intercept + (slope * q)
+  return(d)
+}
+
+get_pa <- function(ph, pl, cap, q){
+  p <- ph - ((ph - pl) * (cap / q))
+  p[q<=cap] <- pl
+  return(p)
+}
+
+
+get_pp <- function(ph, pl, cap, q, alpha = 0.7){
+  p <- ph - ((1-alpha) * (ph - pl) * (cap / q))
+  p[q<=cap] <- pl
+  return(p)
+}
+
+
+pm_opt_fun <- function(q, oth){
+  intercept <- oth$intercept
+  slope <- oth$slope
+  cap <- oth$cap
+  ph <- oth$ph
+  pl <- oth$pl
+  
+  pm <- ifelse(q <= cap, pl, ph)
+  d <- get_demand(intercept = intercept, slope = slope, q = q)
+  
+  dif <- (pm - d) ^ 2
+  return(dif)
+}
+
+pa_opt_fun <- function(q, oth){
+  intercept <- oth$intercept
+  slope <- oth$slope
+  cap <- oth$cap
+  ph <- oth$ph
+  pl <- oth$pl
+  
+  pa <- get_pa(ph = ph, pl = pl, cap = cap, q = q)
+  d <- get_demand(intercept = intercept, slope = slope, q = q)
+  
+  dif <- (pa - d) ^ 2
+  return(dif)
+}
+
+pp_opt_fun <- function(q, oth){
+  intercept <- oth$intercept
+  slope <- oth$slope
+  cap <- oth$cap
+  ph <- oth$ph
+  pl <- oth$pl
+  alpha <- oth$alpha
+  
+  pp <- get_pp(ph = ph, pl = pl, cap = cap, q = q, alpha = alpha)
+  d <- get_demand(intercept = intercept, slope = slope, q = q)
+  
+  dif <- (pp - d) ^ 2
+  return(dif)
+}
+
+pm_optim_wraper <- function(intercept, slope, cap, ph, pl){
+  opt <- optim(par = 10,
+               fn = pm_opt_fun,
+               lower = 0,
+               upper = 200,
+               method = "L-BFGS-B",
+               oth =  list(intercept = intercept,
+                           slope = slope,
+                           cap = cap,
+                           ph = ph,
+                           pl = pl))
+  
+  qm <- opt$par + rnorm(n = 1, mean = 0, sd = 1)
+  
+  tibble(qm = qm,
+         pm = ifelse(qm <= cap, pl, ph))
+}
+
+pa_optim_wraper <- function(intercept, slope, cap, ph, pl){
+  opt <- optim(par = 10,
+               fn = pa_opt_fun,
+               lower = 0,
+               upper = 200,
+               method = "L-BFGS-B",
+               oth =  list(intercept = intercept,
+                           slope = slope,
+                           cap = cap,
+                           ph = ph,
+                           pl = pl))
+  
+  qa <- opt$par + rnorm(n = 1, mean = 0, sd = 1)
+  
+  tibble(qa = qa,
+         pa = get_pa(q = qa, cap = cap, ph = ph, pl = pl))
+}
+
+pp_optim_wraper <- function(intercept, slope, cap, ph, pl, alpha){
+  opt <- optim(par = 10,
+               fn = pp_opt_fun,
+               lower = 0,
+               upper = 200,
+               method = "L-BFGS-B", 
+               oth =  list(intercept = intercept,
+                           slope = slope,
+                           cap = cap,
+                           ph = ph,
+                           pl = pl,
+                           alpha = alpha))
+  
+  qp <- opt$par + rnorm(n = 1, mean = 0, sd = 1)
+  tibble(qp = qp,
+         pp = get_pp(q = qp, cap = cap, ph = ph, pl = pl, alpha = alpha))
+}
+```
+
+
+```{r}
+# Define soem data
+
+data <- tibble(q = 1:200) %>% 
+  expand_grid(ph = c(p_market, p_market + 3)) %>% 
+  mutate(cap = ifelse(ph == p_market, 10, 20),
+         pl = ph - 2,
+         pm = ifelse(q <= cap, pl, ph)) %>% 
+  group_by(ph) %>% 
+  mutate(pa = cumsum(pm) / 1:200,
+         pp = (0.7 * pm) + (0.3 * pa)) %>% 
+  ungroup()
+
+
+```
+
+```{r}
+# Simualte demands and find intereresctions
+set.seed(10)
+n <- 300
+demands <- tibble(id = 1:n,
+                  sub = sample(c(T, F), size = n, replace = T),
+                  slope = - 0.04,
+                  intercept = 17,
+                  error = rnorm(n = n, mean = 0, sd = 2),
+                  int = intercept + error) %>% 
+  expand_grid(ph = c(p_market, p_market + 3)) %>% 
+  mutate(cap = ifelse(ph == p_market, 10, 20),
+         pl = ph - 2,
+         qu = (ph - int) / slope,
+         marginal_subsidy = pmap(.l = list(intercept = int, slope = slope, cap = cap, ph = ph, pl = pl),
+                                 pm_optim_wraper),
+         average_subsidy = pmap(.l = list(int, slope, cap, ph, pl),
+                                pa_optim_wraper),
+         perceived_subsidy = pmap(.l = list(int, slope, cap, ph, pl, alpha = 0.7),
+                                  pp_optim_wraper)) %>% 
+  unnest(c(marginal_subsidy, average_subsidy, perceived_subsidy)) %>% 
+  filter(qm > 0)
+
+
+
+```
+
+The inverse demand function is given by
+
+$$
+\begin{split}
+p(Q) &= \alpha + \beta q\\
+\alpha &= 15 + \epsilon \\
+\beta &= -0.03 \\
+\epsilon &\sim \mathcal{N}(0, 2)
+\end{split}
+$$
+
+# Simulate data
+
+I simulate 50 demand curves for two time steps. Each time step has a different marginal market price (an increase of 3 units), but the "kink" is the same for both time steps.
+
+
+```{r, fig.cap="Suply and demand curves. Points mark the equilibrium points for each demand curve when consumers respond to marginal (red) or average (blue) prices."}
+## Kink plot
+data %>% 
+  ggplot(aes(x = q, group = ifelse(ph == 12, "T = 1", "T = 2"))) +
+  geom_step(aes(y = pm), direction = "vh") +
+  geom_line(aes(y = pa)) +
+  geom_line(aes(y = pp)) +
+  geom_abline(data = demands, aes(intercept = int, slope = slope)) +
+  geom_point(data = demands, aes(x = qm, y = pm), color = "red") +
+  geom_point(data = demands, aes(x = qa, y = pa), color = "blue") +
+  geom_point(data = demands, aes(x = qp, y = pp), color = "green") +
+  lims(y = c(9, 17),
+       x = c(0, NA)) +
+  facet_wrap(~ifelse(ph == 12, "T = 1", "T = 2")) +
+  geom_vline(aes(xintercept = cap), linetype = "dashed") +
+  theme_gray()
+```
+
+So, the red and blue dots represent two parallel worlds. One in which consumers respond to marginal prices (red dots) and one in which consumers respond to average prices (blue dots).
+
+# Bunching test
+
+The first test Ito does is a bunching test. We'll do this for each "world", so there will be two bunching tests, and I'll do it just for one year (it shouldn't matter what year it is). The takeaway is that we should see no buncing of the blue dots, but we should see it for the red dots.
+
+
+```{r, fig.cap = "Bunching analysis for observed consumptions for a marginal world (red) and averag eworld (blue)."}
+## Bunching test
+b1 <- ggplot(data = demands %>% filter(ph == 12),
+       aes(x = qm)) +
+  geom_histogram(bins = 15, color = "black", fill = "red") +
+  labs(x = expression(Q[i]~"("~p[m]~")"),
+       subtitle = "Assuming response to marginal (T = 1)") +
+  lims(x = c(30, 200)) +
+  geom_vline(aes(xintercept = cap), linetype = "dashed")
+
+b2 <- ggplot(data = demands %>% filter(ph == 12),
+       aes(x = qa)) +
+  geom_histogram(bins = 15, color = "black", fill = "blue") +
+  labs(x = expression(Q[i]~"("~p[a]~")"),
+       subtitle = "Assuming response to average (T = 1)") +
+  lims(x = c(30, 200)) +
+  geom_vline(aes(xintercept = cap), linetype = "dashed")
+
+b3 <- ggplot(data = demands %>% filter(ph == 12),
+       aes(x = qp)) +
+  geom_histogram(bins = 15, color = "black", fill = "green") +
+  labs(x = expression(Q[i]~"("~p[p]~")"),
+       subtitle = "Assuming response to perceived (T = 1)") +
+  lims(x = c(30, 200)) +
+  geom_vline(aes(xintercept = cap), linetype = "dashed")
+
+cowplot::plot_grid(b1, b2, b3, ncol = 3) 
+
+```
+
+# Estimation
+
+The bunching test shows that in the red world (marginal) there is bunching around the kink point. There is no bunching around the kink point in the blue world (average). Let's move on to estimate the effect of changes in p to changes in Q. For each demand curve, we know the equilibrium point in year T = 1 and T = 2, and we know the equilibrium poiunts for each world (marginal vs average). Therefore, we calculate changes in comsumption and changes in prices for each individual and world.
+
+```{r}
+## Empirics
+
+estimation_data <- demands %>% 
+  filter(qm > 0) %>%
+  group_by(id) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  filter(n > 1) %>%
+  select(id, pm, pa, pp, qm, qa, qp, qu, ph, cap) %>% 
+  group_by(id) %>% 
+  summarise_all(diff) %>% 
+  ungroup() %>% 
+  mutate(sub = sample(c(T, F), size = length(qm), replace = T))
+
+
+d1 <- ggplot(estimation_data, aes(x = pm, y = qm)) +
+  geom_point(color = "red") +
+  labs(x = bquote(Delta~p[m]),
+       y = bquote(Delta~Q(p[m]))) +
+  ggtitle(label = "Change in Q vs change in pm",
+          subtitle = "Assuming response to marginal") +
+scale_x_continuous(breaks = 0:4, labels = 0:4, limits = c(1, 3))
+
+d2 <- ggplot(data = estimation_data, aes(x = pa, y = qa)) +
+  geom_point(color = "blue") +
+  labs(x = bquote(Delta~p[a]),
+       y = bquote(Delta~Q(p[a]))) +
+  ggtitle(label = "Change in Q vs change in pa",
+          subtitle = "Assuming response to average")+
+scale_x_continuous(breaks = 0:4, labels = 0:4, limits = c(1, 3))
+
+d3 <- ggplot(data = estimation_data, aes(x = pp, y = qp)) +
+  geom_point(color = "green") +
+  labs(x = bquote(Delta~p[p]),
+       y = bquote(Delta~Q(p[p]))) +
+  ggtitle(label = "Change in Q vs change in pp",
+          subtitle = "Assuming response to perceived")+
+scale_x_continuous(breaks = 0:4, labels = 0:4, limits = c(1, 3))
+
+d4 <- ggplot(data = estimation_data, aes(x = ph, y = qu)) +
+  geom_point(color = "green") +
+  labs(x = bquote(Delta~p[p]),
+       y = bquote(Delta~Q(p[p]))) +
+  ggtitle(label = "Change in Q vs change in pp",
+          subtitle = "Assuming response to perceived")+
+scale_x_continuous(breaks = 0:4, labels = 0:4, limits = c(1, 3))
+
+cowplot::plot_grid(d1, d2, d3, d4, ncol = 2)
+
+```
+
+Since we have calculated the differences, that takes care of "individual-level fixed effects". It also adds the assumption that the curve should have an origin at (0, 0), so we estimate the following three models for each world:
+
+$$
+\Delta Q_i = \beta_1\Delta p_m + \beta_2 \Delta p_a + \mu
+$$
+
+And the corresponding encompassing tests of
+
+$$
+\begin{split}
+\Delta Q_i &= \beta_1p_m + \mu \\
+\Delta Q_i &= \beta_2 p_a + \mu
+\end{split}
+$$
+
+Again, we'll fit these three models twice. First on a world where $\Delta Q_i$ is calculated from consumers responding to marginal prices, and one where consumers respond to average prices (The figure above).
+
+\clearpage
+
+# Results
+
+From the set up, we know that the real slope is $\beta = 0.3$ ( so, we want to recover 1 / beta). We see that, when consumers respond to marginal prices only (Table 1), the first model (pm as a dependent variable only) correctly recovers the estimand. The second model, with only pa, recovers a produces a biased estimate, likely due to spurious correlation. In the full model, there is no value of knowing pa, once pm is known.
+
+When consumers respond to average prices only, the opposite occurs. The first model, with just pm as a predictor, produces a biased estimate, The second model, with just pa, recovers the slope. In the full model we see there is no value of learning pm, once pa is known.
+
+
+```{r}
+
+c("qm ~ pm -1",
+  "qm ~ pa -1 ",
+  "qm ~ pm + pa -1") %>% 
+  map(as.formula) %>% 
+  map(lm, data = estimation_data) %>%
+  modelsummary::modelsummary(gof_omit = "F|IC|Adj|Pse|Wit|Log",
+                             statistic_vertical = F,
+                             stars = T, coef_map = c(pm = "$\\Delta p_m$",
+                                                     pa = "$\\Delta p_a$"),
+                             title = "Outcome variable is the difference in consumption observed when individuals respond to marginal prices")
+```
+
+```{r}
+c("qa ~ pm -1",
+  "qa ~ pa -1 ",
+  "qa ~ pm + pa -1") %>% 
+  map(as.formula) %>% 
+  map(fixest::feols, data = estimation_data) %>%
+  modelsummary::modelsummary(gof_omit = "F|IC|Adj|Pse|Wit|Log",
+                             statistic_vertical = F,
+                             stars = T, coef_map = c(pm = "$\\Delta p_m$",
+                                                     pa = "$\\Delta p_a$"),
+                             title = "Outcome variable is the difference in consumption observed when individuals respond to marginal prices")
+```
+
+
+```{r}
+c("qp ~ pm - 1",
+  "qp ~ pa - 1",
+  "qp ~ pm + pa -1") %>% 
+  map(as.formula) %>% 
+  map(fixest::feols, data = estimation_data) %>%
+  modelsummary::modelsummary(gof_omit = "F|IC|Adj|Pse|Wit|Log",
+                             statistic_vertical = F,
+                             stars = T, coef_map = c(pm = "$\\Delta p_m$",
+                                                     pa = "$\\Delta p_a$"),
+                             title = "Outcome variable is the difference in consumption observed when individuals respond to marginal prices")
+```
+
+

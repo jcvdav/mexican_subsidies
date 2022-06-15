@@ -1,0 +1,27 @@
+\begin{table}
+
+\caption{\label{tab:}Salience test (2017 - 2019 data only).}
+\centering
+\begin{tabular}[t]{lcccccc}
+\toprule
+  & log(L) & log(L)  & log(L)   & log(L)    & log(L)     & log(L)     \\
+\midrule
+(Intercept) & \num{12.115}*** &  &  &  &  & \\
+ & (\num{0.439}) &  &  &  &  & \\
+Fuel price (MXN / L) & \num{-0.092}*** & \num{-0.112}*** & \num{-0.249}* & \num{-0.248}* & \num{-0.322} & \num{-0.199}**\\
+ & (\num{0.022}) & (\num{0.010}) & (\num{0.114}) & (\num{0.114}) & (\num{0.236}) & (\num{0.068})\\
+Price subsidy & \num{-0.758}*** & \num{-0.684}*** & \num{-0.684}*** & \num{-0.679}*** & \num{-0.631}*** & \num{0.108}**\\
+ & (\num{0.058}) & (\num{0.181}) & (\num{0.181}) & (\num{0.181}) & (\num{0.184}) & (\num{0.036})\\
+Total Capacity (HP) &  &  &  & \num{0.001}* & \num{0.001} & \num{0.001}***\\
+ &  &  &  & (\num{0.001}) & (\num{0.001}) & (\num{0.000})\\
+\midrule
+Num.Obs. & \num{1111} & \num{1111} & \num{1111} & \num{1111} & \num{620} & \num{491}\\
+R2 & \num{0.151} & \num{0.868} & \num{0.868} & \num{0.871} & \num{0.889} & \num{0.984}\\
+Std.Errors & IID & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa & by: eu\_rnpa\\
+FE: eu_rnpa &  & X & X & X & X & X\\
+FE: year &  &  & X & X & X & X\\
+H0: delta = alpha & 0.666 (0) & 0.572 (0) & 0.435 (0.018) & 0.43 (0.012) & 0.309 (0.195) & -\\
+\bottomrule
+\multicolumn{7}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\end{tabular}
+\end{table}
