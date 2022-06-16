@@ -4,27 +4,26 @@
              Columns 1-3 use mean national fuel prices from 2012-2019.
              Columns 4-6 use mean annual state-level prices from 2017-2019.}
 \centering
-\begin{tabular}[t]{lcccccc}
+\begin{tabular}[t]{lcccc}
 \toprule
-  & log(L) & log(L)  & log(L)   & log(L)    & log(L)     & log(L)     \\
+  & log(L) & log(L)  & log(L)   & log(L)   \\
 \midrule
-P & \num{-0.107}*** & \num{-0.101}*** & \num{-0.240}*** & \num{-0.232}*** & \num{-0.244}*** & \num{-0.277}\\
- & (\num{0.010}) & (\num{0.011}) & (\num{0.046}) & (\num{0.045}) & (\num{0.051}) & (\num{0.240})\\
-Delta & \num{-0.453}*** & \num{-0.412}*** & \num{-0.635}*** & \num{-0.629}*** & \num{-0.632}*** & \num{-0.632}***\\
- & (\num{0.077}) & (\num{0.075}) & (\num{0.185}) & (\num{0.184}) & (\num{0.184}) & (\num{0.184})\\
-Total Capacity (HP) &  & \num{0.001}*** & \num{0.001} & \num{0.001} & \num{0.001} & \num{0.001}\\
- &  & (\num{0.000}) & (\num{0.001}) & (\num{0.001}) & (\num{0.001}) & (\num{0.001})\\
-Nino 3.4 &  & \num{-0.204}*** &  &  & \num{0.071} & \\
- &  & (\num{0.059}) &  &  & (\num{0.088}) & \\
+P & \num{-0.094}*** & \num{-0.107}*** & \num{-0.101}*** & \num{-0.137}***\\
+ & (\num{0.011}) & (\num{0.010}) & (\num{0.011}) & (\num{0.018})\\
+Delta & \num{-0.655}*** & \num{-0.453}*** & \num{-0.412}*** & \num{-0.409}***\\
+ & (\num{0.069}) & (\num{0.077}) & (\num{0.075}) & (\num{0.076})\\
+Total Capacity (HP) &  &  & \num{0.001}*** & \num{0.002}***\\
+ &  &  & (\num{0.000}) & (\num{0.000})\\
+Nino 3.4 &  &  & \num{-0.204}*** & \num{-0.274}***\\
+ &  &  & (\num{0.059}) & (\num{0.080})\\
 \midrule
-Num.Obs. & \num{1455} & \num{1455} & \num{620} & \num{620} & \num{620} & \num{620}\\
-R2 & \num{0.739} & \num{0.757} & \num{0.888} & \num{0.889} & \num{0.889} & \num{0.889}\\
-Std.Errors & by: eu & by: eu & by: eu & by: eu & by: eu & by: eu\\
-FE: eu & X & X & X & X & X & X\\
-FE: year &  &  &  &  &  & X\\
-H0: delta = alpha & 0.347 (0) & 0.31 (0) & 0.395 (0.004) & 0.397 (0.004) & 0.388 (0.005) & 0.354 (0.145)\\
-Prices & National & National & National & State & State & State\\
+Num.Obs. & \num{1455} & \num{1455} & \num{1455} & \num{809}\\
+R2 & \num{0.165} &  &  & \\
+RMSE & \num{1.32} & \num{0.74} & \num{0.71} & \num{0.88}\\
+Std.Errors & by: eu & by: eu & by: eu & by: eu\\
+FE: eu &  & X & X & X\\
+H0: delta = alpha & 12.032 (0) & 0.347 (0) & 0.31 (0) & 0.272 (0)\\
 \bottomrule
-\multicolumn{7}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\multicolumn{5}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
 \end{tabular}
 \end{table}

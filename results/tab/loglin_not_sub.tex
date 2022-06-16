@@ -1,27 +1,24 @@
 \begin{table}
 
-\caption{\label{tab:}Price elasticity of demand for vessels that are not subsidized.
-             Columns 1-3 use mean national fuel prices from 2012-2019.
-             Columns 4-6 use mean annual state-level prices from 2017-2019.}
+\caption{\label{tab:}Price semi-elasticity of demand for vessels that are not subsidized.}
 \centering
-\begin{tabular}[t]{lcccccc}
+\begin{tabular}[t]{lccc}
 \toprule
-  & log(L) & log(L)  & log(L)   & log(L)    & log(L)     & log(L)     \\
+  & log(L) & log(L)  & log(L)  \\
 \midrule
-Fuel price (MXN / L) & \num{-0.206}*** & \num{-0.205}*** & \num{-0.193}* & \num{-0.200}* & \num{-0.192}* & \num{-0.533}\\
- & (\num{0.049}) & (\num{0.045}) & (\num{0.088}) & (\num{0.091}) & (\num{0.091}) & (\num{0.427})\\
-Total Capacity (HP) &  & \num{0.003}*** & \num{0.003}+ & \num{0.003}+ & \num{0.003}* & \num{0.003}*\\
- &  & (\num{0.001}) & (\num{0.002}) & (\num{0.002}) & (\num{0.002}) & (\num{0.002})\\
-NINO 3.4 &  & \num{-0.117} &  &  & \num{-0.268} & \\
- &  & (\num{0.099}) &  &  & (\num{0.226}) & \\
+Fuel price (MXN / L) & \num{-0.192}*** & \num{-0.206}*** & \num{-0.205}***\\
+ & (\num{0.041}) & (\num{0.049}) & (\num{0.045})\\
+Total Capacity (HP) &  &  & \num{0.003}***\\
+ &  &  & (\num{0.001})\\
+NINO 3.4 &  &  & \num{-0.117}\\
+ &  &  & (\num{0.099})\\
 \midrule
-Num.Obs. & \num{584} & \num{584} & \num{150} & \num{150} & \num{150} & \num{150}\\
-R2 & \num{0.666} & \num{0.691} & \num{0.934} & \num{0.935} & \num{0.936} & \num{0.936}\\
-Std.Errors & by: eu & by: eu & by: eu & by: eu & by: eu & by: eu\\
-FE: eu & X & X & X & X & X & X\\
-FE: year &  &  &  &  &  & X\\
-Prices & National & National & National & State & State & State\\
+Num.Obs. & \num{584} & \num{584} & \num{584}\\
+R2 & \num{0.064} &  & \\
+RMSE &  & \num{0.98} & \num{0.94}\\
+Std.Errors & by: eu & by: eu & by: eu\\
+FE: eu &  & X & X\\
 \bottomrule
-\multicolumn{7}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\multicolumn{4}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
 \end{tabular}
 \end{table}

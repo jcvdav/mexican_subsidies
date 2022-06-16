@@ -1,0 +1,27 @@
+\begin{table}
+
+\caption{\label{tab:}Price semi-elasticity of demand for vessels that are not subsidized.
+             Columns 1-2 use mean national fuel prices, columns 3-4 use mean state-level prices.
+             Column 1 is our full specification in the main text, columns 2 - 4 use 2017 - 2019 data.}
+\centering
+\begin{tabular}[t]{lcccc}
+\toprule
+  & log(L) & log(L)  & log(L)   & log(L)   \\
+\midrule
+Fuel price (MXN / L) & \num{-0.205}*** & \num{-0.186}* & \num{-0.192}* & \num{-0.533}\\
+ & (\num{0.045}) & (\num{0.088}) & (\num{0.091}) & (\num{0.427})\\
+Total Capacity (HP) & \num{0.003}*** & \num{0.003}* & \num{0.003}* & \num{0.003}*\\
+ & (\num{0.001}) & (\num{0.002}) & (\num{0.002}) & (\num{0.002})\\
+NINO 3.4 & \num{-0.117} & \num{-0.286} & \num{-0.268} & \\
+ & (\num{0.099}) & (\num{0.226}) & (\num{0.226}) & \\
+\midrule
+Num.Obs. & \num{584} & \num{150} & \num{150} & \num{150}\\
+RMSE & \num{0.94} & \num{0.57} & \num{0.57} & \num{0.57}\\
+Std.Errors & by: eu & by: eu & by: eu & by: eu\\
+FE: eu & X & X & X & X\\
+FE: year &  &  &  & X\\
+Prices & National & National & State & State\\
+\bottomrule
+\multicolumn{5}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\end{tabular}
+\end{table}
