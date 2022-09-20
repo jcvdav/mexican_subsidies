@@ -4,7 +4,7 @@
 
 ## Set up #############################################################################################################################################################################
 # Load packages
-library(connections)
+library(DBI)
 library(bigrquery)
 library(tidyverse)
 
@@ -16,7 +16,7 @@ hp_kw <- 0.7457
 bq_auth("juancarlos@ucsb.edu")
 
 # Establish a connection to BigQuery
-mex_fisheries <- connection_open(
+mex_fisheries <- dbConnect(
   bigquery(),
   project = "emlab-gcp",
   dataset = "mex_fisheries",
