@@ -33,7 +33,6 @@ vessel_registry <- tbl(mex_fisheries, "vessel_info") %>%
   group_by(vessel_rnpa) %>% 
   mutate(n = n()) %>% 
   ungroup() %>% 
-  arrange(desc(n)) %>% 
   filter(n == 1,
          fuel_type == "Diesel")
 

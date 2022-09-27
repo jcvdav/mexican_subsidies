@@ -2,23 +2,20 @@
 
 \caption{\label{tab:}Price semi-elasticity of demand for vessels that are not subsidized.}
 \centering
-\begin{tabular}[t]{lccc}
+\begin{tabular}[t]{lcccc}
 \toprule
-  & log(L) & log(L)  & log(L)  \\
+  & log(L) & log(L)  & log(L)   & log(L)   \\
 \midrule
-Fuel price (MXN / L) & \num{-0.192}*** & \num{-0.206}*** & \num{-0.205}***\\
- & (\num{0.041}) & (\num{0.049}) & (\num{0.045})\\
-Total Capacity (HP) &  &  & \num{0.003}***\\
- &  &  & (\num{0.001})\\
-NINO 3.4 &  &  & \num{-0.117}\\
- &  &  & (\num{0.099})\\
+Fuel price (MXN / L) & \num{-0.192}*** & \num{-0.206}*** & \num{-0.205}*** & \num{0.068}\\
+ & (\num{0.041}) & (\num{0.049}) & (\num{0.045}) & (\num{0.140})\\
 \midrule
-Num.Obs. & \num{584} & \num{584} & \num{584}\\
-R2 & \num{0.064} &  & \\
-RMSE &  & \num{0.98} & \num{0.94}\\
-Std.Errors & by: eu & by: eu & by: eu\\
-FE: eu &  & X & X\\
+Num.Obs. & \num{584} & \num{584} & \num{584} & \num{584}\\
+R2 & \num{0.064} &  &  & \\
+Std.Errors & by: eu & by: eu & by: eu & by: eu\\
+FE: eu &  & X & X & X\\
+Controls &  &  & X & X\\
+Time trend &  &  &  & X\\
 \bottomrule
-\multicolumn{4}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\multicolumn{5}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
 \end{tabular}
 \end{table}

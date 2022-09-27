@@ -87,6 +87,7 @@ shrimp_eus <- eu_panel %>%
             sardine = any(sardine),
             others = any(others),
             n = n()) %>% 
+  ungroup() %>% 
   filter(shrimp, !tuna, !sardine, !others, n >= 2) %>% 
   pull(eu_rnpa)
 
@@ -103,3 +104,32 @@ write_csv(x = eu_panel,
 
 write_csv(x = shrimp,
           file = file.path(project_path, "data", "processed_data", "shrimp_economic_unit_annual_panel.csv"))
+
+
+# Figures 
+pct_shrimp <- eu_panel %>%
+  filter(year > 2011) %>% 
+  ungroup() %>%
+  mutate(s = ifelse(eu_rnpa %in% shrimp_eus, "shrimp", "other")) %>%
+  group_by(year, s) %>%
+  summarize(subsidy_cap_l = sum(subsidy_cap_l)) %>%
+  ungroup() %>% 
+  group_by(year) %>% 
+  mutate(subsidy_cap_l = subsidy_cap_l / sum(subsidy_cap_l)) %>% 
+  ungroup() %>% 
+  drop_na(subsidy_cap_l) %>% 
+  ggplot(aes(x = year, y = subsidy_cap_l, fill = s)) +
+  geom_col() +
+  labs(x = "Year",
+       y = "% of total subsidy allocated",
+       fill = "Fishery") +
+  scale_fill_brewer(palette = "Set2") +
+  scale_x_continuous(breaks = seq(2012, 2019, by = 2)) +
+  scale_y_continuous(labels = scales::percent) +
+  geom_hline(yintercept = 0.5, linetype = "dashed")
+
+
+ggsave(plot = pct_shrimp,
+       filename = here::here("results", "img", "pct_subsidy_shrimp.pdf"),
+       width = 6,
+       height = 4)

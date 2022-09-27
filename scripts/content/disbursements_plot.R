@@ -11,17 +11,12 @@ library(cowplot)
 library(tidyuverse)
 
 # Read data
-shrimp <- read_csv(
-  file = file.path(
-    project_path, "data", "processed_data", "imputed_subsidy_economic_unit_annual_shrimp_panel.csv")) %>% 
-  filter(between(year, 2012, 2019)) %>% 
-  mutate(extra_l = pmax(0, fuel_consumption_l - predicted_subsidy_cap_l) / 1e3)
-
-
+shrimp_panel <- readRDS(file.path(project_path, "data", "processed_data", "shrimp_estimation_panel.rds")) %>% 
+  mutate(treated = treated == 1)
 
 
 subsidized_vessels <-
-  shrimp %>%
+  shrimp_panel %>%
   count(year, treated) %>% 
   ggplot(aes(x = year, y = n, fill = treated)) +
   geom_col(color = "black") +
@@ -31,19 +26,19 @@ subsidized_vessels <-
        fill = "Subsidized")
 
 mean_subsidy_amount <-
-  shrimp %>% 
+  shrimp_panel %>% 
   filter(treated) %>% 
-  ggplot(aes(x = year, y = subsidy_cap_l / 1e6)) +
-  stat_summary(geom = "pointrange", fun.data = "mean_se",
+  ggplot(aes(x = year, y = (subsidy_cap_l / total_hp))) +
+  stat_summary(geom = "pointrange", fun.data = mean_sdl, fun.args = list(mult = 1),
                fill = "steelblue",
                shape = 21,
                size = 1) +
   labs(x = "Year",
-       y = "Mean subsidy cap\n(Million L)")
+       y = "Norm. subsidy cap\n(L / HP)")
 
 
 total_liters <- 
-  shrimp %>% 
+  shrimp_panel %>% 
   group_by(year) %>% 
   summarize(tot = sum(subsidy_cap_l) / 1e6) %>% 
   ungroup() %>% 

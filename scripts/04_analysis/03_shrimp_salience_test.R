@@ -29,46 +29,57 @@ always_sub <- shrimp_panel %>%
 # DEFINE FUNCTIONS
 my_test <- function(model) {
   dif <- model$coefficients[1] - model$coefficients[2]
-  result <- test_coef_equality(model, names(model$coefficients)[1], names(model$coefficients)[2],
+  result <- regrrr::test_coef_equality(model, names(model$coefficients)[1], names(model$coefficients)[2],
                                v = sandwich::vcovHAC(model))
   paste0(round(dif, 3), " (", round(result, 3),  ")")
 }
 
-omits <- "Adj|IC|Lo|Ps|RMSE"
+omits <- "Adj|IC|Lo|Ps|Std"
 
 
 ## ANALYSIS ####################################################################
-s0 <- feols(log(fuel_consumption_l) ~ ph + delta, shrimp_panel, subset = ~left == 1, cluster = "eu")
-s1 <- feols(log(fuel_consumption_l) ~ ph + delta | eu, shrimp_panel, subset = ~left == 1)
-s2 <- feols(log(fuel_consumption_l) ~ ph + delta + total_hp + nino34_m | eu, shrimp_panel, subset = ~left == 1)
-s3 <- feols(log(fuel_consumption_l) ~ ph + delta + total_hp + nino34_m | eu, data = shrimp_panel %>% filter(!eu %in% always_sub), subset = ~left == 1)
-s4 <- feols(log(fuel_consumption_l) ~ ph + delta + total_hp + nino34_m | eu, shrimp_panel, subset = ~left == 1 & year >= 2017)
-s5 <- feols(log(fuel_consumption_l) ~ p_stat + delta + total_hp + nino34_m | eu, shrimp_panel, subset = ~left == 1 & year >= 2017)
-s6 <- feols(log(fuel_consumption_l) ~ p_stat + delta + total_hp | eu + year, shrimp_panel, subset = ~left == 1 & year >= 2017)
+s1 <- feols(log(fuel_consumption_l) ~ ph | eu, data = shrimp_panel, subset = ~left == 1)
+s2 <- feols(log(fuel_consumption_l) ~ ph + delta | eu, data = shrimp_panel, subset = ~left == 1)
+s3 <- feols(log(fuel_consumption_l) ~ ph + delta + year | eu, data = shrimp_panel, subset = ~left == 1)
+s4 <- feols(log(fuel_consumption_l) ~ ph + delta + year + nino34_m + total_hp| eu, data = shrimp_panel, subset = ~left == 1)
 
-s_short <- list(s0,
-                s1,
+
+s5 <- feols(log(fuel_consumption_l) ~ ph + delta + year + nino34_m + total_hp| eu, data = shrimp_panel %>% filter(!eu %in% always_sub), subset = ~left == 1)
+s6 <- feols(log(fuel_consumption_l) ~ ph + delta + total_hp + nino34_m | eu, shrimp_panel, subset = ~left == 1 & year >= 2017)
+s7 <- feols(log(fuel_consumption_l) ~ p_stat + delta + total_hp + nino34_m | eu, shrimp_panel, subset = ~left == 1 & year >= 2017)
+s8 <- feols(log(fuel_consumption_l) ~ p_stat + delta + total_hp | eu + year, shrimp_panel, subset = ~left == 1 & year >= 2017)
+
+s_short <- list(s1,
                 s2,
-                s3)
+                s3,
+                s4)
+
 names(s_short) <- rep("log(L)", length(s_short))
 
-Htest_short <- c("H0: delta = alpha", map_chr(s_short[1:4], my_test)) %>%
+Htest_short <- c("H0: delta = P", map_chr(s_short[1:4], my_test)) %>%
   t() %>%
   as.data.frame() %>% 
   set_names(nm = paste0("V", 1:5))
+
+controls <- c("Controls", "", "", "", "X") %>% 
+  t() %>% 
+  as.data.frame()
+
+rows <- rbind(controls,
+              Htest_short)
 
 modelsummary(s_short,
              output = here("results", "tab", "salience_test.tex"),
              title = "Salience test on vessels to the left of the kink.
              The last column excludes vessels that were always subsidized.",
              stars = T,
-             add_rows = Htest_short,
+             add_rows = rows,
              gof_omit = omits,
              coef_rename = c("ph" = "P",
-                             "delta" = "Delta",
-                             "total_hp" = "Total Capacity (HP)",
-                             "nino34_m" = "Nino 3.4"),
-             coef_omit = "(Intercept)")
+                             "delta" = "Delta"),
+             coef_omit = "(Intercept)|year|nino|total_hp",
+             notes = list("Controls are: Total capacity and annual mean of NINO3.4 index",
+                          "Standard errors are clustered at the economic-unit-level"))
 
 
 

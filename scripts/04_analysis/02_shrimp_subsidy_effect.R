@@ -56,6 +56,11 @@ lmods <- list(m1[[3]],
 names(lmods) <- rep("log(L)", length(lmods))
 
 
+# Now we regress only on subsidy status
+s1 <- feols(log(fuel_consumption_l) ~ treated | eu + year, data = shrimp_panel)
+s2 <- feols(log(fuel_consumption_l) ~ treated + total_hp + predicted_subsidy_cap_l | eu + year, data = shrimp_panel)
+
+
 ## BUILD TABLES ################################################################
 
 # Set up table defaults
@@ -63,7 +68,7 @@ renames <- c("treated" = "Subsidized",
              "dist" = "Distance from kink (1,000 L)",
              "total_hp" = "Total Capacity (HP)")
 
-omits <- "Adj|IC|Lo|Ps|RMSE"
+omits <- "Adj|IC|Lo|Ps|Std."
 
 modelsummary(rmods,
              title = "Right of kink, effect on fuel consumption. The last column excludes vessels that were always subsidized.",
@@ -80,6 +85,17 @@ modelsummary(lmods,
              gof_omit = omits,
              coef_rename = renames,
              coef_omit = "(Intercept)")
+
+# This table is not exported
+list(s1, s2, lmods[[3]], lmods[[4]], rmods[[3]], rmods[[4]]) %>%
+  set_names(c("Naive", "Naive", "Left", "Left", "Right", "Right")) %>% 
+  modelsummary(stars = T,
+               gof_omit = omits,
+               coef_rename = renames,
+               coef_omit = "(Intercept)|total_hp|predicted",
+               add_rows = c("Controls", "", "X", "", "X", "", "X") %>% 
+                 t() %>% 
+                 as.data.frame())
 
 
 
