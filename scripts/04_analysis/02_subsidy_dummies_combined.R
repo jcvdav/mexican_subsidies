@@ -24,8 +24,8 @@ shrimp_panel <- readRDS(file.path(project_path, "data", "processed_data", "shrim
 ## ANALYSIS ####################################################################
 m1 <- feols(log(fuel_consumption_l) ~ treated | eu + year, data = shrimp_panel)
 m2 <- feols(log(fuel_consumption_l) ~ treated + total_hp + predicted_subsidy_cap_l | eu + year, data = shrimp_panel)
-m3 <- feols(log(fuel_consumption_l) ~ tl + tr  | eu + year, data = shrimp_panel)
-m4 <- feols(log(fuel_consumption_l) ~ tl + tr + total_hp + predicted_subsidy_cap_l | eu + year, data = shrimp_panel)
+m3 <- feols(log(fuel_consumption_l) ~ tl + tr  + left| eu + year, data = shrimp_panel)
+m4 <- feols(log(fuel_consumption_l) ~ tl + tr + left + total_hp + predicted_subsidy_cap_l | eu + year, data = shrimp_panel)
 
 ## BUILD TABLES ################################################################
 m <- list(m1, m2, m3, m4)
@@ -41,7 +41,7 @@ controls <- c("Controls", "", "X", "", "X") %>%
 
 modelsummary(models = m,
              title = "Effect of subsidy on fuel consumption.",
-             output = here("results", "tab", "subsidy_dummies_combined.tex"),
+             # output = here("results", "tab", "subsidy_dummies_combined.tex"),
              stars = T,
              gof_omit = "IC|Std",
              coef_rename = renames,
