@@ -30,8 +30,10 @@ always_sub <- shrimp_panel %>%
 my_test <- function(model) {
   dif <- model$coefficients[1] - model$coefficients[2]
   result <- regrrr::test_coef_equality(model, names(model$coefficients)[1], names(model$coefficients)[2],
-                               v = sandwich::vcovHAC(model))
+                                       v = sandwich::vcovHAC(model))
   paste0(round(dif, 3), " (", round(result, 3),  ")")
+  
+  return(results)
 }
 
 omits <- "Adj|IC|Lo|Ps|Std"
@@ -40,8 +42,8 @@ omits <- "Adj|IC|Lo|Ps|Std"
 ## ANALYSIS ####################################################################
 s1 <- feols(log(fuel_consumption_l) ~ ph | eu, data = shrimp_panel, subset = ~left == 1)
 s2 <- feols(log(fuel_consumption_l) ~ ph + delta | eu, data = shrimp_panel, subset = ~left == 1)
-s3 <- feols(log(fuel_consumption_l) ~ ph + delta + year | eu, data = shrimp_panel, subset = ~left == 1)
-s4 <- feols(log(fuel_consumption_l) ~ ph + delta + year + nino34_m + total_hp| eu, data = shrimp_panel, subset = ~left == 1)
+s3 <- feols(log(fuel_consumption_l) ~ ph + delta + nino34_m + total_hp | eu, data = shrimp_panel, subset = ~left == 1)
+s4 <- feols(log(fuel_consumption_l) ~ ph + delta + nino34_m + total_hp + year | eu, data = shrimp_panel, subset = ~left == 1)
 
 
 s5 <- feols(log(fuel_consumption_l) ~ ph + delta + year + nino34_m + total_hp| eu, data = shrimp_panel %>% filter(!eu %in% always_sub), subset = ~left == 1)
@@ -61,9 +63,15 @@ Htest_short <- c("H0: delta = P", map_chr(s_short[1:4], my_test)) %>%
   as.data.frame() %>% 
   set_names(nm = paste0("V", 1:5))
 
-controls <- c("Controls", "", "", "", "X") %>% 
+nino<- c("Controls", "", "", "X", "X") %>% 
   t() %>% 
   as.data.frame()
+
+year <- c("Time trend", "", "", "", "X") %>% 
+  t() %>% 
+  as.data.frame()
+
+controls <- rbind(nino, year)
 
 rows <- rbind(controls,
               Htest_short)
