@@ -8,7 +8,7 @@
 
 library(here)
 library(cowplot)
-library(tidyuverse)
+library(tidyverse)
 
 # Read data
 shrimp_panel <- readRDS(file.path(project_path, "data", "processed_data", "shrimp_estimation_panel.rds")) %>% 
