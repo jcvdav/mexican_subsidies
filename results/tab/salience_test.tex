@@ -7,16 +7,17 @@
 \toprule
   & log(L) & log(L)  & log(L)   & log(L)   \\
 \midrule
-P & \num{-0.102}*** & \num{-0.107}*** & \num{0.022} & \num{-0.102}\\
- & (\num{0.011}) & (\num{0.010}) & (\num{0.079}) & (\num{0.091})\\
-Delta &  & \num{-0.453}*** & \num{-0.459}*** & \num{-0.411}***\\
- &  & (\num{0.077}) & (\num{0.077}) & (\num{0.075})\\
+P & \num{-0.102}*** & \num{-0.107}*** & \num{-0.101}*** & \num{-0.102}\\
+ & (\num{0.011}) & (\num{0.010}) & (\num{0.011}) & (\num{0.091})\\
+Delta &  & \num{-0.453}*** & \num{-0.412}*** & \num{-0.411}***\\
+ &  & (\num{0.077}) & (\num{0.075}) & (\num{0.075})\\
 \midrule
 Num.Obs. & \num{1455} & \num{1455} & \num{1455} & \num{1455}\\
-RMSE & \num{0.77} & \num{0.74} & \num{0.73} & \num{0.71}\\
+RMSE & \num{0.77} & \num{0.74} & \num{0.71} & \num{0.71}\\
 FE: eu & X & X & X & X\\
-Controls &  &  &  & X\\
-H0: delta = P & NA (NA) & 0.347 (0) & 0.481 (0) & 0.309 (0.001)\\
+Controls &  &  & X & X\\
+Time trend &  &  &  & X\\
+H0: delta = P & NA (NA) & 0.347 (0) & 0.31 (0) & 0.309 (0.001)\\
 \bottomrule
 \multicolumn{5}{l}{\rule{0pt}{1em}Standard errors are clustered at the economic-unit-level}\\
 \multicolumn{5}{l}{\rule{0pt}{1em}Controls are: Total capacity and annual mean of NINO3.4 index}\\
