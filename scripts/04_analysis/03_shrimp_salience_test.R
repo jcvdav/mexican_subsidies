@@ -31,12 +31,17 @@ my_test <- function(model) {
   dif <- model$coefficients[1] - model$coefficients[2]
   result <- regrrr::test_coef_equality(model, names(model$coefficients)[1], names(model$coefficients)[2],
                                        v = sandwich::vcovHAC(model))
-  paste0(round(dif, 3), " (", round(result, 3),  ")")
+  if(is.na(dif)){
+    return("-")
+  } else {
+    result <- paste0(round(dif, 3), " (", round(result, 3),  ")")
+    
+    return(result)
+  }
   
-  return(results)
 }
 
-omits <- "Adj|IC|Lo|Ps|Std"
+omits <- "Adj|IC|Lo|Ps|Std|RMSE"
 
 
 ## ANALYSIS ####################################################################
@@ -58,12 +63,12 @@ s_short <- list(s1,
 
 names(s_short) <- rep("log(L)", length(s_short))
 
-Htest_short <- c("H0: delta = P", map_chr(s_short[1:4], my_test)) %>%
+Htest_short <- c("H0: delta = P", map_chr(s_short, my_test)) %>%
   t() %>%
   as.data.frame() %>% 
   set_names(nm = paste0("V", 1:5))
 
-nino<- c("Controls", "", "", "X", "X") %>% 
+controls <- c("Controls", "", "", "X", "X") %>% 
   t() %>% 
   as.data.frame()
 
@@ -71,22 +76,28 @@ year <- c("Time trend", "", "", "", "X") %>%
   t() %>% 
   as.data.frame()
 
-controls <- rbind(nino, year)
+rsq <- c("R2", map_dbl(s_short, ~round(
+  r2(.x, type = "r2")
+  , 3))) %>% 
+  t() %>%
+  as.data.frame() %>% 
+  set_names(c("V1", "V2", "V3", "V4", "V5"))
 
-rows <- rbind(controls,
+rows <- rbind(rsq,
+              controls,
+              year,
               Htest_short)
 
 modelsummary(s_short,
              output = here("results", "tab", "salience_test.tex"),
-             title = "Salience test on vessels to the left of the kink.
-             The last column excludes vessels that were always subsidized.",
+             title = "Salience test on vessels to the left of the kink.",
              stars = T,
              add_rows = rows,
              gof_omit = omits,
-             coef_rename = c("ph" = "P",
-                             "delta" = "Delta"),
+             coef_rename = c("ph" = "p",
+                             "delta" = "s"),
              coef_omit = "(Intercept)|year|nino|total_hp",
-             notes = list("Controls are: Total capacity and annual mean of NINO3.4 index",
+             notes = list("Controls are: Total engine capacity and annual mean of NINO3.4 index",
                           "Standard errors are clustered at the economic-unit-level"))
 
 

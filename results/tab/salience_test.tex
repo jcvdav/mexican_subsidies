@@ -1,26 +1,25 @@
 \begin{table}
 
-\caption{\label{tab:}Salience test on vessels to the left of the kink.
-             The last column excludes vessels that were always subsidized.}
+\caption{\label{tab:}Salience test on vessels to the left of the kink.}
 \centering
 \begin{tabular}[t]{lcccc}
 \toprule
   & log(L) & log(L)  & log(L)   & log(L)   \\
 \midrule
-P & \num{-0.102}*** & \num{-0.107}*** & \num{-0.101}*** & \num{-0.102}\\
+p & \num{-0.102}*** & \num{-0.107}*** & \num{-0.101}*** & \num{-0.102}\\
  & (\num{0.011}) & (\num{0.010}) & (\num{0.011}) & (\num{0.091})\\
-Delta &  & \num{-0.453}*** & \num{-0.412}*** & \num{-0.411}***\\
+s &  & \num{-0.453}*** & \num{-0.412}*** & \num{-0.411}***\\
  &  & (\num{0.077}) & (\num{0.075}) & (\num{0.075})\\
 \midrule
 Num.Obs. & \num{1455} & \num{1455} & \num{1455} & \num{1455}\\
-RMSE & \num{0.77} & \num{0.74} & \num{0.71} & \num{0.71}\\
 FE: eu & X & X & X & X\\
+R2 & 0.716 & 0.739 & 0.757 & 0.757\\
 Controls &  &  & X & X\\
 Time trend &  &  &  & X\\
-H0: delta = P & NA (NA) & 0.347 (0) & 0.31 (0) & 0.309 (0.001)\\
+H0: delta = P & - & 0.347 (0) & 0.31 (0) & 0.309 (0.001)\\
 \bottomrule
 \multicolumn{5}{l}{\rule{0pt}{1em}Standard errors are clustered at the economic-unit-level}\\
-\multicolumn{5}{l}{\rule{0pt}{1em}Controls are: Total capacity and annual mean of NINO3.4 index}\\
+\multicolumn{5}{l}{\rule{0pt}{1em}Controls are: Total engine capacity and annual mean of NINO3.4 index}\\
 \multicolumn{5}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
 \end{tabular}
 \end{table}
