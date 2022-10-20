@@ -1,0 +1,30 @@
+\begin{table}
+
+\caption{\label{tab:}Effect of MFSP on economic-unit level annual fuel consumption.
+  The dependent variable is log(fuel consumption). The first two columns use all data.
+  Columns 2 and 3 restrict the sample to economic units ``to the left" of their subsidy cap,
+  columns 5 and 6 restrict the sample to economic units ``to the right" of the kink.
+  Since this is a log-linear regression, we must exponentiate the coefficient of interest to interpret it.
+  These values are shown at the bottom of the table. When subsidized, economic units
+  ``to the left" increase their fishing effort by a factor of factor of 2.24, or 124\% compared to similar unsubsidized fishers.
+  We do not find evidence that economic units ``to the right" increase their effort.}
+\centering
+\begin{tabular}[t]{lcccccc}
+\toprule
+  & Pooled & Pooled  & Left & Left  & Right & Right \\
+\midrule
+Subsidized & \num{0.484}*** & \num{0.452}*** & \num{0.890}*** & \num{0.810}*** & \num{0.048}+ & \num{0.050}+\\
+ & (\num{0.083}) & (\num{0.081}) & (\num{0.154}) & (\num{0.151}) & (\num{0.029}) & (\num{0.028})\\
+\midrule
+Num.Obs. & \num{3009} & \num{3009} & \num{1455} & \num{1455} & \num{1554} & \num{1554}\\
+FE: eu & X & X & X & X & X & X\\
+FE: year & X & X & X & X & X & X\\
+R2 & 0.78 & 0.791 & 0.745 & 0.758 & 0.962 & 0.964\\
+Controls &  & X &  & X &  & X\\
+exp(Beta) & 1.622 & 1.571 & 2.435 & 2.248 & 1.049 & 1.051\\
+(exp(Beta) - 1) * 100) & 62.231 & 57.127 & 143.485 & 124.765 & 4.872 & 5.089\\
+\bottomrule
+\multicolumn{7}{l}{\rule{0pt}{1em}All standard errors are clustered at the economic-unit level}\\
+\multicolumn{7}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\end{tabular}
+\end{table}
