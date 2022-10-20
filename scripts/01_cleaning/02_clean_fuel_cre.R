@@ -1,7 +1,11 @@
-######################################################
-#title#
-######################################################
-# 
+################################################################################
+# title
+################################################################################
+#
+# Juan Carlos Villaseñor-Derbez
+# juancvd@stanford.edu
+# date
+#
 # Clean mean fuel prcies from DatosAbiertos
 # https://datos.gob.mx/busca/dataset/ubicacion-de-gasolineras-y-precios-comerciales-de-gasolina-y-diesel-por-estacion
 # Email del publicador	jcuellar@cre.gob.mx
@@ -19,25 +23,29 @@
 #
 # Description: Muestra los precios promedio diarios y los precios promedio mensuales de gasolinas y diésel
 # (Joint with Histórico de número de estaciones de servicio (gasolineras) por municipio)
-######################################################
+################################################################################
 
+## SET UP ######################################################################
 
+# Load packages ----------------------------------------------------------------
+library(here)
 library(janitor)
 library(tidyverse)
 
+# Load data --------------------------------------------------------------------
 cre_fuel_prices <- read_csv(
-  file = file.path(
-    project_path,
+  file = here(
     "data",
-    "raw_data",
-    "fuel_prices_CRE",
+    "raw",
+    "fuel_prices",
     "PreciosPromedioMensuales.csv"
-    ), skip = 1
-  ) %>% 
+  ), skip = 1) %>% 
   clean_names()
 
-# Select data
-# Monthly state-level prices
+## PROCESSING ##################################################################
+
+## The first two are directly reported in the data
+# Monthly state-level ----------------------------------------------------------
 monthly_state_diesel_prices <- cre_fuel_prices %>% 
   select(state = entidad_federativa_11,
          diesel_price_mxn_l = disel_12,
@@ -59,6 +67,7 @@ monthly_state_diesel_prices <- cre_fuel_prices %>%
   filter(year <= 2020)
 
 
+# Daily national-level ---------------------------------------------------------
 daily_national_diesel_prices <- cre_fuel_prices %>% 
   select(date = fecha_calendario,
          diesel_price_mxn_l = disel_19) %>% 
@@ -68,55 +77,58 @@ daily_national_diesel_prices <- cre_fuel_prices %>%
          month = lubridate::month(date)) %>% 
   filter(year <= 2020)
 
-# Annual state mean
+## The following two are computed
+# Annual state-level -----------------------------------------------------------
 annual_state_diesel_prices <- monthly_state_diesel_prices %>% 
   group_by(state, year) %>% 
   summarize(mean_diesel_price_mxn_l = mean(diesel_price_mxn_l))
 
-# Annual national
+# Annual national-level --------------------------------------------------------
 annual_national_diesel_prices <- daily_national_diesel_prices %>% 
   group_by(year) %>% 
   summarize(mean_diesel_price_mxn_l = mean(diesel_price_mxn_l))
 
 
-# EXPORT DATA
+
+## EXPORT ######################################################################
+
+# Monthly state-level ----------------------------------------------------------
 saveRDS(
   object = monthly_state_diesel_prices,
-  file = file.path(
-    project_path,
+  file = here(
     "data",
-    "processed_data",
-    "monthly_state_diesel_prices.rds"
+    "processed",
+    "monthly_state_diesel_prices_cre_2017_2020.rds"
   )
 )
 
+# Daily national-level ---------------------------------------------------------
 saveRDS(
   object = daily_national_diesel_prices,
-  file = file.path(
-    project_path,
+  file = here(
     "data",
-    "processed_data",
-    "daily_national_diesel_prices.rds"
+    "processed",
+    "daily_national_diesel_prices_cre_2017_2020.rds"
   )
 )
 
+# Annual state-level -----------------------------------------------------------
 saveRDS(
   object = annual_state_diesel_prices,
-  file = file.path(
-    project_path,
+  file = here(
     "data",
-    "processed_data",
-    "annual_state_diesel_prices.rds"
+    "processed",
+    "annual_state_diesel_prices_cre_2017_2020.rds"
   )
 )
 
+# Annual national-level --------------------------------------------------------
 saveRDS(
   object = annual_national_diesel_prices,
-  file = file.path(
-    project_path,
+  file = here(
     "data",
-    "processed_data",
-    "annual_national_diesel_prices.rds"
+    "processed",
+    "annual_national_diesel_prices_cre_2017_2020.rds"
   )
 )
 
