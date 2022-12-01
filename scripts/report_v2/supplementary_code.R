@@ -8,7 +8,7 @@
 # For questions about the code, contact JCVD at juancvd@stanford.edu
 #
 # Description ------------------------------------------------------------------
-# The code first sets up the environment with the reqired packages. It then
+# The code first sets up the environment with the required packages. It then
 # loads the data and proceeds to perform three analysis:
 #
 # Part 1 estimates the effect of fuel subsidies on fuel consumption
@@ -20,6 +20,7 @@
 ## SET UP ######################################################################
 
 # Load packages ----------------------------------------------------------------
+library(regrrr)                                                                 # Hypothesis testing of regression coefficients
 library(fixest)                                                                 # For fast fixed effects estimation
 library(modelsummary)                                                           # To build tables
 library(tidyverse)                                                              # General data management
@@ -356,7 +357,7 @@ modelsummary(
   gof_omit = "Adj|IC|Lo|Ps|Wi|RMSE",                                            # Remove redundant goodness of fit measures
   coef_rename = c("log(ph)" = "log(Fuel price [MXP / L])"),                     # Rename coefficients of interest
   coef_omit = "(Intercept)|total_hp|nino|year",                                 # Remove coefficients to reduce clutter
-  add_rows = controls,                                                          # Add extra rows
+  add_rows = controls                                                           # Add extra rows
 )
 
 # Produce panel B of table 3 ---------------------------------------------------
