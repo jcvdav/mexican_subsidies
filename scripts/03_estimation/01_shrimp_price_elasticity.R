@@ -15,7 +15,8 @@ source(here("scripts", "00_setup.R"))
 
 ## Load data ###################################################################
 
-shrimp_panel <- readRDS(file.path(project_path, "data", "processed_data", "shrimp_estimation_panel.rds"))
+shrimp_panel <- readRDS(file = here("data", "estimation_panels", "shrimp_estimation_panel.rds"))
+
 
 
 ## ANALYSIS ####################################################################
@@ -53,7 +54,7 @@ controls <- rbind(nino, year)
 
 
 modelsummary(nev_short,
-             output = here("results", "tab", "not_sub.tex"),
+             # output = here("results", "tab", "not_sub.tex"),
              stars = T,
              gof_omit = "Adj|IC|Lo|Ps|Wi|RMSE",
              title = "Price elasticity of demand for vessels that are not subsidized.",
@@ -105,7 +106,7 @@ loglin_nev_short <- list(loglin_nev0,
 names(loglin_nev_short) <- rep("log(L)", length(loglin_nev_short))
 
 modelsummary(loglin_nev_short, 
-             output = here("results", "tab", "loglin_not_sub.tex"),
+             # output = here("results", "tab", "loglin_not_sub.tex"),
              stars = T,
              gof_omit = "Adj|IC|Lo|Ps|Wi|RMSE",
              title = "Price semi-elasticity of demand for vessels that are not subsidized.",

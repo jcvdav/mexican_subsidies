@@ -1,7 +1,7 @@
 
 library(tidyverse)
 
-data <- readRDS(file.path(project_path, "data", "processed_data", "shrimp_estimation_panel.rds")) %>% 
+data <- readRDS(file = here("data", "estimation_panels", "shrimp_estimation_panel.rds")) %>% 
   filter(year == 2019)
 
 # How many percentage points does price change with a 1peso?

@@ -37,17 +37,16 @@ cre_2017_2020 <- readRDS(
 
 ## PROCESSING ##################################################################
 
-# X ----------------------------------------------------------------------------
+# Build panel ------------------------------------------------------------------
 annual_national_diesel_prices_2011_2020 <-
   rbind(sie_2011_2016,
         cre_2017_2020) %>%
   mutate(year = as.integer(year)) %>%
   left_join(cpi_t, by = "year") %>%
-  mutate(mean_diesel_price_mxn_l = rate * mean_diesel_price_mxn_l)
+  mutate(mean_diesel_price_mxn_l = rate * mean_diesel_price_mxn_l) %>% 
+  select(-rate)
 
 ## EXPORT ######################################################################
-
-# X ----------------------------------------------------------------------------
 saveRDS(
   object = annual_national_diesel_prices_2011_2020,
   file = here(

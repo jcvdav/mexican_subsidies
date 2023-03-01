@@ -22,7 +22,7 @@ library(tidyverse)
 source(here("scripts", "00_setup.R"))
 
 # Load data --------------------------------------------------------------------
-shrimp_panel <- readRDS(file.path(project_path, "data", "processed_data", "shrimp_estimation_panel.rds")) %>% 
+shrimp_panel <- readRDS(file = here("data", "estimation_panels", "shrimp_estimation_panel.rds")) %>% 
   mutate(tl = treated * left,
          tr = treated * right,
          nt = 1 * !treated)
