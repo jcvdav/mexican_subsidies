@@ -36,7 +36,7 @@ prices <- readRDS(file = here(
   "data",
   "processed",
   "annual_national_diesel_prices_2011_2020.rds")) %>% 
-  filter(between(year, 2012, 2019))
+  filter(between(year, 2011, 2019))
 
 # State level, when available
 annual_state_prices <- 
@@ -47,13 +47,15 @@ annual_state_prices <-
       "annual_state_diesel_prices_cre_2017_2020.rds"
     )
   )
+
+cpi <- readRDS(file = here("data", "processed", "cpi_t_rates.rds"))
 ## PROCESSING ##################################################################
 
 # Combine national and state-level data  ---------------------------------------
 annual_state_diesel_prices <- annual_state_prices %>% 
-  left_join(prices %>% select(year, rate), by = "year") %>% 
-  mutate(mean_diesel_price_mxn_l = rate * mean_diesel_price_mxn_l) %>% 
-  filter(between(year, 2012, 2019),
+  left_join(cpi, by = "year") %>%
+  mutate(mean_diesel_price_mxn_l = rate * mean_diesel_price_mxn_l) %>%
+  filter(between(year, 2011, 2019),
          state %in% states)
 
 ## VISUALIZE ###################################################################
@@ -64,7 +66,7 @@ ts <- ggplot(data = prices,
                            y = mean_diesel_price_mxn_l)) + 
   geom_line(data = annual_state_diesel_prices,
             aes(x = year, y = mean_diesel_price_mxn_l, group = state),
-            size = 0.1) +
+            linewidth = 0.1) +
   geom_line() + 
   geom_point(size = 4) +
   labs(x = "Year",

@@ -43,13 +43,24 @@ subsidy_and_effort_panel <- readRDS(
     "data",
     "processed",
     "imputed_subsidy_economic_unit_annual_shrimp_panel.rds")) %>% 
-  mutate(eu_rnpa = fix_rnpa(eu_rnpa, length = 10))
+  mutate(eu_rnpa = fix_rnpa(eu_rnpa, length = 10)) %>% 
+  left_join(cpi_t, by = "year") %>%
+  mutate(subsidy_pesos = subsidy_cap_l * 2,
+         subsidy_pesos = subsidy_pesos * rate) %>%
+  select(-rate) %>% 
+  filter(hours > 24 * 30)
 
 nino <- readRDS(
   file = here("data", "raw", "annual_nino34.rds"))
 
 shrimp_landings <- readRDS(
   file = here("data", "processed", "shrimp_landings_panel.rds"))
+
+extensive <- readRDS(
+  file = here("data", "extensive_margin.rds")) %>% 
+  mutate(eu_rnpa = fix_rnpa(eu_rnpa, length = 10),
+         year = as.numeric(year)) %>% 
+  filter(area > 0)
 
 ## PROCESSING ##################################################################
 
@@ -89,6 +100,7 @@ shrimp <- subsidy_and_effort_panel %>%
   left_join(nino, by = "year") %>%
   left_join(shrimp_landings, by = c("year", "eu")) %>%
   left_join(n_times_sub, by = "eu") %>% 
+  left_join(extensive, by = c("year", "eu" = "eu_rnpa")) %>% 
   mutate(
     subsidy_frequency = case_when(eu %in% always ~ "always",
                                   eu %in% never ~"never",
@@ -96,7 +108,6 @@ shrimp <- subsidy_and_effort_panel %>%
     always = 1 * (eu %in% always),
     never = 1 * (eu %in% never),
     sometimes = 1 * (always == 0 & never == 0),
-    subsidy_pesos = subsidy_cap_l * 2,
     treated = 1 * treated,
     R = 2,
     delta = -R * treated ,
@@ -115,7 +126,7 @@ shrimp <- subsidy_and_effort_panel %>%
          predicted_subsidy_pesos, predicted_subsidy_cap_l, free_fuel_l,
          n_times_sub, subsidy_frequency, always, sometimes, never,
          ph, pl, p, pp, delta, p_stat, nino34_m,
-         fuel_consumption_l, hours, landed_weight)
+         fuel_consumption_l, hours, landed_weight, area)
 
 ## EXPORT ######################################################################
 

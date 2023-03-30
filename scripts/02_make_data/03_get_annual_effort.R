@@ -39,12 +39,14 @@ mex_fisheries <- dbConnect(
 ## PROCESSING ##################################################################
 
 # vessel registry --------------------------------------------------------------
-vessel_registry <- tbl(mex_fisheries, "vessel_info") %>%
+vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20221104") %>%
   group_by(vessel_rnpa) %>%
   mutate(n = n()) %>%
   ungroup() %>%
   filter(n == 1,
-         fuel_type == "Diesel")
+         shrimp == 1, tuna == 0, sardine == 0, others == 0,
+         fuel_type == "Diesel",
+         str_detect(gear_type, "ARRASTRE"))
 
 # tracks, filtered -------------------------------------------------------------
 tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20220323") %>%

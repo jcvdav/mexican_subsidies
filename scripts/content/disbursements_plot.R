@@ -11,8 +11,8 @@ library(cowplot)
 library(tidyverse)
 
 # Read data
-shrimp_panel <- readRDS(file.path(project_path, "data", "processed_data", "shrimp_estimation_panel.rds")) %>% 
-  mutate(treated = treated == 1)
+shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) %>% 
+  mutate(treated = ifelse(treated == 1, "Subsidized", "Not subsidized"))
 
 
 subsidized_vessels <-
@@ -21,6 +21,8 @@ subsidized_vessels <-
   ggplot(aes(x = year, y = n, fill = treated)) +
   geom_col(color = "black") +
   scale_fill_brewer(palette = "Set1") +
+  scale_x_continuous(expand = c(0, 0), breaks = 2011:2019) +
+  scale_y_continuous(expand = c(0, 0)) +
   labs(x = "Year",
        y = "Number of\neconomic units",
        fill = "Subsidized")
@@ -46,6 +48,17 @@ total_liters <-
   geom_col() +
   labs(x = "Year",
        y = "Total subsidy\n(Million L)")
+
+total_pesos <- shrimp_panel %>% 
+  group_by(year) %>% 
+  summarize(tot = sum(subsidy_pesos) / 1e6) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = year, y = tot)) +
+  geom_col() +
+  scale_x_continuous(expand = c(0, 0), breaks = 2011:2019) +
+  scale_y_continuous(expand = c(0, 0)) +
+  labs(x = "Year",
+       y = expression("Total Subsidy(Million"~MXP[2019]~")"))
 
 
 

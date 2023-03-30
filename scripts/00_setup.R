@@ -34,6 +34,10 @@ ggplot2::update_geom_defaults(geom = "bar",
                               new = list(color = "black",
                                          fill = "steelblue"))
 
+ggplot2::update_geom_defaults(geom = "area",
+                              new = list(color = "black",
+                                         fill = "steelblue"))
+
 
 # Turn off dplyr's anoying messages
 options(dplyr.summarise.inform = FALSE)

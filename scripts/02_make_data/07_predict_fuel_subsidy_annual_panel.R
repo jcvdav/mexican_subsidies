@@ -91,7 +91,7 @@ imp <- final_fit %>%
 
 
 model <- rand_forest(mtry = 3,
-                     trees = 2000,
+                     trees = 1000,
                      min_n = 2) %>% 
   set_engine("ranger", importance = "impurity") %>% 
   set_mode("regression") %>% 
