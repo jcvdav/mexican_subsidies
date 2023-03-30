@@ -20,7 +20,8 @@ library(tidyverse)
 
 # Load data --------------------------------------------------------------------
 shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) %>% 
-  mutate(subsidy_frequency = fct_relevel(subsidy_frequency, "never", "sometimes", "always"))
+  mutate(subsidy_frequency = fct_relevel(subsidy_frequency, "never", "sometimes", "always"),
+         removed = -1 * treated)
 
 ## PROCESSING ##################################################################
 
@@ -42,28 +43,74 @@ removed_2014 <- shrimp_panel %>%
          treated == 0) %>% 
   pull(eu)
 
+never_until_2014 <- shrimp_panel %>%
+  filter(year <= 2014) %>%
+  group_by(eu) %>%
+  summarize(never = sum(never)) %>%
+  filter(never == 4) %>% 
+  pull(eu)
 
-did2 <- shrimp_panel %>% 
+did_removed_vs_never <- shrimp_panel %>% 
   filter(year <= 2014,
-         eu %in% always_bef) %>% 
-  select(eu, year, treated, hours, area, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
+         eu %in% c(removed_2014, never_until_2014)) %>% 
+  select(eu, year, treated, subsidy_pesos, hours, fishing_hours, area, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
   mutate(years_since = year - 2014,
          removed = eu %in% removed_2014) %>% 
   group_by(eu) %>% 
-  mutate(norm_hours = (hours - mean(hours[year <= 2013])) / sd(hours[year <= 2013]),
-         norm_area = ((area - mean(area[year <= 2013])) / sd(area[year <= 2013])),
-         norm_landings = (landed_weight - mean(landed_weight[year <= 2013])) / sd(landed_weight[year <= 2013]),
-         norm_fuel = (fuel_consumption_l - mean(fuel_consumption_l[year <= 2013])) / sd(fuel_consumption_l[year <= 2013])) %>% 
-  ungroup() %>% 
+  add_count() %>% 
+  filter(n == 4) %>% 
+  ungroup()
+
+did_removed_vs_reduced <- shrimp_panel %>% 
+  filter(year <= 2014,
+         eu %in% always_bef) %>% 
+  select(eu, year, treated, subsidy_pesos, hours, fishing_hours, area, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
+  mutate(years_since = year - 2014,
+         removed = eu %in% removed_2014) %>% 
   group_by(eu) %>% 
   add_count() %>% 
-  filter(n == 4)
+  filter(n == 4) %>% 
+  ungroup()
 
-feols(hours ~ total_hp + n_vessels + i(years_since, removed, ref = -1) |
-        eu + years_since,
+ggplot(did_removed_vs_reduced %>% filter(subsidy_pesos > 0),
+       aes(x = year, y = log(subsidy_pesos), color = removed)) +
+  geom_line(aes(group = eu), linewidth = 0.1, alpha = 0.5) +
+  stat_summary(geom = "line", fun = mean) +
+  stat_summary(geom = "pointrange", fun.data = mean_se, fatten = 1) +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "Year",
+       y = expression("log(subsidy"~MXP[2019]~")"),
+       color = "Subsidy removed in 2014") +
+  theme(legend.position = c(0, 0),
+        legend.justification = c(0, 0))
+
+ggplot(did_removed_vs_reduced, aes(x = year, y = log(hours), color = removed)) +
+  geom_line(aes(group = eu), linewidth = 0.1, alpha = 0.5) +
+  stat_summary(geom = "line", fun = mean) +
+  stat_summary(geom = "pointrange", fun.data = mean_se) +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "Year",
+       y = "log(hours)",
+       color = "Subsidy removed in 2014") +
+  theme(legend.position = c(0, 0),
+        legend.justification = c(0, 0))
+
+
+feols(log(hours) ~ total_hp + n_vessels + i(years_since, removed, ref = -1) |
+        eu + year,
       panel.id = ~eu + years_since,
       cluster = ~eu,
-      data = did2) %>% 
+      data = did_removed_vs_reduced) %>% 
+  iplot(xlab = "Time to treatment",
+        main = "Event study: log(Hours)",
+        pt.col = "steelblue",
+        pt.cex = 2)
+
+feols(hours ~ total_hp + n_vessels + i(years_since, removed, ref = -1) |
+        eu + year,
+      panel.id = ~eu + years_since,
+      cluster = ~eu,
+      data = did_removed_vs_reduced) %>% 
   iplot(xlab = "Time to treatment",
         main = "Event study: Hours",
         pt.col = "steelblue",
@@ -74,8 +121,17 @@ feols(hours ~ total_hp + n_vessels + i(years_since, removed, ref = -1) |
 
 omit <- "nino|hp|n_vess|(Intercept)|RMSE|With|Std.|FE"
 
+
+ggplot(data = shrimp_panel %>% 
+         filter(sometimes == 1),
+       mapping = aes(x = n_times_sub)) +
+  geom_histogram(binwidth = 1) +
+  labs(x = "N times subsidized",
+       y = "N economic units")
+
 models1 <- feols(c(log(hours), log(area), log(landed_weight), log(fuel_consumption_l)) ~ 
-                   treated + log(ph) + total_hp + n_vessels + nino34_m | eu,
+                   removed + log(ph) + total_hp + n_vessels + nino34_m |
+                   eu,
                  data = shrimp_panel,
                  panel.id = ~eu + year,
                  vcov = "NW",
@@ -83,21 +139,47 @@ models1 <- feols(c(log(hours), log(area), log(landed_weight), log(fuel_consumpti
                  subset = ~sometimes == 1) %>% 
   set_names(c("log(hours)", "log(area)", "log(landings)", "log(fuel consumption)"))
 
-extra1 <- tibble(V1 = "% Change", V2 = scales::percent((exp(coefficients(models1[[1]])[1])-1), 0.01))
+extra1 <- tibble(V1 = "% Change",
+                 V2 = scales::percent((exp(coefficients(models1[[1]])[1])-1), 0.01),
+                 V3 = scales::percent((exp(coefficients(models1[[2]])[1])-1), 0.01))
 attr(extra1, 'position') <- c(6, 3)
 
 modelsummary(models = models1[1:2],
              stars = T,
              coef_omit = omit,
              gof_omit = omit,
-             # add_rows = extra1,
-             title = "Effect of receiving a subsidy on log(hours) of activity. Identification comes fom quasi-random inclusion / exclusion from the roster",
+             add_rows = extra1,
+             title = "Effect of receiving a subsidy on intensive(log(hours)) and extensive (log(area)) margins. Identification comes fom quasi-random inclusion / exclusion from the roster",
              coef_rename = c("log(ph)" = "log(fuel price)",
-                             "treated" = "Subsidized"),
-             notes = c("Control variables are total horsepower, number of vessels, and mean Nino3.4 anomaly.",
+                             "removed" = "Subsidy removed"),
+             notes = c("Control variables are total horsepower, number of vessels, and mean Nino3.4 index.",
                        "All estimations include economic-unit-fixed effects.",
-                       "Numbers in parentheses are heteroskedastic- and autocorrelation-robust standard errors.", 
-                       "% Change is calculated as (exp(coefficient)-1) * 100"))
+                       "Numbers in parentheses are panel-robust standard errors.", 
+                       "% Change is calculated as (exp(coefficient)-1) * 100",
+                       "Difference is sample size is due to missing coordinates on some VMS messages."))
+
+
+feols(c(log(hours), log(area)) ~ 
+        removed + log(ph) + total_hp + n_vessels + nino34_m |
+        eu,
+      data = shrimp_panel,
+      panel.id = ~eu + year,
+      vcov = "NW",
+      # cluster = ~eu,
+      subset = ~sometimes == 1 & n_times_sub < 8) %>% 
+  set_names(c("log(hours)", "log(area)")) %>% 
+  modelsummary(stars = T,
+               coef_omit = omit,
+               gof_omit = omit,
+               title = "Sample restricted to vessels subsidized at most 7 times. Effect of receiving a subsidy on intensive(log(hours)) and extensive (log(area)) margins. Identification comes fom quasi-random inclusion / exclusion from the roster",
+               coef_rename = c("log(ph)" = "log(fuel price)",
+                               "treated" = "Subsidized"),
+               notes = c("Control variables are total horsepower, number of vessels, and mean Nino3.4 index.",
+                         "All estimations include economic-unit-fixed effects.",
+                         "Numbers in parentheses are panel-robust standard errors.", 
+                         "% Change is calculated as (exp(coefficient)-1) * 100",
+                         "Difference is sample size is due to missing coordinates on some VMS messages."))
+
 
 # Main takeaway: For a subset of X vessels that are sometimes subsidized,
 # we see that they fish more when they receive a subsidy.
@@ -117,26 +199,27 @@ models2 <- feols(c(log(hours), log(area), log(landed_weight), log(fuel_consumpti
 extra2 <- tibble(V1 = "% Change", V2 = scales::percent((exp(coefficients(models2[[1]])[1])-1), 0.01))
 attr(extra1, 'position') <- c(6, 3)
 
-modelsummary(models = models2[1],
+modelsummary(models = models2[1:2],
              stars = T,
              coef_omit = omit,
              gof_omit = omit,
-             add_rows = extra2,
-             title = "Elasticity fishing activity with regards to subsidy amount (mexican pesos) and price of fuel (pesos per liter) for vessels that are subsidized at least once. Identification comes from exogenous variations in the adjustment factor or subsidized price",
+             # add_rows = extra2,
+             title = "Elasticity of fishing activity with regards to subsidy amount (mexican pesos) and price of fuel (pesos per liter) for vessels that are subsidized at least once. Identification comes from exogenous variations in the adjustment factor or subsidized price",
              coef_rename = c("log(subsidy_pesos)" = "log(subsidy amount)",
                              "log(ph)" = "log(fuel price)"),
              notes = c("Control variables are total horsepower, number of vessels, and mean Nino3.4 anomaly.",
                        "All estimations include economic-unit-fixed effects.",
-                       "Numbers in parentheses are heteroskedastic- and autocorrelation-robust standard errors.",
-                       "% Change is calcualted as (((1 + 0.01) ^ coefficient)-1) * 100"))
+                       "Numbers in parentheses are panel-robust standard errors.",
+                       "% Change is calcualted as (((1 + 0.01) ^ coefficient)-1) * 100",
+                       "Difference is sample size is due to missing coordinates on some VMS messages."))
 
 # Effect is: (((1 - 0.5)^0.094)-1)
 # A 1% increase in subsidies produces a (((1 + 0.01)^0.094)-1) * 100 = 0.093576 increase in hours
 
 
 # Implications -----------
-increase <- (exp(0.243)-1)
-factor <- 1 - increase
+decrease <- (exp(coef(models1$`log(hours)`)[[1]])-1)
+factor <- 1 + decrease
 
 total_outcomes <- shrimp_panel %>% 
   mutate(treated = ifelse(treated == 1, "Subsidized", "Not subsidized")) %>% 
@@ -209,7 +292,8 @@ treated_in_2019 <- shrimp_panel %>%
          treated == 1) %>% 
   pull(eu)
 
-shrimp_tracks <- readRDS(here("data", "2019_shrimp_tracks.rds"))
+shrimp_tracks <- readRDS(here("data", "2019_shrimp_tracks.rds")) %>% 
+  filter(between(speed, 0.1, 7))
 
 res <- 0.1
 
@@ -238,8 +322,8 @@ ggplot() +
   theme(legend.position = "bottom")
 
 ggplot() +
-  geom_sf(data = mex) +
   geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = log(additional))) +
+  geom_sf(data = mex) +
   scale_fill_viridis_c() +
   guides(fill = guide_colorbar(title = "log(subsidized hours)",
                                frame.colour = "black",

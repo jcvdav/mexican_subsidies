@@ -77,6 +77,7 @@ annual_fuel_consumption <- tracks %>%
   summarize(
     # Calculate total daily grams
     hours = sum(hours, na.rm = T),
+    fishing_hours = sum(hours[between(speed, 1.5, 4)], na.rm = T),
     fuel_grams = sum(fuel_grams, na.rm = T)
   ) %>%
   ungroup() %>%

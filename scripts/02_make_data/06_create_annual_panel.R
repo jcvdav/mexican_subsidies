@@ -46,6 +46,7 @@ eu_fuel_consumption <- fuel_consumption_raw %>%
             n_vessels = n_distinct(vessel_rnpa),
             fuel_consumption_l = sum(fuel_consumption_l, na.rm = T),
             hours = sum(hours, na.rm = T),
+            fishing_hours = sum(fishing_hours, na.rm = T),
             tuna = sum(tuna) > 0,
             sardine = sum(sardine) > 0,
             shrimp = sum(shrimp) > 0,

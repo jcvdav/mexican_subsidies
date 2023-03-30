@@ -51,7 +51,8 @@ get_extensive <- function(data) {
     pull(vessel_rnpa)
   
   pts <- data %>% 
-    filter(!vessel_rnpa %in% not_enough) %>%
+    filter(!vessel_rnpa %in% not_enough,
+           between(speed, 1.5, 4)) %>%
     select(eu_rnpa, vessel_rnpa, lon, lat) %>% 
     group_by(eu_rnpa, vessel_rnpa) %>% 
     nest() %>% 

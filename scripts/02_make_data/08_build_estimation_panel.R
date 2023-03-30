@@ -76,11 +76,8 @@ always <- subsidy_and_effort_panel %>%
 
 # Find vessels that were never subsidized
 never <- subsidy_and_effort_panel %>% 
-  filter(treated == 0) %>% 
   group_by(eu_rnpa) %>% 
-  add_count() %>% 
-  ungroup() %>%
-  filter(n == n_distinct(year)) %>% 
+  filter(all(treated == 0)) %>% 
   pull(eu_rnpa) %>% 
   unique()
 
@@ -126,7 +123,7 @@ shrimp <- subsidy_and_effort_panel %>%
          predicted_subsidy_pesos, predicted_subsidy_cap_l, free_fuel_l,
          n_times_sub, subsidy_frequency, always, sometimes, never,
          ph, pl, p, pp, delta, p_stat, nino34_m,
-         fuel_consumption_l, hours, landed_weight, area)
+         fuel_consumption_l, hours, fishing_hours, landed_weight, area)
 
 ## EXPORT ######################################################################
 
