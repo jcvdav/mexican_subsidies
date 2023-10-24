@@ -1,9 +1,11 @@
 # Load packages ----------------------------------------------------------------
-library(here)
-library(DBI)
-library(bigrquery) #ws 1.4.0
-library(magrittr)
-library(tidyverse)
+pacman::p_load(
+  here,
+  DBI,
+  bigrquery,
+  magrittr,
+  tidyverse
+)
 
 # Authenticate using local token -----------------------------------------------
 bq_auth("juancarlos@ucsb.edu")
@@ -20,7 +22,7 @@ mex_fisheries <- dbConnect(
 
 ## PROCESSING ##################################################################
 # vessel registry --------------------------------------------------------------
-vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20221104") %>%
+vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20230803") %>% # "vessel_info_v_20221104") %>%
   group_by(vessel_rnpa) %>%
   mutate(n = n()) %>%
   ungroup() %>%
@@ -31,7 +33,7 @@ vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20221104") %>%
   select(eu_rnpa, vessel_rnpa, state, gear_type, engine_power_hp)
 
 # tracks, filtered -------------------------------------------------------------
-tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20220323") %>%
+tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20231003") %>% # "mex_vms_processed_v_20220323") %>%
   inner_join(vessel_registry, by = "vessel_rnpa") %>% 
   filter(between(year, 2011, 2019),
          speed > 0) %>% 
@@ -43,7 +45,6 @@ shrimp_tracks <- tracks %>%
   collect() %>% 
   group_by(year_outside) %>% 
   nest()
-
 
 my_write <- function(year, data) {
   name <- here("data", paste0(year, "_shrimp_tracks.rds"))

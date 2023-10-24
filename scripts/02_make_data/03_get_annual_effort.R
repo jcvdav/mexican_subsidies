@@ -39,7 +39,7 @@ mex_fisheries <- dbConnect(
 ## PROCESSING ##################################################################
 
 # vessel registry --------------------------------------------------------------
-vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20221104") %>%
+vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20230803") %>% # "vessel_info_v_20221104") %>%
   group_by(vessel_rnpa) %>%
   mutate(n = n()) %>%
   ungroup() %>%
@@ -49,7 +49,7 @@ vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20221104") %>%
          str_detect(gear_type, "ARRASTRE"))
 
 # tracks, filtered -------------------------------------------------------------
-tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20220323") %>%
+tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20231003") %>% # "mex_vms_processed_v_20220323") %>%
   filter(speed > 0) %>%
   select(-economic_unit)
 

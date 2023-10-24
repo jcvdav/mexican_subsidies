@@ -31,7 +31,7 @@ landings <- readRDS(
 
 ## PROCESSING ##################################################################
 
-# Filter srhimp only -----------------------------------------------------------
+# Filter shrimp only -----------------------------------------------------------
 filtered <- landings %>%
   filter(main_species_group == "CAMARON") %>% 
   select(year, eu = eu_rnpa, landed_weight)

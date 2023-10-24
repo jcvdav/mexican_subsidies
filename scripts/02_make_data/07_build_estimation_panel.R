@@ -13,17 +13,21 @@
 ## SET UP ######################################################################
 
 # Load packages ----------------------------------------------------------------
-library(here)
-library(tidyverse)
+pacman::p_load(
+  here,
+  tidyverse
+)
 
-fix_rnpa <- function(rnpa, length = 8){
-  rnpa[is.na(rnpa)] <- "_"
-  lengths <- stringr::str_length(rnpa)
-  missing <- pmax(length - lengths, 0)
-  zeroes <- purrr::map_chr(missing, ~paste(numeric(length = .x), collapse = ""))
-  out <- paste0(zeroes, rnpa)
-  return(out)
-}
+# fix_rnpa <- function(rnpa, length = 8){
+#   rnpa[is.na(rnpa)] <- "_"
+#   lengths <- stringr::str_length(rnpa)
+#   missing <- pmax(length - lengths, 0)
+#   zeroes <- purrr::map_chr(missing, ~paste(numeric(length = .x), collapse = ""))
+#   out <- paste0(zeroes, rnpa)
+#   return(out)
+# }
+
+
 
 # Load data --------------------------------------------------------------------
 cpi_t <- readRDS(
@@ -38,18 +42,6 @@ state_prices <- readRDS(
   mutate(p_stat = p_stat * rate) %>%
   select(-rate)
 
-subsidy_and_effort_panel <- readRDS(
-  file = here(
-    "data",
-    "processed",
-    "imputed_subsidy_economic_unit_annual_shrimp_panel.rds")) %>% 
-  mutate(eu_rnpa = fix_rnpa(eu_rnpa, length = 10)) %>% 
-  left_join(cpi_t, by = "year") %>%
-  mutate(subsidy_pesos = subsidy_cap_l * 2,
-         subsidy_pesos = subsidy_pesos * rate) %>%
-  select(-rate) %>% 
-  filter(hours > 24 * 30)
-
 nino <- readRDS(
   file = here("data", "raw", "annual_nino34.rds"))
 
@@ -58,9 +50,22 @@ shrimp_landings <- readRDS(
 
 extensive <- readRDS(
   file = here("data", "extensive_margin.rds")) %>% 
-  mutate(eu_rnpa = fix_rnpa(eu_rnpa, length = 10),
-         year = as.numeric(year)) %>% 
-  filter(area > 0)
+  mutate(year = as.numeric(year)) %>% 
+  filter(fg_area_km > units::set_units(0, km^2),
+         fg_hours > 0)
+
+subsidy_and_effort_panel <- readRDS(
+  file = here(
+    "data",
+    "processed",
+    "shrimp_economic_unit_annual_panel.rds"
+  )) %>% 
+  left_join(cpi_t, by = "year") %>%
+  mutate(subsidy_pesos = subsidy_cap_l * 2,
+         subsidy_pesos = subsidy_pesos * rate) %>%
+  select(-rate)
+  
+
 
 ## PROCESSING ##################################################################
 
@@ -91,7 +96,6 @@ n_times_sub <- subsidy_and_effort_panel %>%
 # X ----------------------------------------------------------------------------
 shrimp <- subsidy_and_effort_panel %>%
   filter(year < 2020) %>% 
-  # filter(between(year, 2012, 2019)) %>% # Used to be part of the PEW report
   rename(eu = eu_rnpa) %>%
   left_join(state_prices, by = c("year", "state")) %>%
   left_join(nino, by = "year") %>%
@@ -106,24 +110,13 @@ shrimp <- subsidy_and_effort_panel %>%
     never = 1 * (eu %in% never),
     sometimes = 1 * (always == 0 & never == 0),
     treated = 1 * treated,
-    R = 2,
-    delta = -R * treated ,
-    left = 1 * (fuel_consumption_l <= predicted_subsidy_cap_l),
-    right = 1 - left,
-    free_fuel_l = subsidy_pesos / ph,
-    predicted_subsidy_pesos = predicted_subsidy_cap_l * 2,
-    pp = pmax(0, (ph * (fuel_consumption_l - (subsidy_pesos / ph)) / fuel_consumption_l))
-    #D = phi < 1L#,
-    # term1 = pl + (D * R),
-    # term2 = phi * R  * D
-  ) %>% 
+    fg_area_km = as.numeric(fg_area_km)) %>% 
   select(year, region, state, eu, total_hp, n_vessels,
          tuna, sardine, shrimp, others,
-         treated, left, right, subsidy_pesos, subsidy_cap_l,
-         predicted_subsidy_pesos, predicted_subsidy_cap_l, free_fuel_l,
+         treated, subsidy_pesos, subsidy_cap_l,
          n_times_sub, subsidy_frequency, always, sometimes, never,
-         ph, pl, p, pp, delta, p_stat, nino34_m,
-         fuel_consumption_l, hours, fishing_hours, landed_weight, area)
+         ph, pl, p, p_stat, nino34_m,
+         fuel_consumption_l, hours, fishing_hours, landed_weight, fg_area_km, fg_hours)
 
 ## EXPORT ######################################################################
 
@@ -157,3 +150,4 @@ write_csv(
     "shrimp_estimation_panel.csv"
   )
 )
+

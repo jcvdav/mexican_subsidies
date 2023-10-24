@@ -90,7 +90,7 @@ shrimp_eus <- eu_panel %>%
 shrimp <- eu_panel %>% 
   filter(eu_rnpa %in% shrimp_eus) %>% 
   mutate(region = case_when(state %in% c("Baja california", "Baja california sur", "Sinaloa", "Sonora", "Nayarit") ~ "GoC",
-                            state %in% c("Campeche", "Tamaulipas", "Veracruz", "Quintana roo") ~ "GoM",
+                            state %in% c("Campeche", "Tamaulipas", "Veracruz", "Quintana roo", "Yucatan") ~ "GoM",
                             state %in% c("Chiapas", "Oaxaca") ~ "Pacific")) 
 
 ## EXPORT ######################################################################

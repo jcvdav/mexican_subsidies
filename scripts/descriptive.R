@@ -7,21 +7,24 @@
 # date
 #
 # Description
-#
+# How many times does a vessel enter / exit the roster?
 ################################################################################
 
 ## SET UP ######################################################################
 
 # Load packages ----------------------------------------------------------------
-library(here)
-library(fixest)
-library(modelsummary)
-library(tidyverse)
+pacman::p_load(
+  here,
+  fixest,
+  modelsummary,
+  tidyverse
+)
 
 # Load data --------------------------------------------------------------------
-shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) %>% 
+shrimp_panel <- shrimp %>% # readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) %>% 
   mutate(subsidy_frequency = fct_relevel(subsidy_frequency, "never", "sometimes", "always"),
-         removed = -1 * treated)
+         removed = -1 * treated) %>% 
+  filter(year >= 2011)
 
 ## PROCESSING ##################################################################
 
@@ -53,9 +56,9 @@ never_until_2014 <- shrimp_panel %>%
 did_removed_vs_never <- shrimp_panel %>% 
   filter(year <= 2014,
          eu %in% c(removed_2014, never_until_2014)) %>% 
-  select(eu, year, treated, subsidy_pesos, hours, fishing_hours, area, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
+  select(eu, year, treated, subsidy_pesos, hours, fishing_hours, area_km, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
   mutate(years_since = year - 2014,
-         removed = eu %in% removed_2014) %>% 
+         removed = 1 * (eu %in% removed_2014)) %>% 
   group_by(eu) %>% 
   add_count() %>% 
   filter(n == 4) %>% 
@@ -64,16 +67,33 @@ did_removed_vs_never <- shrimp_panel %>%
 did_removed_vs_reduced <- shrimp_panel %>% 
   filter(year <= 2014,
          eu %in% always_bef) %>% 
-  select(eu, year, treated, subsidy_pesos, hours, fishing_hours, area, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
+  select(eu, year, treated, subsidy_pesos, hours, fishing_hours, area_km, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
   mutate(years_since = year - 2014,
-         removed = eu %in% removed_2014) %>% 
+         removed = 1 * (eu %in% removed_2014)) %>% 
+  group_by(eu) %>% 
+  add_count() %>% 
+  filter(n == 4) %>% 
+  ungroup()
+
+did3 <- shrimp_panel %>% 
+  filter(year <= 2014,
+         eu %in% c(always_bef, never_until_2014)) %>% 
+  select(eu, year, treated, subsidy_pesos, hours, fishing_hours, area_km, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
+  mutate(years_since = year - 2014,
+         never = (eu %in% never_until_2014) * 1,
+         removed = (eu %in% removed_2014) * 1,
+         reduced = (never == 0 & removed == 0),
+         cat = case_when(eu %in% never_until_2014 ~ "never",
+                         eu %in% removed_2014 ~ "removed",
+                         T ~ "reduced"),
+         cat = fct_relevel(cat, c("reduced", "removed", "never"))) %>% 
   group_by(eu) %>% 
   add_count() %>% 
   filter(n == 4) %>% 
   ungroup()
 
 ggplot(did_removed_vs_reduced %>% filter(subsidy_pesos > 0),
-       aes(x = year, y = log(subsidy_pesos), color = removed)) +
+       aes(x = year, y = log(subsidy_pesos), color = factor(removed))) +
   geom_line(aes(group = eu), linewidth = 0.1, alpha = 0.5) +
   stat_summary(geom = "line", fun = mean) +
   stat_summary(geom = "pointrange", fun.data = mean_se, fatten = 1) +
@@ -84,7 +104,8 @@ ggplot(did_removed_vs_reduced %>% filter(subsidy_pesos > 0),
   theme(legend.position = c(0, 0),
         legend.justification = c(0, 0))
 
-ggplot(did_removed_vs_reduced, aes(x = year, y = log(hours), color = removed)) +
+ggplot(did_removed_vs_reduced,
+       aes(x = year, y = log(hours), color = factor(removed))) +
   geom_line(aes(group = eu), linewidth = 0.1, alpha = 0.5) +
   stat_summary(geom = "line", fun = mean) +
   stat_summary(geom = "pointrange", fun.data = mean_se) +
@@ -94,6 +115,10 @@ ggplot(did_removed_vs_reduced, aes(x = year, y = log(hours), color = removed)) +
        color = "Subsidy removed in 2014") +
   theme(legend.position = c(0, 0),
         legend.justification = c(0, 0))
+
+feols(log(hours) ~ post * removed + total_hp + n_vessels, data = did_removed_vs_reduced %>% 
+        filter(year %in% c(2013, 2014)) %>%
+        mutate(post = 1 * (year == 2014)))
 
 
 feols(log(hours) ~ total_hp + n_vessels + i(years_since, removed, ref = -1) |
@@ -117,41 +142,70 @@ feols(hours ~ total_hp + n_vessels + i(years_since, removed, ref = -1) |
         pt.cex = 2)
 
 
+# 3-way
+feols(log(hours) ~ i(years_since, cat, ref = -1) | eu + years_since + cat,
+        # i(years_since, reduced, ref = -1) + i(years_since, removed, ref = -1)  | eu + year + cat,
+      panel.id = ~eu + years_since,
+      cluster = ~eu,
+      data = did3) %>% 
+  broom::tidy() %>% 
+  filter(str_detect(term, "years_since")) %>% 
+  mutate(group = str_extract(term, "never|reduced|removed"),
+         years = as.numeric(str_extract(term, "-[:digit:]|[:digit:]"))) %>% 
+  ggplot(aes(x = years, y = estimate, fill = group)) +
+  geom_pointrange(aes(ymin = estimate - 1.96 * std.error, ymax = estimate + 1.96 * std.error),
+                  position = position_jitter(height = 0, width = 0.2), shape = 21) +
+  geom_hline(yintercept = 0)
+
+
+ggplot(did3, aes(x = year, y = log(hours), color = cat)) +
+  geom_line(aes(group = eu), linewidth = 0.1, alpha = 0.5) +
+  stat_summary(geom = "line", fun = mean) +
+  stat_summary(geom = "pointrange", fun.data = mean_se) +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "Year",
+       y = "log(hours)",
+       color = "Subsidy removed in 2014") +
+  theme(legend.position = c(0, 0),
+        legend.justification = c(0, 0))
 ########### identification 2
 
-omit <- "nino|hp|n_vess|(Intercept)|RMSE|With|Std.|FE"
+omit <- "nino|hp|n_vess|(Intercept)|RMSE|With|Std.|FE|IC"
 
 
-ggplot(data = shrimp_panel %>% 
-         filter(sometimes == 1),
+ggplot(data = shrimp_panel %>% select(eu, n_times_sub) %>% distinct(),
        mapping = aes(x = n_times_sub)) +
   geom_histogram(binwidth = 1) +
+  scale_x_continuous(labels = c(0:9), breaks = c(0:9)) +
   labs(x = "N times subsidized",
-       y = "N economic units")
+       y = "N economic units",
+       title = "Historgram of frequency with which economic units are subsidized (2011-2019)",
+       subtitle = "N = 0 implies never subsidized, N = 9 implies always subsidized.") 
 
-models1 <- feols(c(log(hours), log(area), log(landed_weight), log(fuel_consumption_l)) ~ 
-                   removed + log(ph) + total_hp + n_vessels + nino34_m |
+models1 <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+                   treated + log(ph) + total_hp + n_vessels + nino34_m |
                    eu,
                  data = shrimp_panel,
                  panel.id = ~eu + year,
                  vcov = "NW",
                  # cluster = ~eu,
-                 subset = ~sometimes == 1) %>% 
-  set_names(c("log(hours)", "log(area)", "log(landings)", "log(fuel consumption)"))
+                 subset = ~sometimes == 1)
 
 extra1 <- tibble(V1 = "% Change",
                  V2 = scales::percent((exp(coefficients(models1[[1]])[1])-1), 0.01),
-                 V3 = scales::percent((exp(coefficients(models1[[2]])[1])-1), 0.01))
+                 V3 = scales::percent((exp(coefficients(models1[[2]])[1])-1), 0.01),
+                 V4 = scales::percent((exp(coefficients(models1[[3]])[1])-1), 0.01))
 attr(extra1, 'position') <- c(6, 3)
 
-modelsummary(models = models1[1:2],
+modelsummary(models = models1,
              stars = T,
              coef_omit = omit,
              gof_omit = omit,
              add_rows = extra1,
              title = "Effect of receiving a subsidy on intensive(log(hours)) and extensive (log(area)) margins. Identification comes fom quasi-random inclusion / exclusion from the roster",
              coef_rename = c("log(ph)" = "log(fuel price)",
-                             "removed" = "Subsidy removed"),
+                             "removed" = "Subsidy removed",
+                             "treated" = "Enter"),
              notes = c("Control variables are total horsepower, number of vessels, and mean Nino3.4 index.",
                        "All estimations include economic-unit-fixed effects.",
                        "Numbers in parentheses are panel-robust standard errors.", 
@@ -159,15 +213,15 @@ modelsummary(models = models1[1:2],
                        "Difference is sample size is due to missing coordinates on some VMS messages."))
 
 
-feols(c(log(hours), log(area)) ~ 
-        removed + log(ph) + total_hp + n_vessels + nino34_m |
+feols(c(log(hours), log(area_km), log(landed_weight)) ~ 
+        treated + log(ph) + total_hp + n_vessels + nino34_m |
         eu,
       data = shrimp_panel,
       panel.id = ~eu + year,
       vcov = "NW",
       # cluster = ~eu,
       subset = ~sometimes == 1 & n_times_sub < 8) %>% 
-  set_names(c("log(hours)", "log(area)")) %>% 
+  # set_names(c("log(hours)", "log(area)", "log(landed_weight)")) %>% 
   modelsummary(stars = T,
                coef_omit = omit,
                gof_omit = omit,
@@ -188,22 +242,25 @@ feols(c(log(hours), log(area)) ~
 
 
 # Identification 3
-models2 <- feols(c(log(hours), log(area), log(landed_weight), log(fuel_consumption_l)) ~ 
-        log(subsidy_pesos) + log(ph) + nino34_m + n_vessels + total_hp| eu,
+models2 <- feols(c(log(hours), log(area_km), log(landed_weight)) ~ 
+        log(subsidy_pesos) + log(ph) + nino34_m + n_vessels + total_hp | eu,
       data = shrimp_panel %>% group_by(eu) %>% add_count() %>% filter(n >= 2) %>% ungroup(),
       panel.id = ~eu + year,
       vcov = "NW",
       subset = ~treated == 1) %>% 
-  set_names(c("log(hours)", "log(area)", "log(landings)", "log(fuel consumption)"))
+  set_names(c("log(hours)", "log(area)", "log(landings)"))
 
-extra2 <- tibble(V1 = "% Change", V2 = scales::percent((exp(coefficients(models2[[1]])[1])-1), 0.01))
+extra2 <- tibble(V1 = "% Change",
+                 V2 = scales::percent((((1 + 0.01)^coefficients(models2[[1]])[1])-1), 0.01),
+                 V3 = scales::percent((((1 + 0.01)^coefficients(models2[[2]])[1])-1), 0.01),
+                 V4 = scales::percent((((1 + 0.01)^coefficients(models2[[3]])[1])-1), 0.01))
 attr(extra1, 'position') <- c(6, 3)
 
-modelsummary(models = models2[1:2],
+modelsummary(models = models2[1:3],
              stars = T,
              coef_omit = omit,
              gof_omit = omit,
-             # add_rows = extra2,
+             add_rows = extra2,
              title = "Elasticity of fishing activity with regards to subsidy amount (mexican pesos) and price of fuel (pesos per liter) for vessels that are subsidized at least once. Identification comes from exogenous variations in the adjustment factor or subsidized price",
              coef_rename = c("log(subsidy_pesos)" = "log(subsidy amount)",
                              "log(ph)" = "log(fuel price)"),
@@ -219,7 +276,7 @@ modelsummary(models = models2[1:2],
 
 # Implications -----------
 decrease <- (exp(coef(models1$`log(hours)`)[[1]])-1)
-factor <- 1 + decrease
+factor <- 1 - decrease
 
 total_outcomes <- shrimp_panel %>% 
   mutate(treated = ifelse(treated == 1, "Subsidized", "Not subsidized")) %>% 
@@ -239,6 +296,24 @@ alternative_outcomes <- shrimp_panel %>%
                names_to = "source") %>% 
   mutate(treated = paste(treated, source, sep = "-")) %>% 
   filter(hours > 0)
+
+alternative_outcomes2 <- shrimp_panel %>% 
+  expand_grid(pct = seq(0.1, 0.9, by = .2)) %>% 
+  mutate(factor = 1 + (((1 - pct)^coefficients(models2[[1]])[1])-1)) %>% 
+  mutate(additional = treated * (hours - (factor * hours)),
+         treated = ifelse(treated == 1, "Subsidized", "Not subsidized")) %>% 
+  group_by(year, treated, pct) %>% 
+  summarize(hours = sum(hours) / 1e6,
+            subsidy = sum(additional) / 1e6) %>% 
+  mutate(baseline = hours - subsidy) %>% 
+  select(year, treated, pct, subsidy, baseline) %>% 
+  pivot_longer(cols = c(subsidy, baseline),
+               values_to = "hours",
+               names_to = "source") %>% 
+  filter(hours > 0,
+         treated == "Subsidized",
+         source == "subsidy") %>% 
+  mutate(treated = paste(treated, source, sep = "-")) 
 
 ggplot(data = total_outcomes,
        mapping = aes(x = year, y = hours)) +
@@ -281,11 +356,36 @@ ggplot(data = alternative_outcomes,
        fill = "Subsidy status") +
   scale_fill_brewer(palette = "Set1")
 
+ggplot(data = alternative_outcomes,
+       mapping = aes(x = year, y = hours, fill = treated)) +
+  stat_summary(aes(x = year, y = hours), geom = "line", fun = "sum", position = "stack", inherit.aes = F) +
+  stat_summary(geom = "area", fun = "sum", position = "stack") +
+  geom_line(data = alternative_outcomes2,
+            position = "dodge",
+            mapping = aes(x = year, y = hours, linetype = paste0(pct * 100, "%"),
+                          group = pct), inherit.aes = F) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0),
+                     breaks = seq(2011, 2019, by = 2),
+                     limits = c(2011, 2019.5)) +
+  theme(legend.position = c(1, 1),
+        legend.justification = c(1, 1)) +
+  guides(linetype = guide_legend(ncol = 2)) +
+  labs(x = "Year",
+       y = "Total activity\n(Millions of hours)",
+       fill = "Subsidy status",
+       linetype = "% Subsidy reduction") +
+  scale_fill_brewer(palette = "Set1")
+
 
 
 ## SPatiall attribution
 
+
 mex <- rnaturalearth::ne_countries(country = "Mexico", returnclas = "sf")
+
+continent <- rnaturalearth::ne_countries(continent = "North America", returnclass = "sf") %>% 
+  sf::st_crop(sf::st_buffer(mex, dist = 1.5))
 
 treated_in_2019 <- shrimp_panel %>% 
   filter(year == 2019,
@@ -301,8 +401,10 @@ tracks_info <- shrimp_tracks %>%
   mutate(lon = (floor(lon / res) * res) + (res / 2),
          lat = (floor(lat / res) * res) + (res / 2),
          treated = 1 * (eu_rnpa %in% treated_in_2019)) %>% 
+  expand_grid(pct = seq(0.1, 0.9, by = .2)) %>% 
+  mutate(factor = 1 + (((1 - pct)^coefficients(models2[[1]])[1])-1)) %>% 
   mutate(additional = treated * (hours - (factor * hours))) %>% 
-  group_by(lat, lon) %>% 
+  group_by(lat, lon, pct) %>% 
   summarize(hours = sum(hours, na.rm = T),
             additional = sum(additional, na.rm = T),
             n_eus = n_distinct(eu_rnpa)) %>% 
@@ -311,38 +413,57 @@ tracks_info <- shrimp_tracks %>%
 
 
 ggplot() +
-  geom_sf(data = mex) +
-  geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = log(hours))) +
+  geom_raster(data = tracks_info, aes(x = lon, y = lat, fill = log(hours))) +
+  geom_sf(data = continent, color = "black") +
+  geom_sf(data = mex, color = "black") +
   scale_fill_viridis_c() +
-  guides(fill = guide_colorbar(title = "log(Total hours)",
+  guides(fill = guide_colorbar(title = "log(Hours)",
                                frame.colour = "black",
-                               ticks.colour = "black",
-                               barwidth = 10)) +
-  cowplot::theme_map() +
-  theme(legend.position = "bottom")
+                               ticks.colour = "black")) +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(x = "",
+       y = "")
 
 ggplot() +
-  geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = log(additional))) +
-  geom_sf(data = mex) +
+  geom_raster(data = tracks_info, aes(x = lon, y = lat, fill = log(additional))) +
+  geom_sf(data = continent, color = "black") +
+  geom_sf(data = mex, color = "black") +
   scale_fill_viridis_c() +
-  guides(fill = guide_colorbar(title = "log(subsidized hours)",
+  guides(fill = guide_colorbar(title = "log(Subsidized Hours)",
                                frame.colour = "black",
-                               ticks.colour = "black",
-                               barwidth = 10)) +
-  cowplot::theme_map() +
-  theme(legend.position = "bottom")
+                               ticks.colour = "black")) +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(x = "",
+       y = "") +
+  facet_wrap(~pct)
 
 ggplot() +
-  geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = difference)) +
-  geom_sf(data = mex) +
-  scale_fill_viridis_c(labels = scales::percent) +
-  # scale_fill_gradientn(colors = colorRamps::matlab.like(10), label = scales::percent) +
-  guides(fill = guide_colorbar(title = "% Atrributable\nto subsidy",
+  geom_tile(data = tracks_info %>% mutate(pct = paste0(pct * 100, "% reduction")), aes(x = lon, y = lat, fill = difference)) +
+  geom_sf(data = continent, color = "black") +
+  geom_sf(data = mex, color = "black") +
+  scale_fill_viridis_c(labels = scales::percent, option = "B") +
+  # scale_fill_gradient(low = "steelblue", high = "red", labels = scales::percent) +
+  guides(fill = guide_colorbar(title = "% Reduction",
                                frame.colour = "black",
                                ticks.colour = "black",
-                               barwidth = 10)) +
-  cowplot::theme_map() +
-  theme(legend.position = "bottom")
+                               title.position = "top",
+                               direction = "horizontal")) +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  theme_minimal() +
+  theme(legend.position = c(1, 0),
+        legend.justification = c(1, 0)) +
+  labs(x = "",
+       y = "",
+       title = "Expected reduction in fishing activity from five\nsubsidy reduction policies",
+       subtitle = "Maps are produced from 2019 fishing activity on a 0.1° grid") +
+  facet_wrap(~pct, ncol = 2)
 
 
 
