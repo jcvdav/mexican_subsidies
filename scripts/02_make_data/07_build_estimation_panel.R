@@ -106,6 +106,8 @@ shrimp <- subsidy_and_effort_panel %>%
     subsidy_frequency = case_when(eu %in% always ~ "always",
                                   eu %in% never ~"never",
                                   T ~ "sometimes"),
+    subsidy_frequency = fct_relevel(subsidy_frequency,
+                                    "never", "sometimes", "always"),
     always = 1 * (eu %in% always),
     never = 1 * (eu %in% never),
     sometimes = 1 * (always == 0 & never == 0),
@@ -116,7 +118,8 @@ shrimp <- subsidy_and_effort_panel %>%
          treated, subsidy_pesos, subsidy_cap_l,
          n_times_sub, subsidy_frequency, always, sometimes, never,
          ph, pl, p, p_stat, nino34_m,
-         fuel_consumption_l, hours, fishing_hours, landed_weight, fg_area_km, fg_hours)
+         fuel_consumption_l, hours, fishing_hours, landed_weight, fg_area_km, fg_hours) %>% 
+  filter(year >= 2011)
 
 ## EXPORT ######################################################################
 
