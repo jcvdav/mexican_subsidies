@@ -21,9 +21,8 @@ pacman::p_load(
 )
 
 # Load data --------------------------------------------------------------------
-shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) %>% 
-  mutate(subsidy_frequency = fct_relevel(subsidy_frequency, "never", "sometimes", "always"),
-         removed = -1 * treated)
+shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) #%>% 
+  # mutate(removed = -1 * treated)
 
 ## PROCESSING ##################################################################
 
@@ -31,7 +30,6 @@ shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_pan
 ## DiD 
 always_bef <- shrimp_panel %>% 
   filter(year <= 2013,
-         always == 0,
          treated == 1) %>% 
   group_by(eu) %>% 
   add_count() %>% 
@@ -49,23 +47,13 @@ removed_2014 <- shrimp_panel %>%
 did_removed_vs_reduced <- shrimp_panel %>% 
   filter(year <= 2014,
          eu %in% always_bef) %>% 
-  select(eu, year, treated, subsidy_pesos, hours, fishing_hours, fg_area_km, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
+  select(eu, year, region,treated, subsidy_pesos, hours, fishing_hours, fg_area_km, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
   mutate(years_since = year - 2014,
+         post = 1 * (year == 2014),
          removed = 1 * (eu %in% removed_2014)) %>% 
   group_by(eu) %>% 
   add_count() %>% 
-  filter(n == 4) %>% 
-  ungroup()
-
-did_removed_vs_reduced2 <- shrimp_panel %>% 
-  filter(year <= 2017,
-         eu %in% always_bef) %>% 
-  select(eu, year, treated, subsidy_pesos, hours, fishing_hours, fg_area_km, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
-  mutate(years_since = year - 2014,
-         removed = 1 * (eu %in% removed_2014)) %>% 
-  group_by(eu) %>% 
-  add_count() %>% 
-  filter(n == 7) %>% 
+  filter(n == 4) %>% # This ends up removing a single vessel that drops out in 2014 (3 obs correspodning to 2011-2013)
   ungroup()
 
 ggplot(did_removed_vs_reduced %>% filter(subsidy_pesos > 0),
@@ -81,8 +69,9 @@ ggplot(did_removed_vs_reduced %>% filter(subsidy_pesos > 0),
         legend.justification = c(0, 0))
 
 ggplot(did_removed_vs_reduced,
-       aes(x = year, y = log(hours), color = factor(removed))) +
-  geom_line(aes(group = eu), linewidth = 0.1, alpha = 0.5) +
+       aes(x = year, y = log(hours),
+           color = factor(removed))) +
+  # geom_line(aes(group = eu), linewidth = 0.1, alpha = 0.5) +
   stat_summary(geom = "line", fun = mean) +
   stat_summary(geom = "pointrange", fun.data = mean_se) +
   scale_color_brewer(palette = "Set1") +
@@ -92,43 +81,69 @@ ggplot(did_removed_vs_reduced,
   theme(legend.position = c(0, 0),
         legend.justification = c(0, 0))
 
-feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ post * removed + total_hp + n_vessels, data = did_removed_vs_reduced %>% 
-        filter(year %in% c(2013, 2014)) %>%
-        mutate(post = 1 * (year == 2014)))
+## ESTIMATION ##################################################################
+# Two-way fixed effects
+event_study <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~
+                       i(year, removed, 2013) + total_hp + n_vessels |
+                       eu + year^region,
+                     data = did_removed_vs_reduced,
+                     panel.id = ~eu + year,
+                     vcov = NW(lag = 1)) %>% 
+  set_names(c("Hours", "Area", "Landings"))
 
-feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ post * removed + total_hp + n_vessels, data = did_removed_vs_reduced %>% 
-        filter(year %in% c(2013, 2014)) %>%
-        mutate(post = 1 * (year == 2014)))
+# Including time-varying constants instead of year-region
+event_study_owfe <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~
+                       i(year, removed, 2013) + log(ph) + nino34_m + total_hp + n_vessels |
+                       eu,
+                     data = did_removed_vs_reduced,
+                     panel.id = ~eu + year,
+                     vcov = NW(lag = 1)) %>% 
+  set_names(c("Hours", "Area", "Landings"))
 
+attr(event_study, "tree") <- tibble(id = 1:3,
+                                    lhs = factor(names(event_study),
+                                                 levels = names(event_study)))
 
-feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~  total_hp + n_vessels + i(years_since, removed, "-1") | eu + years_since,
-      data = did_removed_vs_reduced2) %>% 
-  iplot()
+did <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~
+               post:removed + total_hp + n_vessels + log(ph) + nino34_m | 
+               eu,
+             data = did_removed_vs_reduced,
+             panel.id = ~eu + year,
+             vcov = "NW")
 
-
-feols(log(hours) ~ total_hp + n_vessels + i(years_since, removed, ref = -1) |
-        eu + year,
-      panel.id = ~eu + years_since,
-      cluster = ~eu,
-      data = did_removed_vs_reduced) %>% 
-  iplot(xlab = "Time to treatment",
-        main = "Event study: log(Hours)",
-        pt.col = "steelblue",
-        pt.cex = 2)
-
-feols(log(hours) ~ total_hp + n_vessels + i(years_since, removed, ref = -3) |
-        eu + years_since,
-      panel.id = ~eu + years_since,
-      cluster = ~eu,
-      data = did_removed_vs_reduced) %>% 
-  iplot(xlab = "Time to treatment",
-        main = "Event study: Hours",
-        pt.col = "steelblue",
-        pt.cex = 2)
-
+did <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~
+               post:removed + total_hp + n_vessels + log(ph) + nino34_m | 
+               eu + year ^ region,
+             data = did_removed_vs_reduced,
+             panel.id = ~eu + year,
+             vcov = "NW")
 ## VISUALIZE ###################################################################
 
+gof_stats <- map_dfr(event_study, glance, .id = "model") %>% 
+  mutate(x = 2011.5,
+         y = 0.5,
+         adj.r.squared = round(adj.r.squared, 3))
+
 # X ----------------------------------------------------------------------------
+ggiplot(event_study,
+        multi_style = "facet",
+        pt.pch = 21,
+        ref.line.par = list(col = "black"),
+        theme = theme(legend.position = "None",
+                      panel.border = element_rect(fill = "transparent")),
+        main = "Effect of subsidy removals on fishing hours, extent of fishing grounds, and landings") +
+  scale_x_continuous(breaks = c(2011:2014)) +
+  scale_colour_brewer(palette = 'Set2') +
+  scale_fill_brewer(palette = 'Set2') +
+  labs(fill = "Outcome of interest",
+       color = "Outcome of interest",
+       shape = "Outcome of interest",
+       x = "Year",
+       subtitle = "Treatment is subsidy removal. Treated economic units (N = 67) had their subsidies removed in 2014.
+       Control economic units (N = 194) had their subsidy reduced, but not removed.")
+
+modelsummary(event_study,
+             stars = panelsummary:::econ_stars())
 
 ## ESTIMATE ####################################################################
 

@@ -11,13 +11,27 @@ project_path <- paste0(sys_path,"Shared drives/emlab/projects/current-projects/m
 mex_path <- paste0(sys_path,"Shared drives/emlab/projects/current-projects/mex-fisheries")
 
 # Reset theme
-ggplot2::theme_set(startR::ggtheme_plot())
+ggplot2::theme_set(theme_bw())
+
+# gray <- "#f8f4f4"
+gray <- "transparent"
 
 ggplot2::theme_update(
-  axis.title.y = ggplot2::element_text(hjust = 1, size = 14),
-  axis.title.x = ggplot2::element_text(hjust = 1, size = 14),
-  axis.text.y = ggplot2::element_text(size = 12),
-  axis.text.x = ggplot2::element_text(size = 12)
+  axis.title.y = ggplot2::element_text(size = 10),
+  axis.title.x = ggplot2::element_text(size = 10),
+  axis.text.y = ggplot2::element_text(size = 8),
+  axis.text.x = ggplot2::element_text(size = 8),
+  panel.background = element_blank(),
+  plot.background = element_blank(),
+  legend.background = element_blank(),
+  legend.key = element_blank(),
+  panel.border = element_blank(),
+  panel.grid.major.x = element_blank(),#element_line(colour = "gray", linewidth = 0.1),
+  panel.grid.major.y = element_line(colour = "gray",
+                                    linewidth = 0.1,
+                                    linetype = "dashed"),
+  panel.grid.minor = element_blank(),
+  strip.background = element_blank()
 )
 
 ggplot2::update_geom_defaults(geom = "point",
@@ -37,6 +51,14 @@ ggplot2::update_geom_defaults(geom = "bar",
 ggplot2::update_geom_defaults(geom = "area",
                               new = list(color = "black",
                                          fill = "steelblue"))
+
+ggplot2::update_geom_defaults(geom = "segment",
+                              new = list(color = "black",
+                                         linetype = "dashed"))
+
+ggplot2::update_geom_defaults(geom = "hline",
+                              new = list(color = "black",
+                                         linetype = "dashed"))
 
 
 # Turn off dplyr's anoying messages
