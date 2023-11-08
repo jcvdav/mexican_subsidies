@@ -11,7 +11,7 @@ project_path <- paste0(sys_path,"Shared drives/emlab/projects/current-projects/m
 mex_path <- paste0(sys_path,"Shared drives/emlab/projects/current-projects/mex-fisheries")
 
 # Reset theme
-ggplot2::theme_set(theme_bw())
+ggplot2::theme_set(ggplot2::theme_bw())
 
 # gray <- "#f8f4f4"
 gray <- "transparent"
@@ -21,17 +21,17 @@ ggplot2::theme_update(
   axis.title.x = ggplot2::element_text(size = 10),
   axis.text.y = ggplot2::element_text(size = 8),
   axis.text.x = ggplot2::element_text(size = 8),
-  panel.background = element_blank(),
-  plot.background = element_blank(),
-  legend.background = element_blank(),
-  legend.key = element_blank(),
-  panel.border = element_blank(),
-  panel.grid.major.x = element_blank(),#element_line(colour = "gray", linewidth = 0.1),
-  panel.grid.major.y = element_line(colour = "gray",
+  panel.background = ggplot2::element_blank(),
+  plot.background = ggplot2::element_blank(),
+  legend.background = ggplot2::element_blank(),
+  legend.key = ggplot2::element_blank(),
+  panel.border = ggplot2::element_blank(),
+  panel.grid.major.x = ggplot2::element_blank(),#element_line(colour = "gray", linewidth = 0.1),
+  panel.grid.major.y = ggplot2::element_line(colour = "gray",
                                     linewidth = 0.1,
                                     linetype = "dashed"),
-  panel.grid.minor = element_blank(),
-  strip.background = element_blank()
+  panel.grid.minor = ggplot2::element_blank(),
+  strip.background = ggplot2::element_blank()
 )
 
 ggplot2::update_geom_defaults(geom = "point",

@@ -49,9 +49,9 @@ elasticity_twfe_split <- feols(c(log(hours), log(fg_area_km), log(landed_weight)
                                vcov = "NW",
                                split = ~subsidy_frequency,
                                subset = ~treated == 1) %>% 
-  set_names(c("Hours", "Area", "Landings", "Hours", "Area", "Landings"))
+  set_names(c("S Hours", "S Area", "S Landings", "A Hours", "A Area", "A Landings"))
 
-elasticity <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+elasticity_owfe <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
                       log(subsidy_pesos) + log(ph) + nino34_m + n_vessels + total_hp | eu,
                     data = shrimp_panel %>% group_by(eu) %>% add_count() %>% filter(n >= 2) %>% ungroup(),
                     panel.id = ~eu + year,
@@ -59,11 +59,20 @@ elasticity <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~
                     subset = ~treated == 1) %>% 
   set_names(c("Hours", "Area", "Landings"))
 
+elasticity_owfe_split <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+                                 log(subsidy_pesos) + log(ph) + nino34_m + n_vessels + total_hp | eu,
+                               data = shrimp_panel %>% group_by(eu) %>% add_count() %>% filter(n >= 2) %>% ungroup(),
+                               panel.id = ~eu + year,
+                               vcov = "NW",
+                               split = ~subsidy_frequency,
+                               subset = ~treated == 1) %>% 
+  set_names(c("S Hours", "S Area", "S Landings", "A Hours", "A Area", "A Landings"))
+
 extra2 <- tibble(V1 = "% Change",
                  V2 = scales::percent((((1 + 0.01)^coefficients(elasticity_twfe[[1]])[1])-1), 0.01),
                  V3 = scales::percent((((1 + 0.01)^coefficients(elasticity_twfe[[2]])[1])-1), 0.01),
                  V4 = scales::percent((((1 + 0.01)^coefficients(elasticity_twfe[[3]])[1])-1), 0.01))
-attr(extra1, 'position') <- c(6, 3)
+attr(extra2, 'position') <- c(3, 3)
 
 modelsummary(models = elasticity_twfe,
              stars = T,
@@ -79,21 +88,27 @@ modelsummary(models = elasticity_twfe,
                        "% Change is calcualted as (((1 + 0.01) ^ coefficient)-1) * 100",
                        "Difference is sample size is due to missing coordinates on some VMS messages."))
 
-map_dfr(c("TWFE" = elasticity_twfe,
-          "Controls" = elasticity),
+map_dfr(c("TWFE Main" = elasticity_twfe,
+          "Controls Main" = elasticity_owfe,
+          "TWFE Split" = elasticity_twfe_split,
+          "Controls Split" = elasticity_owfe_split),
         tidy, conf.int = T,
         .id = "model") %>% 
   filter(term == "log(subsidy_pesos)") %>% 
   mutate(var = str_extract(model, "Hours|Area|Landings|log(hours)"),
          var = fct_relevel(var, "Hours", "Area", "Landings"),
-         model = str_extract(model, "Controls|TWFE")) %>% 
-  ggplot(aes(x = var, y = estimate, fill = var, color = var, shape = model)) +
+         split = str_extract(model, "Split\\..{1}"),
+         split = ifelse(is.na(split), "Main", str_remove(split, "Split\\.")),
+         model = str_extract(model, "Controls|TWFE"),
+         group = paste(model, split),
+         group = fct_relevel(group, "TWFE Main", "TWFE S", "TWFE A", "Controls Main", "Controls S", "Controls A")) %>% 
+  ggplot(aes(x = var, y = estimate, fill = var, color = var, shape = group)) +
   geom_hline(yintercept = 0, linetype = "solid") +
   geom_pointrange(aes(ymin = conf.low,
                       ymax = conf.high),
                   position = position_dodge(width = 0.5),
                   fatten = 6) +
-  scale_shape_manual(values = c(21, 22, 24)) +
+  scale_shape_manual(values = c(21, 1, 10, 22, 0, 7)) +
   scale_colour_brewer(palette = 'Set2') +
   scale_fill_brewer(palette = 'Set2') +
   guides(fill = "none",

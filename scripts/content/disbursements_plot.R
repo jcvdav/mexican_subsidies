@@ -29,7 +29,7 @@ subsidized_vessels <-
 
 mean_subsidy_amount <-
   shrimp_panel %>% 
-  filter(treated) %>% 
+  filter(treated == 1) %>% 
   ggplot(aes(x = year, y = (subsidy_cap_l / total_hp))) +
   stat_summary(geom = "pointrange", fun.data = mean_sdl, fun.args = list(mult = 1),
                fill = "steelblue",

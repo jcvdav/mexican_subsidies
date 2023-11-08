@@ -76,6 +76,14 @@ models_owfe <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~
                      subset = ~sometimes == 1) %>% 
   set_names(c("Hours", "Area", "Landings"))
 
+models_owfe_fs <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+                          treated + log(ph) + total_hp + n_vessels + nino34_m |
+                          eu,
+                        data = shrimp_panel,
+                        panel.id = ~eu + year,
+                        vcov = "NW") %>% 
+  set_names(c("Hours", "Area", "Landings"))
+
 extra1 <- tibble(V1 = "% Change",
                  V2 = scales::percent((exp(coefficients(models[[1]])[1])-1), 0.01),
                  V3 = scales::percent((exp(coefficients(models[[2]])[1])-1), 0.01),
@@ -98,22 +106,28 @@ modelsummary(models = models,
                        or missing landings data."))
 
 
-map_dfr(c("TWFE" = models,
-          "Controls" = models_owfe,
-          "Full" = models_fs),
+map_dfr(c("TWFE Main" = models,
+          "Controls Main" = models_owfe,
+          "TWFE Full" = models_fs,
+          "Controls Full" = models_owfe_fs),
         tidy, conf.int = T,
         .id = "model") %>% 
   filter(term == "treated") %>% 
   mutate(var = str_extract(model, "Hours|Area|Landings"),
          var = fct_relevel(var, "Hours", "Area", "Landings"),
-         model = str_extract(model, "Controls|TWFE|Full")) %>% 
-  ggplot(aes(x = var, y = estimate, fill = var, color = var, shape = model)) +
+         sample = str_extract(model, "Main|Full"),
+         # sample = fct_relevel(sample, "Main", "Full"),
+         model = str_extract(model, "Controls|TWFE"),
+         # model = fct_relevel(model, "TWFE", "Controls"),
+         group = paste(model, sample),
+         group = fct_relevel(group, "TWFE Main", "Controls Main", "TWFE Full", "Controls Full")) %>% 
+  ggplot(aes(x = var, y = estimate, fill = var, color = var, shape = group)) +
   geom_hline(yintercept = 0, linetype = "solid") +
   geom_pointrange(aes(ymin = conf.low,
                       ymax = conf.high),
                   position = position_dodge(width = 0.5),
                   fatten = 6) +
-  scale_shape_manual(values = c(21, 22, 24)) +
+  scale_shape_manual(values = c(21, 22, 1, 0)) +
   scale_colour_brewer(palette = 'Set2') +
   scale_fill_brewer(palette = 'Set2') +
   guides(fill = "none",
@@ -155,14 +169,14 @@ restrict_n_times <- function(n_times = 9){
           treated + total_hp + n_vessels |
           eu + year ^ region,
         data = shrimp_panel %>% 
-          filter(n_times_sub < n_times),
+          filter(n_times_sub <= n_times),
         panel.id = ~eu + year,
         vcov = "NW",
         subset = ~sometimes == 1) %>% 
     tidy(conf.int = T)
 }
 
-map_dfr(2:9,
+map_dfr(2:8,
         restrict_n_times,
         .id = "n_times") %>% 
   mutate(n_times = as.numeric(n_times) + 1) %>% 
@@ -170,5 +184,5 @@ map_dfr(2:9,
   ggplot(aes(x = n_times, y = estimate, ymin = conf.low, ymax = conf.high)) +
   geom_hline(yintercept = 0, linetype = "solid") +
   geom_pointrange() +
-  labs(x = "Subsidized at least # times",
+  labs(x = "Subsidized at most # times",
        y = "Estimate and 95% CI")
