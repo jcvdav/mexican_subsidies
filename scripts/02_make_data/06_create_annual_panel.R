@@ -33,9 +33,7 @@ fuel_prices <- readRDS(
 
 # Fuel consumption
 fuel_consumption_raw <- readRDS(
-  file = here("data",
-              "processed",
-              "vms_annual_fuel_consumption.rds"))
+  file = here("data", "processed", "vms_annual_vessel_activity.rds"))
 
 ## PROCESSING ##################################################################
 # Fuel consumption

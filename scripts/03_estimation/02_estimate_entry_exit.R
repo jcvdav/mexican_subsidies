@@ -53,10 +53,19 @@ shrimp_panel %>%
 models <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
                         treated + total_hp + n_vessels |
                         eu + year ^ region,
-                      data = shrimp_panel,
+                      data = shrimp_panel,# %>% mutate(treated = (1 - treated)),
                       panel.id = ~eu + year,
                       vcov = "NW",
                       subset = ~sometimes == 1) %>% 
+  set_names(c("Hours", "Area", "Landings"))
+
+models2 <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+                  treated + total_hp + n_vessels |
+                  eu + year ^ region,
+                data = shrimp_panel %>% mutate(treated = (1 - treated)),
+                panel.id = ~eu + year,
+                vcov = "NW",
+                subset = ~sometimes == 1) %>% 
   set_names(c("Hours", "Area", "Landings"))
 
 models_fs <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 

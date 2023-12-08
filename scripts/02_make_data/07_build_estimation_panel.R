@@ -49,7 +49,7 @@ shrimp_landings <- readRDS(
   file = here("data", "processed", "shrimp_landings_panel.rds"))
 
 extensive <- readRDS(
-  file = here("data", "extensive_margin.rds")) %>% 
+  file = here("data", "processed", "extensive_margin.rds")) %>% 
   mutate(year = as.numeric(year)) %>% 
   filter(fg_area_km > units::set_units(0, km^2),
          fg_hours > 0)

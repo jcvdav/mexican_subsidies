@@ -125,7 +125,7 @@ gof_stats <- map_dfr(event_study, glance, .id = "model") %>%
          adj.r.squared = round(adj.r.squared, 3))
 
 # X ----------------------------------------------------------------------------
-ggiplot(event_study,
+ggiplot::ggiplot(event_study,
         multi_style = "facet",
         pt.pch = 21,
         ref.line.par = list(col = "black"),
