@@ -92,7 +92,6 @@ get_extensive <- function(data) {
 }
 
 plan(multisession, workers = 14)
-tic()
 vessel_info <- shrimp_tracks %>% 
   pull(data) %>% 
   bind_rows() %>%
@@ -100,25 +99,14 @@ vessel_info <- shrimp_tracks %>%
   group_by(year, eu_rnpa, vessel_rnpa) %>%
   group_split() %>% 
   future_map_dfr(.f = get_extensive)
-toc()
-beepr::beep(2)
 plan(sequential)
+beepr::beep(2)
 
 extensive <- vessel_info %>% 
   select(-vessel_rnpa) %>% 
   group_by(year, eu_rnpa) %>%
-  summarize_all(sum)
-
-# plan(multisession, workers = 9)
-# extensive <- shrimp_tracks %>% 
-#   head(1) %>% 
-#   mutate(data = future_map(data, get_extensive)) %>% 
-#   unnest(data) %>% 
-#   group_by(year, eu_rnpa) %>%
-#   summarize(fg_area_km = sum(fg_area_km),
-#             fg_hours = sum(fg_hours))
-# beppr::beep(2)
-# plan(sequential)
+  summarize_all(sum) %>% 
+  mutate(year = as.numeric(year))
 
 ## EXPORT ######################################################################
 
@@ -128,59 +116,3 @@ saveRDS(object = extensive,
         file = here("data", "processed", "extensive_margin.rds"))
 
 
-
-# Define area calculations -----------------------------------------------------
-# area_concave_hull <- function(x) {
-#   # Find clusters
-#   clusters <- x %>%
-#     st_distance() %>%
-#     dbscan(eps = 50000, # Distance in meters
-#            minPts = 6 # Minimum points per cluster
-#     )
-#   
-#   # Calculate convex hull and area of each cluster
-#   fishing_grounds <- x %>%
-#     mutate(cluster = clusters$cluster) %>%
-#     filter(cluster > 0) %>%
-#     group_by(cluster) %>%
-#     summarize(ground_hours = sum(hours, na.rm = T)) %>%
-#     st_convex_hull() %>%
-#     mutate(area = st_area(.),
-#            area = units::set_units(area, km^2))
-#   
-#   return(tibble(fg_area_km = sum(fishing_grounds$area, na.rm = T),
-#                 fg_hours = sum(fishing_grounds$ground_hours, na.rm = T),
-#                 fg_n = length(unique(fishing_grounds$cluster))))
-# }
-
-# X ----------------------------------------------------------------------------
-# get_extensive <- function(data) {
-#   # browser()
-#   # Find vessels for which we don't have enough points'
-#   # not_enough <- data %>%
-#   #   count(vessel_rnpa) %>%
-#   #   filter(n < 5) %>% 
-#   #   pull(vessel_rnpa)
-#   
-#   # Convert to points
-#   cch <- data %>% 
-#     # filter(!vessel_rnpa %in% not_enough) %>%
-#     # group_by(vessel_rnpa) %>% 
-#     # nest() %>% 
-#     st_as_sf(coords = c("lon", "lat"),
-#              crs = 4326) %>% 
-#     # mutate(data = map(data, st_as_sf,
-#                       # coords = c("lon", "lat"),
-#                       # crs = 4326)) %>% 
-#     st_transform(crs = "+proj=lcc +lat_0=12 +lon_0=-102 +lat_1=17.5 +lat_2=29.5 +x_0=2500000 +y_0=0") %>%  # https://epsg.io/6361
-#     area_concave_hull()
-#   
-#   # browser()
-#   # Calculate area of fishing grounds
-#   # cch <- pts %>%
-#   #   mutate(data = map(data, area_concave_hull)) %>%
-#   #   unnest(data)
-# 
-#   
-#   return(cch)
-# }

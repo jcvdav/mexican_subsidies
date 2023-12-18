@@ -1,3 +1,16 @@
+################################################################################
+# title
+################################################################################
+#
+# Juan Carlos Villaseñor-Derbez
+# juancvd@stanford.edu
+# date
+#
+# Description
+#
+################################################################################
+
+## SET UP ######################################################################
 # Load packages ----------------------------------------------------------------
 pacman::p_load(
   here,
@@ -36,8 +49,8 @@ vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20230803") %>% # "vessel_in
 tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20231207") %>%# "mex_vms_processed_v_20231003") %>% # "mex_vms_processed_v_20220323") %>%
   inner_join(vessel_registry, by = "vessel_rnpa") %>% 
   filter(between(year, 2011, 2019)) %>% 
-  filter(between(implied_speed_knots, 1, 5)) %>%
-  filter(between(depth_m, -100, -9.15)) %>% 
+  filter(between(implied_speed_knots, 1, 5)) %>% # Trawling occurs between 1 and 5 knots
+  filter(between(depth_m, -100, -9.15)) %>%  # And at depths between 9.15m and 100m
   arrange(vessel_rnpa, datetime) %>% 
   select(vessel_rnpa, eu_rnpa, year, lat, lon, implied_speed_knots, depth_m, course, hours) %>% 
   mutate(year_outside = year)

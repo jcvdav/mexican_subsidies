@@ -1,11 +1,26 @@
-# cleaning diesel dataset
+################################################################################
+# title
+################################################################################
+#
+# Juan Carlos Villaseñor-Derbez
+# juancvd@stanford.edu
+# date
+#
+# Cleaning fuel susbidies allocations 
+#
+################################################################################
 
-# Load packages
-library(here)
-library(janitor)
-library(startR)
-library(tidyverse)
+## SET UP ######################################################################
 
+# Load packages ----------------------------------------------------------------
+pacman::p_load(
+  here,
+  janitor,
+  startR,
+  tidyverse
+)
+
+# Load data --------------------------------------------------------------------
 # Read-in the Diesel subsidies data
 all_fuel_raw <-
   read_csv(here("data", "raw", "B1_combustibles.csv"),
@@ -23,7 +38,9 @@ all_fuel_raw <-
              rnpa = col_character()
            ))
 
-# Start cleaning the data
+## PROCESSING ##################################################################
+
+# Clean ------------------------------------------------------------------------
 all_fuel_clean <- all_fuel_raw %>%
   clean_names() %>%                                                            # Clean column names to snake case
   select(                                                                      # Select and translate column names

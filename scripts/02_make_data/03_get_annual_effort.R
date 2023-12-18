@@ -33,10 +33,6 @@ pacman::p_load(
   tidyverse
 )
 
-# Define some parameters -------------------------------------------------------
-diesel_density <- 0.9 #ASTM D975 standard
-hp_kw <- 0.7457
-
 # Authenticate using local token -----------------------------------------------
 bq_auth("juancarlos@ucsb.edu")
 
@@ -65,17 +61,14 @@ vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20230803") %>% # "vessel_in
 
 # tracks, filtered -------------------------------------------------------------
 tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20231207") %>% #"mex_vms_processed_v_20231003") %>% # "mex_vms_processed_v_20220323") %>%
-  filter(between(implied_speed_knots, 1, 5)) %>%
-  filter(between(depth_m, -100, -9.15)) %>% 
+  filter(between(year, 2011, 2019)) %>% 
+  filter(between(implied_speed_knots, 1, 5)) %>% # Trawling occurs between 1 and 5 knots
+  filter(between(depth_m, -100, -9.15)) %>%  # And at depths between 9.15m and 100m
   select(-economic_unit)
 
 # Annual -----------------------------------------------------------------------
-annual_fuel_consumption <- tracks %>%
+annual_activity <- tracks %>%
   inner_join(vessel_registry, by = "vessel_rnpa") %>%                                                                              # Add vessel info from the registry
-  mutate(
-    loading_factor = 0.9 * ((((implied_speed_knots / design_speed_kt) ^ 3) + (0.2 / (0.9 - 0.2))) / (1 + (0.2 / (0.9 - 0.2)))),# Calculate engine loading
-    fuel_grams = hours * loading_factor * engine_power_hp * hp_kw * sfc_gr_kwh # Calculate fuel consumption
-  ) %>%
   group_by(
     vessel_rnpa,
     eu_rnpa,
@@ -89,22 +82,16 @@ annual_fuel_consumption <- tracks %>%
     others,
     fleet,
     fuel_type
-  ) %>%                # Group daily (with characteristics)
-  summarize(
-    # Calculate total daily grams
-    hours = sum(hours, na.rm = T),
-    fishing_hours = sum(hours[between(implied_speed_knots, 1, 5) & between(depth_m, -100, -9.15)], na.rm = T),
-    fuel_grams = sum(fuel_grams, na.rm = T)
   ) %>%
-  ungroup() %>%
-  mutate(fuel_consumption_l = (fuel_grams / 1e3) / diesel_density)              # Convert grams to liters
+  summarize(hours = sum(hours, na.rm = T)) %>%
+  ungroup()
 
 
 # Collect the query ------------------------------------------------------------
-annual_fuel_consumption_local <- annual_fuel_consumption %>%
+annual_activity_local <- annual_activity %>%
   collect() %>%
   drop_na(engine_power_hp)
 
 ## EXPORT ######################################################################
-saveRDS(object = annual_fuel_consumption_local,
+saveRDS(object = annual_activity_local,
         file = here("data", "processed", "vms_annual_vessel_activity.rds"))
