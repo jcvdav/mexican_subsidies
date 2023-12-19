@@ -1,0 +1,25 @@
+\begin{table}
+
+\caption{label{tab:elasticity}Effect of increasing subsidy amounts on intensive and extensive behavioral margins, and fisheries production. Identification comes from exogenous variations in the amount of subsidy allocated toe ach economic unit.}
+\centering
+\begin{threeparttable}
+\begin{tabular}[t]{lccc}
+\toprule
+  & Fishing time & Fishing area & Landings\\
+\midrule
+log(subsidy amount[MXP]) & \num{0.096}*** & \num{0.038}* & \num{0.151}***\\
+ & (\num{0.018}) & (\num{0.014}) & (\num{0.017})\\
+\midrule
+% Change & 0.10% & 0.04% & 0.15%\\
+N & \num{2750} & \num{2744} & \num{2722}\\
+R2 Adj & \num{0.874} & \num{0.884} & \num{0.885}\\
+SE & Newey-West (L=1) & Newey-West (L=1) & Newey-West (L=1)\\
+FE: Economic Unit & X & X & X\\
+FE: Year-region & X & X & X\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\item + p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001 All models include control variables (total horsepower, number of vessels). Numbers in parentheses are standard errors. \% Change is calcualted as (((1 + 0.01) \^ coefficient)-1) * 100. Difference is sample size across columns is due to missing coordinates on some VMS messages or missing landings data
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

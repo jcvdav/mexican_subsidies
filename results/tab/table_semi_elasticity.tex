@@ -1,0 +1,25 @@
+\begin{table}
+
+\caption{\label{tab:semi_elasticity}Effect of receiving a subsidy on intensive and extensive behavioral margins, and fisheries production. Identification comes fom quasi-random inclusions / exclusions from the roster.}
+\centering
+\begin{threeparttable}
+\begin{tabular}[t]{lccc}
+\toprule
+  & Fishing time & Fishing area & Landings\\
+\midrule
+Subsidized & \num{0.273}*** & \num{0.106}* & \num{0.466}***\\
+ & (\num{0.050}) & (\num{0.036}) & (\num{0.071})\\
+\midrule
+% Change & 31.45% & 11.20% & 59.44%\\
+N & \num{1673} & \num{1668} & \num{1479}\\
+R2 Adj & \num{0.736} & \num{0.778} & \num{0.763}\\
+SE & Newey-West (L=1) & Newey-West (L=1) & Newey-West (L=1)\\
+FE: Economic Unit & X & X & X\\
+FE: Year-region & X & X & X\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\item + p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001 All models include control variables (total horsepower and number of vessels). Numbers in parentheses are standard errors. The \% Change is calculated as (exp(coefficient)-1) x 100. Difference is sample size across columns is due to missing coordinates on some VMS messages or missing landings data.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

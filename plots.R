@@ -57,52 +57,116 @@ tribble(~"HP", ~"MDL",
                y = MDL)) + 
   geom_step(direction = "hv")
 
-effect_plot <- function(data, var = hours){
-  ggplot(data %>% 
-           mutate(treatment = ifelse(treated == 1,
-                                     "Subsidized",
-                                     "Not subsidized")),
-         aes(x = treatment,
-             y = log({{var}}),
-             fill = subsidy_frequency)) + 
+effect_plot <- function(data, var = hours, n = 1){
+  # browser()
+  fill <- palette.colors(n = 3, palette = "Set 2")[n]
+  
+  plot_data <- data %>% 
+    mutate(treatment = ifelse(treated == 1,
+                              "Subsidized",
+                              "Not subsidized"),
+           subsidy_frequency = str_to_sentence(subsidy_frequency),
+           subsidy_frequency = fct_relevel(subsidy_frequency, "Never", "Sometimes", "Always"))
+  
+  vals <- plot_data %>% 
+    filter(subsidy_frequency == "Sometimes") %>%
+    group_by(treatment) %>%
+    summarize(var = mean(log({{var}})), .groups = "drop") %>% 
+    mutate(a = diff(var) / var)
+  
+  num <- vals %>% 
+    pull(a) %>% 
+    head(1) %>% 
+    scales::percent(accuracy = 0.01)
+  
+  height <- vals %>% 
+    pull(var) %>% 
+    max()
+  
+  
+  pos <- position_jitter(width = 0.5,
+                         height = 0,
+                         seed = 1)
+  
+  ggplot(data = plot_data,
+         mapping = aes(x = treatment,
+                       y = log({{var}}),
+                       shape = subsidy_frequency)) + 
     stat_summary(geom = "linerange",
                  fun.data = mean_cl_normal,
-                 linewidth = 0.5,
-                 position = position_jitter(width = 0.5,
-                                            height = 0,
-                                            seed = 1)) +
+                 color = fill,
+                 linewidth = 1,
+                 position = pos) +
+    stat_summary(geom = "line",
+                 fun = mean,
+                 color = fill,
+                 linetype = "dashed",
+                 aes(group = subsidy_frequency),
+                 position = pos) +
     stat_summary(geom = "pointrange",
                  fun.data = mean_se,
-                 shape = 21,
                  size = 3,
                  linewidth = 1.5,
                  fatten = 1,
-                 position = position_jitter(width = 0.5,
-                                            height = 0,
-                                            seed = 1)) +
+                 fill = fill,
+                 position = pos) +
     labs(x = "Status") +
     theme(legend.position = "None") +
-    scale_fill_viridis_d()
+    scale_shape_manual(values = c(22, 21, 23)) +
+    annotate(x = 1.5,
+             y = height,
+             geom = "text",
+             label = paste0(num, " change"),
+             color = fill)
 }
 
 hrs <- effect_plot(data = shrimp_panel,
                    var = hours) +
-  labs(title = "Hours")
+  labs(title = "Fishing time (hours)",
+       y = "log(time)")
 
-area <- effect_plot(data = shrimp_panel,
-                    var = fg_area_km) +
-  labs(title = "Area")
+area <- effect_plot(data = shrimp_panel %>% 
+                      filter(!is.na(fg_area_km),
+                             fg_area_km > 0),
+                    var = fg_area_km,
+                    n = 2) +
+  labs(title = "Fishing area (km2)",
+       y = "log(area)")
 
-landings <- effect_plot(data = shrimp_panel,
-                        var = landed_weight) +
-  labs(title = "Landings")
+landings <- effect_plot(data = shrimp_panel %>% 
+                          filter(!is.na(landed_weight),
+                                 landed_weight > 0),
+                        var = landed_weight,
+                        n = 3) +
+  labs(title = "Landings (Kg)",
+       y = "log(landings)")
 
-cowplot::plot_grid(hrs, area, landings, ncol = 3)
+leg <- cowplot::get_legend(
+  landings +
+    theme(legend.position = "bottom") +
+    guides(shape = guide_legend(title = "Sub-sample",
+                                override.aes = list(size = 1,
+                                                    fill = "transparent")),
+           linetype = "none")
+)
 
+p1 <- cowplot::plot_grid(hrs, area, landings,
+                         ncol = 3,
+                         align = "hv")
+p2 <- cowplot::plot_grid(p1, leg, ncol = 1,
+                         rel_heights = c(1, 0.2))
+
+
+ggsave(plot = p2,
+       filename = here("results", "img", "fig_enter.pdf"),
+       width = 7,
+       height = 3.5,
+       units = "in")
 
 elasticity_plot <- function(data, var) {
   ggplot(data %>% 
-           filter(treated == 1),
+           filter(treated == 1,
+                  n_times_sub >= 2),
          aes(x = log(subsidy_pesos),
              y = log({{var}}))) +
     geom_smooth(method = "lm") +
@@ -118,11 +182,11 @@ elasticity_plot <- function(data, var) {
 
 el_hrs <- elasticity_plot(data = shrimp_panel,
                    var = hours) +
-  labs(title = "Hours")
+  labs(title = "Fishing time")
 
 el_area <- elasticity_plot(data = shrimp_panel,
                     var = fg_area_km) +
-  labs(title = "Area")
+  labs(title = "Fishing area")
 
 el_landings <- elasticity_plot(data = shrimp_panel,
                         var = landed_weight) +

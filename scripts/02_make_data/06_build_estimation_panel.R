@@ -51,7 +51,8 @@ nino <- readRDS(
 ## PROCESSING ##################################################################
 # Build baseline panel of subsidy amounts and intensive margin
 subsidy_and_effort_panel <- intensive %>% 
-  left_join(eu_subsidy_panel, by = c("year", "eu_rnpa"))
+  left_join(eu_subsidy_panel, by = c("year", "eu_rnpa")) %>% 
+  replace_na(replace = list(treated = 0, subsidy_pesos = 0))
 
 # Find vessels that are always subsidized
 always <- subsidy_and_effort_panel %>% 

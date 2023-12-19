@@ -26,8 +26,7 @@ shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_pan
 
 ## PROCESSING ##################################################################
 
-########### identification 2
-
+# Set table defaults
 omit <- "hp|n_vess|(Intercept)|RMSE|With|IC"
 
 gm <- tribble(~raw, ~clean, ~fmt,
@@ -38,6 +37,9 @@ gm <- tribble(~raw, ~clean, ~fmt,
               "FE: year^region", "FE: Year-region", 0
 )
 
+coefs <- c("log(ph)" = "log(fuel price)",
+           "removed" = "Subsidy removed",
+           "treated" = "Subsidized")
 
 shrimp_panel %>%
   select(eu, n_times_sub) %>%
@@ -50,86 +52,85 @@ shrimp_panel %>%
        title = "Historgram of frequency with which economic units are subsidized (2011-2019)",
        subtitle = "N = 0 implies never subsidized, N = 9 implies always subsidized.") 
 
-models <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+semi_elasticity_twfe <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
                         treated + total_hp + n_vessels |
                         eu + year ^ region,
                       data = shrimp_panel,# %>% mutate(treated = (1 - treated)),
                       panel.id = ~eu + year,
                       vcov = "NW",
                       subset = ~sometimes == 1) %>% 
-  set_names(c("Hours", "Area", "Landings"))
+  set_names(c("Fishing time", "Fishing area", "Landings"))
 
-models2 <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+semi_elasticity_twfe2 <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
                   treated + total_hp + n_vessels |
                   eu + year ^ region,
                 data = shrimp_panel %>% mutate(treated = (1 - treated)),
                 panel.id = ~eu + year,
                 vcov = "NW",
                 subset = ~sometimes == 1) %>% 
-  set_names(c("Hours", "Area", "Landings"))
+  set_names(c("Fishing time", "Fishing area", "Landings"))
 
-models_fs <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+semi_elasticity_twfe_fs <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
                   treated + total_hp + n_vessels |
                   eu + year ^ region,
                 data = shrimp_panel,
                 panel.id = ~eu + year,
                 vcov = "NW") %>% 
-  set_names(c("Hours", "Area", "Landings"))
+  set_names(c("Fishing time", "Fishing area", "Landings"))
 
-models_owfe <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+semi_elasticity_owfe <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
                        treated + log(mean_diesel_price_mxn_l) + total_hp + n_vessels + nino34_m |
                        eu,
                      data = shrimp_panel,
                      panel.id = ~eu + year,
                      vcov = "NW",
                      subset = ~sometimes == 1) %>% 
-  set_names(c("Hours", "Area", "Landings"))
+  set_names(c("Fishing time", "Fishing area", "Landings"))
 
-models_owfe_fs <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+semi_elasticity_owfe_fs <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
                           treated + log(mean_diesel_price_mxn_l) + total_hp + n_vessels + nino34_m |
                           eu,
                         data = shrimp_panel,
                         panel.id = ~eu + year,
                         vcov = "NW") %>% 
-  set_names(c("Hours", "Area", "Landings"))
+  set_names(c("Fishing time", "Fishing area", "Landings"))
 
-extra1 <- tibble(V1 = "% Change",
-                 V2 = scales::percent((exp(coefficients(models[[1]])[1])-1), 0.01),
-                 V3 = scales::percent((exp(coefficients(models[[2]])[1])-1), 0.01),
-                 V4 = scales::percent((exp(coefficients(models[[3]])[1])-1), 0.01))
-attr(extra1, 'position') <- c(3, 3)
 
-modelsummary(models = models,
+# BUILD TABLES #################################################################
+extra <- tibble(V1 = "% Change",
+                V2 = scales::percent((exp(coefficients(semi_elasticity_twfe[[1]])[1])-1), 0.01),
+                V3 = scales::percent((exp(coefficients(semi_elasticity_twfe[[2]])[1])-1), 0.01),
+                V4 = scales::percent((exp(coefficients(semi_elasticity_twfe[[3]])[1])-1), 0.01))
+attr(extra, 'position') <- c(3, 3)
+
+modelsummary(models = semi_elasticity_twfe,
              stars = T,
              coef_omit = omit,
              gof_map = gm,
-             add_rows = extra1,
-             title = "Effect of receiving a subsidy on intensive and extensive behavioral margins, and fisheries production. Identification comes fom quasi-random inclusion / exclusion from the roster.",
-             coef_rename = c("log(ph)" = "log(fuel price)",
-                             "removed" = "Subsidy removed",
-                             "treated" = "Enter"),
-             notes = c("Control variables are total horsepower and number of vessels.",
-                       "Numbers in parentheses are panel-robust standard errors.", 
-                       "% Change is calculated as (exp(coefficient)-1) * 100",
-                       "Difference is sample size is due to missing coordinates on some VMS messages
-                       or missing landings data."))
+             add_rows = extra,
+             output = here("results", "tab", "table_semi_elasticity.tex"),
+             title = "\\label{tab:semi_elasticity}Effect of receiving a subsidy on intensive and extensive behavioral margins, and fisheries production. Identification comes fom quasi-random inclusions / exclusions from the roster.",
+             coef_rename = coefs,
+             notes = c("All models include control variables (total horsepower and number of vessels). Numbers in parentheses are standard errors. The \\\\% Change is calculated as (exp(coefficient)-1) x 100. Difference is sample size across columns is due to missing coordinates on some VMS messages or missing landings data."),
+             threeparttable = T,
+             escape = F)
 
-
-map_dfr(c("TWFE Main" = models,
-          "Controls Main" = models_owfe,
-          "TWFE Full" = models_fs,
-          "Controls Full" = models_owfe_fs),
-        tidy, conf.int = T,
-        .id = "model") %>% 
+# BUILD FIGURE #################################################################
+p1 <- map_dfr(c("TWFE Main" = semi_elasticity_twfe,
+                "OWFE Main" = semi_elasticity_owfe,
+                "TWFE Full" = semi_elasticity_twfe_fs,
+                "OWFE Full" = semi_elasticity_owfe_fs),
+              tidy, conf.int = T,
+              .id = "model") %>% 
   filter(term == "treated") %>% 
-  mutate(var = str_extract(model, "Hours|Area|Landings"),
-         var = fct_relevel(var, "Hours", "Area", "Landings"),
+  mutate(var = str_extract(model, "Fishing time|Fishing area|Landings"),
+         var = fct_relevel(var, "Fishing time", "Fishing area", "Landings"),
          sample = str_extract(model, "Main|Full"),
          # sample = fct_relevel(sample, "Main", "Full"),
-         model = str_extract(model, "Controls|TWFE"),
+         model = str_extract(model, "OWFE|TWFE"),
          # model = fct_relevel(model, "TWFE", "Controls"),
          group = paste(model, sample),
-         group = fct_relevel(group, "TWFE Main", "Controls Main", "TWFE Full", "Controls Full")) %>% 
+         group = fct_relevel(group, "TWFE Main", "TWFE Full", "OWFE Main", "OWFE Full")) %>% 
   ggplot(aes(x = var, y = estimate, fill = var, color = var, shape = group)) +
   geom_hline(yintercept = 0, linetype = "solid") +
   geom_pointrange(aes(ymin = conf.low,
@@ -141,14 +142,27 @@ map_dfr(c("TWFE Main" = models,
   scale_fill_brewer(palette = 'Set2') +
   guides(fill = "none",
          color = "none",
-         shape = guide_legend(override.aes = list(fill = "black"))) +
+         shape = guide_legend(ncol = 2,
+                              override.aes = list(fill = "black"))) +
   labs(x = "",
        y = "Estimate and 95% Conf.Int.",
-       shape = "Model",
-       title = "Effect of receiving a subsidy on fishing hours, extent of fishing grounds, and landings",
-       subtitle = "All years (2011-2019)",
-       caption = "Treatment is receiving a subsidy. Main sample excludes economic units never (N = 35) and always (N = 169) subsidized.") +
-  theme(legend.position = "bottom")
+       shape = "Specification and sample") +
+  theme(legend.position = c(0, 1),
+        legend.justification = c(0, 1))
+
+ggsave(plot = p1,
+       filename = here("results", "img", "fig_semi_elasticity.pdf"),
+       width = 7,
+       height = 3.5,
+       units = "in")
+
+# EXPORT #######################################################################
+saveRDS(object = semi_elasticity_twfe,
+        file = here("results", "models", "semi_elasticity_twfe.rds"))
+
+
+# DELETE BELOW? --------- Tue Dec 19 13:19:24 2023 ------------------------------
+
 
 # Sensitivity test to show effect for at most 7 (re-do for "at post 6" and "at most 5" and so on...)
 feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
