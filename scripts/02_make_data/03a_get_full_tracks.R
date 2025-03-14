@@ -26,8 +26,8 @@ bq_auth("juancarlos@ucsb.edu")
 # Establish a connection to BigQuery -------------------------------------------
 mex_fisheries <- dbConnect(
   bigquery(),
-  project = "emlab-gcp",
-  dataset = "mex_fisheries",
+  project = "mex-fisheries",
+  dataset = "mex_vms",
   billing = "emlab-gcp",
   use_legacy_sql = FALSE,
   allowLargeResults = TRUE
@@ -35,7 +35,7 @@ mex_fisheries <- dbConnect(
 
 ## PROCESSING ##################################################################
 # vessel registry --------------------------------------------------------------
-vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20230803") %>% # "vessel_info_v_20221104") %>%
+vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20230803") %>% #"vessel_info_v_20230803") %>% # "vessel_info_v_20221104") %>%
   group_by(vessel_rnpa) %>%
   mutate(n = n()) %>%
   ungroup() %>%
@@ -46,7 +46,7 @@ vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20230803") %>% # "vessel_in
   select(eu_rnpa, vessel_rnpa, state, gear_type, engine_power_hp)
 
 # tracks, filtered -------------------------------------------------------------
-tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20231207") %>%# "mex_vms_processed_v_20231003") %>% # "mex_vms_processed_v_20220323") %>%
+tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20240615") %>% #"mex_vms_processed_v_20231207") %>%# "mex_vms_processed_v_20231003") %>% # "mex_vms_processed_v_20220323") %>%
   inner_join(vessel_registry, by = "vessel_rnpa") %>% 
   filter(between(year, 2011, 2019)) %>% 
   filter(between(implied_speed_knots, 1, 5)) %>% # Trawling occurs between 1 and 5 knots

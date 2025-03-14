@@ -52,14 +52,6 @@ eu_panel <- vessel_activity_raw %>%
   ungroup() %>% 
   mutate(state = str_to_sentence(state))
 
-# Combine activity, fuel subsidies, and fuel prices ----------------------------
- # <- eu_activity %>% 
-  # left_join(eu_subsidy_panel, by = c("eu_rnpa", "year")) %>% 
-  # left_join(fuel_prices, by = "year") %>%
-  # replace_na(replace = list(subsidy_cap_l = 0, treated = 0)) %>%
-  # rename(mean_diesel_price = mean_diesel_price_mxn_l) %>%
-  # select(-c(fleet, fuel_type))
-
 # Keep shrimp EUs only ---------------------------------------------------------
 shrimp_eus <- eu_panel %>% 
   group_by(eu_rnpa, state) %>% 

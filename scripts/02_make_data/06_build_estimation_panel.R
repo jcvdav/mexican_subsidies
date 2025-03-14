@@ -112,17 +112,17 @@ saveRDS(
   )
 )
 
-# CSV for Olivie's STATA analysis ----------------------------------------------
-# In emlab drive
-write_csv(
-  x = shrimp,
-  file = file.path(
-    project_path,
-    "data",
-    "processed_data",
-    "shrimp_estimation_panel.csv"
-  )
-)
+# # CSV for Olivie's STATA analysis ----------------------------------------------
+# # In emlab drive
+# write_csv(
+#   x = shrimp,
+#   file = file.path(
+#     project_path,
+#     "data",
+#     "processed_data",
+#     "shrimp_estimation_panel.csv"
+#   )
+# )
 # Local file
 write_csv(
   x = shrimp,

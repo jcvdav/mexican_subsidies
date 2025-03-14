@@ -7,6 +7,11 @@
 # date
 #
 # Description
+# Go here: https://psl.noaa.gov/data/climateindices/list/
+# Find:
+# Niño 3.4*	East Central Tropical Pacific SST (5N-5S)(170-120W): From CPC
+# CPC uses the NOAA ERSST V5 anomalies. Now uses https://www.cpc.ncep.noaa.gov/data/indices/ersst5.nino.mth.91-20.ascii. Mean values also available.
+# Click on "Mean Values", which akes you here: https://psl.noaa.gov/data/correlation/nina4.data
 #
 ################################################################################
 

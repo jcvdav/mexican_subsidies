@@ -21,16 +21,21 @@ pacman::p_load(
 )
 
 # Load data --------------------------------------------------------------------
-regions <- st_read(here("data", "raw", "mexico_fishing_regions.gpkg"))
+shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds"))
+shrimp_tracks <- readRDS(here("data", "processed",  "2019_shrimp_tracks.rds"))
+semi_mod <- readRDS(here("results", "models", "semi_elasticity_twfe.rds"))
 
+regions <- st_read(here("data", "raw", "mexico_fishing_regions.gpkg")) %>% 
+  mutate(region = as.character(as.roman(region)))
 mex <- rnaturalearth::ne_countries(country = "Mexico", returnclas = "sf")
-
 continent <- rnaturalearth::ne_countries(continent = "North America", returnclass = "sf") %>% 
   sf::st_crop(sf::st_buffer(mex, dist = 1.5))
 
-shrimp_tracks <- readRDS(here("data", "processed",  "2019_shrimp_tracks.rds"))
-
 res <- 0.1
+
+semi <- coef(semi_mod$`Fishing time`)[[1]]
+change <- (exp(semi)-1)
+factor <- 1 - change
 
 ## PROCESSING ##################################################################
 treated_in_2019 <- shrimp_panel %>% 
@@ -41,6 +46,7 @@ treated_in_2019 <- shrimp_panel %>%
 
 # X ----------------------------------------------------------------------------
 tracks_info <- shrimp_tracks %>% 
+  filter(year == 2019) %>% 
   mutate(lon = (floor(lon / res) * res) + (res / 2),
          lat = (floor(lat / res) * res) + (res / 2),
          treated = 1 * (eu_rnpa %in% treated_in_2019)) %>% 
@@ -57,100 +63,117 @@ tracks_info <- shrimp_tracks %>%
   st_join(regions) %>% 
   bind_cols(st_coordinates(.)) %>% 
   st_drop_geometry() %>% 
-  replace_na(replace = list(region = 0)) %>% 
-  rename(lon = X, lat = Y)
-
-# Baseline plot
-baseline_map <- ggplot() +
-  geom_sf(data = continent, color = "black") +
-  geom_sf(data = regions, color = "black", fill = "transparent") +
-  geom_sf(data = mex, color = "black") +
-  geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = log(hours))) +
-  scale_fill_viridis_c() +
-  guides(fill = guide_colorbar(title = "log(Hours)",
-                               frame.colour = "black",
-                               ticks.colour = "black")) +
-  scale_x_continuous(expand = c(0,0)) +
-  scale_y_continuous(expand = c(0,0)) +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  labs(x = "",
-       y = "")
-
-baseline_col <- tracks_info %>% 
-  group_by(region) %>% 
-  summarize(hours = sum(hours)) %>% 
-  ggplot(aes(x = region, y = hours)) +
-  geom_col()
-
-cowplot::plot_grid(baseline_map,
-                   baseline_col,
-                   ncol = 1,
-                   align = "hv",
-                   axis = "l",
-                   rel_heights = c(1, 0.5))
-
-# % Subsidy
-ggplot() +
-  geom_tile(data = tracks_info, aes(x = lon,
-                                    y = lat,
-                                    fill = difference)) +
-  geom_sf(data = continent, color = "black") +
-  geom_sf(data = mex, color = "black") +
-  scale_fill_viridis_c(labels = scales::percent, option = "B") +
-  guides(fill = guide_colorbar(title = "% Attributable to subsidy",
-                               frame.colour = "black",
-                               ticks.colour = "black")) +
-  scale_x_continuous(expand = c(0,0)) +
-  scale_y_continuous(expand = c(0,0)) +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  labs(x = "",
-       y = "")
-
-ggplot() +
-  geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = log(additional))) +
-  geom_sf(data = continent, color = "black") +
-  geom_sf(data = mex, color = "black") +
-  scale_fill_viridis_c() +
-  guides(fill = guide_colorbar(title = "log(Subsidized Hours)",
-                               frame.colour = "black",
-                               ticks.colour = "black")) +
-  scale_x_continuous(expand = c(0,0)) +
-  scale_y_continuous(expand = c(0,0)) +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  labs(x = "",
-       y = "")
-
-ggplot() +
-  geom_tile(data = tracks_info %>% mutate(pct = paste0(pct * 100, "% reduction")), aes(x = lon, y = lat, fill = difference)) +
-  geom_sf(data = continent, color = "black") +
-  geom_sf(data = mex, color = "black") +
-  scale_fill_viridis_c(labels = scales::percent, option = "B") +
-  # scale_fill_gradient(low = "steelblue", high = "red", labels = scales::percent) +
-  guides(fill = guide_colorbar(title = "% Reduction",
-                               frame.colour = "black",
-                               ticks.colour = "black",
-                               title.position = "top",
-                               direction = "horizontal")) +
-  scale_x_continuous(expand = c(0,0)) +
-  scale_y_continuous(expand = c(0,0)) +
-  theme_minimal() +
-  theme(legend.position = c(1, 0),
-        legend.justification = c(1, 0)) +
-  labs(x = "",
-       y = "",
-       title = "Expected reduction in fishing activity from five\nsubsidy reduction policies",
-       subtitle = "Maps are produced from 2019 fishing activity on a 0.1° grid") +
-  facet_wrap(~pct, ncol = 2)
-
-
+  drop_na() %>% 
+  rename(lon = X, lat = Y) %>% 
+  mutate(rank = percent_rank(difference))
 
 ## VISUALIZE ###################################################################
 
 # X ----------------------------------------------------------------------------
 
+theme_set(theme_minimal(base_size = 10) +
+            theme(legend.position = "inside",
+                  legend.position.inside = c(1, 1),
+                  legend.justification.inside = c(1, 1),
+                  legend.title.position = "top",
+                  legend.direction = "horizontal", legend.background = element_rect(color = "black", fill = "white")))
+
+# Baseline plot
+total_hours <- ggplot() +
+  geom_sf(data = continent,
+          fill = "gray50",
+          color = "black",
+          linewidth = 0.1) +
+  geom_sf(data = regions, color = "black", fill = "transparent") +
+  geom_sf_text(data = regions, aes(label = region)) +
+  geom_sf(data = mex,
+          fill = "gray50",
+          color = "black",
+          linewidth = 0.1) +
+  geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = log(hours))) +
+  scale_fill_viridis_c(option = "D") +
+  guides(fill = guide_colorbar(title = "log(Hours)",
+                               frame.colour = "black",
+                               ticks.colour = "black")) +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(x = "",
+       y = "")
+
+subsidized_hours <- ggplot() +
+  geom_sf(data = continent,
+          fill = "gray50",
+          color = "black",
+          linewidth = 0.1) +
+  geom_sf(data = regions, color = "black", fill = "transparent") +
+  geom_sf_text(data = regions, aes(label = region)) +
+  geom_sf(data = mex,
+          fill = "gray50",
+          color = "black",
+          linewidth = 0.1) +
+  geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = log(additional))) +
+  scale_fill_viridis_c(option = "B") +
+  guides(fill = guide_colorbar(title = "log(Hours)",
+                               frame.colour = "black",
+                               ticks.colour = "black")) +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(x = "",
+       y = "")
+
+# % Subsidy
+relative <- ggplot() +
+  geom_sf(data = continent,
+          fill = "gray50",
+          color = "black",
+          linewidth = 0.1) +
+  geom_sf(data = regions, color = "black", fill = "transparent") +
+  geom_sf_text(data = regions, aes(label = region)) +
+  geom_sf(data = mex,
+          fill = "gray50",
+          color = "black",
+          linewidth = 0.1) +
+  geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = difference)) +
+  scale_fill_viridis_c(labels = scales::percent, option = "E") +
+  guides(fill = guide_legend(title = "% Subsidized",
+                             frame.colour = "black",
+                             ticks.colour = "black")) +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(x = "",
+       y = "")
+
+rank <- ggplot() +
+  geom_sf(data = continent,
+          fill = "gray50",
+          color = "black",
+          linewidth = 0.1) +
+  geom_sf(data = regions, color = "black", fill = "transparent") +
+  geom_sf_text(data = regions, aes(label = region)) +
+  geom_sf(data = mex,
+          fill = "gray50",
+          color = "black",
+          linewidth = 0.1) +
+  geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = rank)) +
+  scale_fill_viridis_c(labels = scales::percent, option = "mako") +
+  guides(fill = guide_legend(title = "% Rank",
+                               frame.colour = "black",
+                               ticks.colour = "black")) +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(x = "",
+       y = "")
+
 ## EXPORT ######################################################################
 
 # X ----------------------------------------------------------------------------
+p <- cowplot::plot_grid(total_hours,
+                   subsidized_hours,
+                   relative,
+                   rank, align = "hv", labels = c("a)", "b)", "c)", "d)"))
+
+ggsave(plot = p,
+       filename = here("results", "img", "fig_spatial_attribution.pdf"),
+       width = 10,
+       height = 6)
+
