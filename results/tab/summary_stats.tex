@@ -1,0 +1,26 @@
+\begin{table}
+\centering
+\begin{tblr}[         %% tabularray outer open
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]Q[]Q[]Q[]Q[]},
+column{1}={halign=l,},
+column{2}={halign=l,},
+column{3}={halign=r,},
+column{4}={halign=r,},
+column{5}={halign=r,},
+column{6}={halign=r,},
+}                     %% tabularray inner close
+\toprule
+& treated & Mean & SD & Min & Max \\ \midrule %% TinyTableHeader
+subsidy\_pesos & Not subsidized & \num{0.00}      & \num{0.00}       & \num{0.00}   & \num{0.00}        \\
+& Subsidized     & \num{732869.91} & \num{1412247.79} & \num{730.55} & \num{19633910.95} \\
+hours           & Not subsidized & \num{2117.75}   & \num{3186.10}    & \num{0.02}   & \num{27613.03}    \\
+& Subsidized     & \num{4374.22}   & \num{7357.38}    & \num{1.15}   & \num{70999.48}    \\
+fg\_area\_km  & Not subsidized & \num{1882.10}   & \num{2811.03}    & \num{0.00}   & \num{30962.85}    \\
+& Subsidized     & \num{3602.53}   & \num{6742.41}    & \num{0.00}   & \num{64566.95}    \\
+landed\_weight & Not subsidized & \num{22190.89}  & \num{33675.53}   & \num{135.00} & \num{285093.00}   \\
+& Subsidized     & \num{62328.10}  & \num{95041.55}   & \num{300.00} & \num{1099556.00}  \\
+\bottomrule
+\end{tblr}
+\end{table}

@@ -8,42 +8,39 @@
 
 library(here)
 library(cowplot)
-library(tidyuverse)
+library(tidyverse)
 
 # Read data
-shrimp <- read_csv(
-  file = file.path(
-    project_path, "data", "processed_data", "imputed_subsidy_economic_unit_annual_shrimp_panel.csv")) %>% 
-  filter(between(year, 2012, 2019)) %>% 
-  mutate(extra_l = pmax(0, fuel_consumption_l - predicted_subsidy_cap_l) / 1e3)
-
-
+shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) %>% 
+  mutate(treated = ifelse(treated == 1, "Subsidized", "Not subsidized"))
 
 
 subsidized_vessels <-
-  shrimp %>%
+  shrimp_panel %>%
   count(year, treated) %>% 
   ggplot(aes(x = year, y = n, fill = treated)) +
   geom_col(color = "black") +
   scale_fill_brewer(palette = "Set1") +
+  scale_x_continuous(expand = c(0, 0), breaks = 2011:2019) +
+  scale_y_continuous(expand = c(0, 0)) +
   labs(x = "Year",
        y = "Number of\neconomic units",
        fill = "Subsidized")
 
 mean_subsidy_amount <-
-  shrimp %>% 
-  filter(treated) %>% 
-  ggplot(aes(x = year, y = subsidy_cap_l / 1e6)) +
-  stat_summary(geom = "pointrange", fun.data = "mean_se",
+  shrimp_panel %>% 
+  filter(treated == 1) %>% 
+  ggplot(aes(x = year, y = (subsidy_cap_l / total_hp))) +
+  stat_summary(geom = "pointrange", fun.data = mean_sdl, fun.args = list(mult = 1),
                fill = "steelblue",
                shape = 21,
                size = 1) +
   labs(x = "Year",
-       y = "Mean subsidy cap\n(Million L)")
+       y = "Norm. subsidy cap\n(L / HP)")
 
 
 total_liters <- 
-  shrimp %>% 
+  shrimp_panel %>% 
   group_by(year) %>% 
   summarize(tot = sum(subsidy_cap_l) / 1e6) %>% 
   ungroup() %>% 
@@ -51,6 +48,17 @@ total_liters <-
   geom_col() +
   labs(x = "Year",
        y = "Total subsidy\n(Million L)")
+
+total_pesos <- shrimp_panel %>% 
+  group_by(year) %>% 
+  summarize(tot = sum(subsidy_pesos) / 1e6) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = year, y = tot)) +
+  geom_col() +
+  scale_x_continuous(expand = c(0, 0), breaks = 2011:2019) +
+  scale_y_continuous(expand = c(0, 0)) +
+  labs(x = "Year",
+       y = expression("Total Subsidy(Million"~MXP[2019]~")"))
 
 
 

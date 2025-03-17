@@ -1,0 +1,25 @@
+\begin{table}
+\centering
+\begin{talltblr}[         %% tabularray outer open
+caption={\label{tab:semi_elasticity}Effect of receiving a subsidy on intensive and extensive behavioral margins, and fisheries production. Identification comes from quasi-random inclusions / exclusions from the roster.},
+note{}={* p < 0.1, ** p < 0.05, *** p < 0.01},
+note{ }={\small The unit of observation is an economic unit by year. All models include control variables (total horsepower and number of vessels), fixed effects by economic unit and by region-year. Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag). Differences in sample size across columns are due to missing coordinates on some VMS messages or missing landings data.},
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]Q[]Q[]},
+column{1}={halign=l,},
+column{2}={halign=c,},
+column{3}={halign=c,},
+column{4}={halign=c,},
+hline{4}={1,2,3,4}{solid, 0.05em, black},
+}                     %% tabularray inner close
+\toprule
+& Fishing time & Fishing area & Landings \\ \midrule %% TinyTableHeader
+Subsidized & \num{0.273}*** & \num{0.106}** & \num{0.466}*** \\
+& (\num{0.050})  & (\num{0.036}) & (\num{0.071})  \\
+\% Change & 31.44\%        & 11.19\%       & 59.44\%        \\
+N          & \num{1673}     & \num{1668}    & \num{1479}     \\
+R2 Adj     & \num{0.736}    & \num{0.778}   & \num{0.763}    \\
+\bottomrule
+\end{talltblr}
+\end{table}

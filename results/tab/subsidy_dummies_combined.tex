@@ -1,0 +1,26 @@
+\begin{table}
+
+\caption{\label{tab:}Effect of subsidy on fuel consumption.}
+\centering
+\begin{tabular}[t]{lcccc}
+\toprule
+  & log(L) & log(L)  & log(L)   & log(L)   \\
+\midrule
+Subsidized & \num{0.484}*** & \num{0.453}*** &  & \\
+ & (\num{0.083}) & (\num{0.081}) &  & \\
+Subsidized X Left &  &  & \num{0.327}*** & \num{0.300}**\\
+ &  &  & (\num{0.094}) & (\num{0.092})\\
+Subsidized X Right &  &  & \num{0.622}*** & \num{0.591}***\\
+ &  &  & (\num{0.078}) & (\num{0.077})\\
+\midrule
+Num.Obs. & \num{3009} & \num{3009} & \num{3009} & \num{3009}\\
+RMSE & \num{0.61} & \num{0.59} & \num{0.60} & \num{0.59}\\
+FE: eu & X & X & X & X\\
+FE: year & X & X & X & X\\
+Controls &  & X &  & X\\
+\bottomrule
+\multicolumn{5}{l}{\rule{0pt}{1em}Standard errors are clustered at the economic-unit-level}\\
+\multicolumn{5}{l}{\rule{0pt}{1em}Controls are: Total engine power (HP) and imputed kink (L)}\\
+\multicolumn{5}{l}{\rule{0pt}{1em}+ p $<$ 0.1, * p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}\\
+\end{tabular}
+\end{table}

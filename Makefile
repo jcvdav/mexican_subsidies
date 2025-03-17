@@ -1,23 +1,55 @@
-data/economic_unit_subsidy_panel.rds: data/all_fuel_clean.rds scripts/03_processing/01_create_economic_unit_subsidy_panel.R
-	cd scripts;Rscript 00_setup.R
-	cd scripts/03_processing;Rscript 01_create_economic_unit_subsidy_panel.R
-	
-data/all_fuel_clean.rds: scripts/01_cleaning/01_clean_fuel.R
-	cd scripts;Rscript 00_setup.R
-	cd scripts/01_cleaning;Rscript 01_clean_fuel.R
-	
-data/landings_clean.rds: scripts/01_cleaning/02_clean_landings.R
-	cd scripts;Rscript 00_setup.R
-	cd scripts/01_cleaning;Rscript 02_clean_landings.R
+all: main_figures main_tables supp_figures supp_tables README.md dag
+main_figures: results/img/cap_always_subsidized.pdf
+main_tables: results/tab/not_sub.tex results/tab/loglin_not_sub.tex results/tab/fuel_left.tex results/tab/fuel_right.tex
+supp_figures:
+supp_tables: results/tab/supp_not_sub.tex results/tab/supp_loglin_not_sub.tex results/tab/hours_left.tex results/tab/hours_right.tex
+dag: makefile-dag.png workflow.png
 
-data/vessel_registry.rds: scripts/03_processing/02_create_vessel_registry.R
-	cd scripts;Rscript 00_setup.R
-	cd scripts/03_processing;Rscript 02_create_vessel_registry.R
+# draw makefile dag
+makefile-dag.png: Makefile
+	make -Bnd | make2graph -b | dot -Tpng -Gdpi=300 -o makefile-dag.png
 
-data/vms_daily_fuel_consumption.rds: data/vessel_registry.rds scripts/03_processing/03_upload_vessel_registry_to_bigquery.R scripts/03_processing/04_get_fishing_effort.R
-	cd scripts;Rscript 00_setup.R
-	cd scripts/03_processing;Rscript 03_upload_vessel_registry_to_bigquery.R
-	cd scripts/03_processing;Rscript 04_get_fishing_effort.R
+workflow.png: Makefile
+	LANG=C make -p | python3 make_p_to_json.py | python3 json_to_dot.py | dot -Tpng >| workflow.png
 
-results/img/%.pdf: scripts/content/%.R
+README.md: scripts/make_README.r makefile-dag.png
+	cd $(<D); Rscript $(<F)
+
+## MAIN FIGURES ################################################################
+results/img/cap_always_subsidized.pdf: scripts/content/plot_cap_always_subsidized.R
+	cd $(<D); Rscript $(<F)
+
+## MAIN TABLES #################################################################
+results/tab/not_sub.tex: scripts/04_analysis/01_shrimp_price_elasticity.R
+	cd $(<D); Rscript $(<F)
+
+results/tab/supp_not_sub.tex: scripts/04_analysis/01_shrimp_price_elasticity.R
+	cd $(<D); Rscript $(<F)
+
+results/tab/fuel_left.tex: scripts/04_analysis/02_shrimp_subsidy_effect.R
+	cd $(<D); Rscript $(<F)
+
+results/tab/fuel_right.tex: scripts/04_analysis/02_shrimp_subsidy_effect.R
+	cd $(<D); Rscript $(<F)
+
+results/tab/salience_test.tex: scripts/04_analysis/03_shrimp_salience_test.R
+	cd $(<D); Rscript $(<F)
+
+## SUPPLEMENTARY FIGURES #######################################################
+
+
+## SUPPLEMENTARY TABLES ########################################################
+results/tab/loglin_not_sub.tex: scripts/04_analysis/01_shrimp_price_elasticity.R
+	cd $(<D); Rscript $(<F)
+
+results/tab/supp_loglin_not_sub.tex: scripts/04_analysis/01_shrimp_price_elasticity.R
+	cd $(<D); Rscript $(<F)
+
+results/tab/hours_left.tex: scripts/04_analysis/02_shrimp_subsidy_effect.R
+	cd $(<D); Rscript $(<F)
+
+results/tab/hours_right.tex: scripts/04_analysis/02_shrimp_subsidy_effect.R
+	cd $(<D); Rscript $(<F)
+
+results/tab/supp_salience_test.tex: scripts/04_analysis/03_shrimp_salience_test.R
 	cd $(<D); Rscript $(<F)

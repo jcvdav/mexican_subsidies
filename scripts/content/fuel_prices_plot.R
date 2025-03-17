@@ -1,102 +1,97 @@
-######################################################
-#title#
-######################################################
-# 
-# Purpose
+################################################################################
+# title
+################################################################################
 #
-######################################################
+# Juan Carlos Villaseñor-Derbez
+# juancvd@stanford.edu
+# date
+#
+# Description
+#
+################################################################################
 
+## SET UP ######################################################################
+
+# Load packages ----------------------------------------------------------------
 library(here)
 library(cowplot)
 library(tidyverse)
 
+# Define list of relevant states -----------------------------------------------
+states <- c("Baja california",
+            "Baja california sur",
+            "Campeche",
+            "Chiapas",
+            "Nayarit",
+            "Oaxaca",
+            "Quintana roo",
+            "Sinaloa",
+            "Sonora",
+            "Tamaulipas",
+            "Veracruz")
 
-# Read data
+# Load data --------------------------------------------------------------------
+#Anual national average
+prices <- readRDS(file = here(
+  "data",
+  "processed",
+  "annual_national_diesel_prices_2011_2020.rds")) %>% 
+  filter(between(year, 2011, 2019))
 
-monthly_state_diesel_prices <-
+# State level, when available
+annual_state_prices <- 
   readRDS(
-    file = file.path(
-      project_path,
+    file = here(
       "data",
-      "processed_data",
-      "monthly_state_diesel_prices.rds"
+      "processed",
+      "annual_state_diesel_prices_cre_2017_2020.rds"
     )
   )
 
-daily_national_diesel_prices <-
-  readRDS(
-    file = file.path(
-      project_path,
-      "data",
-      "processed_data",
-      "daily_national_diesel_prices.rds"
-    )
-  )
+cpi <- readRDS(file = here("data", "processed", "cpi_t_rates.rds"))
+## PROCESSING ##################################################################
 
-annual_state_diesel_prices <- 
-  readRDS(
-    file = file.path(
-      project_path,
-      "data",
-      "processed_data",
-      "annual_state_diesel_prices.rds"
-    )
-  )
+# Combine national and state-level data  ---------------------------------------
+annual_state_diesel_prices <- annual_state_prices %>% 
+  left_join(cpi, by = "year") %>%
+  mutate(mean_diesel_price_mxn_l = rate * mean_diesel_price_mxn_l) %>%
+  filter(between(year, 2011, 2019),
+         state %in% states)
 
-annual_national_diesel_prices <- 
-  readRDS(
-    file = file.path(
-      project_path,
-      "data",
-      "processed_data",
-      "annual_national_diesel_prices.rds"
-    )
-  )
+## VISUALIZE ###################################################################
 
-
-# Plot
-
-ts <- ggplot() + 
-  geom_line(data = monthly_state_diesel_prices,
-            aes(x = date, y = diesel_price_mxn_l,
-                group = state),
-            size = 1,
-            alpha = 0.1) + 
-  geom_line(data = daily_national_diesel_prices,
-            aes(x = date, y = diesel_price_mxn_l),
-            color = "steelblue") + 
-  geom_point(data = annual_national_diesel_prices,
-             aes(x = lubridate::ymd(paste(year, "6", "1")), y = mean_diesel_price_mxn_l),
-             fill = "steelblue",
-             shape = 21,
-             size = 4) +
-  geom_jitter(data = annual_state_diesel_prices,
-              aes(x = lubridate::ymd(paste(year, "6", "1")), y = mean_diesel_price_mxn_l),
-              size = 1,
-              alpha = 0.5,
-              shape = 20,
-              height = 0,
-              width = 10) +
+# X ----------------------------------------------------------------------------
+ts <- ggplot(data = prices,
+             mapping = aes(x = year,
+                           y = mean_diesel_price_mxn_l)) + 
+  geom_line(data = annual_state_diesel_prices,
+            aes(x = year, y = mean_diesel_price_mxn_l, group = state),
+            linewidth = 0.1) +
+  geom_line() + 
+  geom_point(size = 4) +
   labs(x = "Year",
-       y = "Diesel price (MXP / L)",
-       subtitle = "Each faded black line is a monthly state\nAnnual means are centered on June 1")
+       y = bquote("Diesel price ("~MXP[2019]/L~")"))
 
-
-pct_sub <- ggplot(data = annual_national_diesel_prices,
+# X ----------------------------------------------------------------------------
+pct_sub <- ggplot(data = prices,
                   mapping = aes(x = year, y = 2 / mean_diesel_price_mxn_l)) +
   geom_col() +
   scale_y_continuous(labels = scales::percent) +
   labs(x = "Year",
        y = "Percent price subsidized\n(% of market price)")
 
-
+# X ----------------------------------------------------------------------------
 fuel_prices_plot <- plot_grid(ts,
                               pct_sub,
                               ncol = 1,
                               labels = "AUTO", label_x = 0.95)
 
+fuel_prices_plot
 
+## EXPORT ######################################################################
+
+# Export panel figure ----------------------------------------------------------
 ggsave(plot = fuel_prices_plot,
        filename = here("results", "img", "fuel_prices_plot.pdf"),
        width = 6,
-       height = 4.5)
+       height = 6)
