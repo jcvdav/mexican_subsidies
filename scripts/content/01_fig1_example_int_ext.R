@@ -84,18 +84,24 @@ hour_raster <- rasterize(x = hour_tracks %>%
                          field = "hours",
                          by = "year")
 
-areas <- (!is.na(hour_raster)) * cellSize(ref_raster, unit = "km")
+areas <- (!is.na(hour_raster)) * cellSize(hour_raster, unit = "km")
+
 area_unsub <- values(areas[[1]]) %>% 
   sum()
 area_sub <- values(areas[[2]]) %>% 
   sum()
 
-hour_tracks %>% 
+hr_stats <- hour_tracks %>% 
   group_by(year) %>% 
   summarize(hours = sum(hours))
 
+stats <- hr_stats |> 
+  mutate(area = c(area_unsub, area_sub)) |> 
+  mutate(hours = paste(round(hours / 24), "days"),
+         area = paste(format(round(area), big.mark = ","), "km2"))
+
 outline <- as.polygons(!is.na(hour_raster[[2]])) %>% 
-  as_sf() %>% 
+  st_as_sf() %>% 
   filter(Subsidized == 1)
 
 ## VISUALIZE ###################################################################
@@ -105,12 +111,10 @@ hour_map <- ggplot(data = hour_tracks) +
           fill = "gray50",
           color = "black",
           linewidth = 0.5) +
-  geom_sf(data = outline,
-          fill = "transparent",
-          color = "red3",
-          linewidth = 0.5) +
+  geom_text(data = stats, aes(x = -98.5, y = 26, label = hours)) +
+  geom_text(data = stats, aes(x = -98.5, y = 25.75, label = area)) +
   facet_wrap(~year) +
-  scale_fill_viridis_c(option = "mako",
+  scale_fill_viridis_c(option = "viridis",
                        direction = -1) +
   scale_x_continuous(limits = c(-99, -96.5),
                      breaks = c(seq(-98.5, -96, by = 1))) +
@@ -125,6 +129,14 @@ hour_map <- ggplot(data = hour_tracks) +
 
 hour_map
 
+hour_map_outlined <- hour_map + 
+  geom_sf(data = outline,
+          fill = "transparent",
+          color = "red3",
+          linewidth = 0.5)
+
+hour_map_outlined
+  
 hour_diff_map <- hour_tracks %>% 
   pivot_wider(names_from = "year",
               values_from = "hours") %>% 
@@ -154,7 +166,7 @@ hour_diff_map <- hour_tracks %>%
   annotation_scale(location = 'br')
 
 
-hours <- plot_grid(hour_map, hour_diff_map,
+hours <- plot_grid(hour_map_outlined, hour_diff_map,
                    rel_widths = c(2.05, 1))
 
 hours
@@ -165,6 +177,18 @@ hours
 ggsave(plot = hours,
        filename = here("results", "img", "fig_example_int_ext.pdf"),
        width = 7.5,
+       height = 5,
+       units = "in")
+
+ggsave(plot = hour_map,
+       filename = here("results", "img", "fig_example_int_ext_base.pdf"),
+       width = 5,
+       height = 5,
+       units = "in")
+
+ggsave(plot = hour_map_outlined,
+       filename = here("results", "img", "fig_example_int_ext_base_outlined.pdf"),
+       width = 5,
        height = 5,
        units = "in")
 

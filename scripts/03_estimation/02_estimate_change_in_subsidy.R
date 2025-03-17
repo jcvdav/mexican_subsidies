@@ -27,7 +27,7 @@ model_names <- c("Fishing time", "Fishing area", "Landings")
 split_model_names <- c("S Fishing time", "S Fishing area", "S Landings", "A Fishing time", "A Fishing area", "A Landings")
 
 # Information to omit from the regression tables to make the more tidy
-omit <- "hp|n_vess|(Intercept)|RMSE|With|IC"
+omit <- "(Intercept)|RMSE|With|IC"
 
 # Change the appearance of what will appear in the regression table
 gm <- tribble(~raw, ~clean, ~fmt,
@@ -37,13 +37,14 @@ gm <- tribble(~raw, ~clean, ~fmt,
 
 # Rename coefficients
 coefs <- c("log(ph)" = "log(fuel price)",
-           "log(subsidy_pesos)" = "log(subsidy amount[MXP])")
+           "log(subsidy_pesos)" = "log(subsidy amount[MXP])",
+           "n_vessels" = "\\# Vessels",
+           "norm_hp" = "Norm. power (hp / vessel)")
 
 # Load data --------------------------------------------------------------------
 shrimp_panel_raw <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds"))
 
 ## PROCESSING ##################################################################
-
 shrimp_panel <- shrimp_panel_raw %>% 
   filter(treated == 1,
          n_times_sub >= 2) %>% 
@@ -53,7 +54,7 @@ shrimp_panel <- shrimp_panel_raw %>%
 # Main specification -----------------------------------------------------------
 # TWFE and time-varying covariates
 elasticity_twfe <- feols(fml = c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-                           log(subsidy_pesos) + n_vessels + total_hp|
+                           log(subsidy_pesos) + n_vessels + norm_hp |
                            eu + year^region,
                          data = shrimp_panel,
                          panel.id = ~eu + year,
@@ -67,20 +68,27 @@ extra <- tibble(V1 = "\\% Change",
                 V3 = scales::percent((((1 + 0.01)^coefficients(elasticity_twfe[[2]])[1])-1), accuracy = 0.01, suffix = "\\%"),
                 V4 = scales::percent((((1 + 0.01)^coefficients(elasticity_twfe[[3]])[1])-1), accuracy = 0.01, suffix = "\\%")) %>% 
   set_names(c("V1", model_names))
-attr(extra, 'position') <- c(3, 3)
+attr(extra, 'position') <- c(7, 7)
 
 # Build table ------------------------------------------------------------------
 modelsummary(models = elasticity_twfe,
-             stars = T,
+             stars = panelsummary:::econ_stars(),
              coef_omit = omit,
              gof_map = gm,
              add_rows = extra,
              output = here("results", "tab", "table_elasticity.tex"),
              title = "\\label{tab:elasticity}Effect of increasing subsidy amounts on intensive and extensive behavioral margins, and fisheries production. Identification comes from exogenous variations in the amount of subsidy allocated toe ach economic unit.",
              coef_rename = coefs,
-             notes = "The unit of observation is an economic unit by year. All models include control variables (total horsepower, number of vessels). Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag). Difference is sample size across columns is due to missing coordinates on some VMS messages or missing landings data",
+             notes = "\\tiny The unit of observation is an economic unit by year. All models include fixed effects by economic unit and by region-year. Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag). Differences in sample size across columns are due to missing coordinates on some VMS messages or missing landings data.",
              escape = F)
 
+## ROBUSTNESS TESTS ############################################################
+feols(fml = c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+        log(subsidy_pesos) + total_hp |
+        eu + year^region,
+      data = shrimp_panel |> group_by(eu) |> mutate(n = max(n_vessels)) |> ungroup() |> filter(n == 1),
+      panel.id = ~eu + year,
+      vcov = "NW")
 
 
 ## ALTERNATIVE SPECIFICATIONS ##################################################

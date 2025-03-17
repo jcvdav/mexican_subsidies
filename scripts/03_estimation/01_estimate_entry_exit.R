@@ -17,6 +17,7 @@ pacman::p_load(
   here,
   fixest,
   modelsummary,
+  broom,
   tidyverse
 )
 
@@ -28,7 +29,7 @@ shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_pan
 model_names <- c("Fishing time", "Fishing area", "Landings")
 
 # Information to omit from the regression tables to make the more tidy
-omit <- "hp|n_vess|(Intercept)|RMSE|With|IC"
+omit <- "(Intercept)|RMSE|With|IC"
 
 # Change the appearance of what will appear in the regression table
 gm <- tribble(~raw, ~clean, ~fmt,
@@ -42,7 +43,9 @@ gm <- tribble(~raw, ~clean, ~fmt,
 
 coefs <- c("log(ph)" = "log(fuel price)",
            "removed" = "Subsidy removed",
-           "treated" = "Subsidized")
+           "treated" = "Subsidized",
+           "n_vessels" = "\\# Vessels",
+           "norm_hp" = "Norm. power (hp / vessel)")
 
 # QUICK FIGURE 
 shrimp_panel %>%
@@ -61,7 +64,7 @@ shrimp_panel %>%
 # TWFE and time-varying covariates
 semi_elasticity_twfe <-
   feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-          treated + total_hp + n_vessels |
+          treated + n_vessels + norm_hp |
           eu + year ^ region,
         data = shrimp_panel,
         panel.id = ~eu + year,
@@ -74,7 +77,7 @@ extra <- tibble(V1 = "\\% Change",
                 V2 = scales::percent((exp(coefficients(semi_elasticity_twfe[[1]])[1])-1), accuracy = 0.01, suffix = "\\%"),
                 V3 = scales::percent((exp(coefficients(semi_elasticity_twfe[[2]])[1])-1), accuracy = 0.01, suffix = "\\%"),
                 V4 = scales::percent((exp(coefficients(semi_elasticity_twfe[[3]])[1])-1), accuracy = 0.01, suffix = "\\%"),)
-attr(extra, 'position') <- c(3, 3)
+attr(extra, 'position') <- c(7, 7)
 
 # Build table ------------------------------------------------------------------
 modelsummary(models = semi_elasticity_twfe,
@@ -85,14 +88,14 @@ modelsummary(models = semi_elasticity_twfe,
              add_rows = extra,
              output = here("results", "tab", "table_semi_elasticity.tex"),
              title = "\\label{tab:semi_elasticity}Effect of receiving a subsidy on intensive and extensive behavioral margins, and fisheries production. Identification comes from quasi-random inclusions / exclusions from the roster.",
-             notes = c("\\small The unit of observation is an economic unit by year. All models include control variables (total horsepower and number of vessels), fixed effects by economic unit and by region-year. Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag). Differences in sample size across columns are due to missing coordinates on some VMS messages or missing landings data."),
+             notes = "\\tiny The unit of observation is an economic unit by year. All models include fixed effects by economic unit and by region-year. Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag). Differences in sample size across columns are due to missing coordinates on some VMS messages or missing landings data.",
              escape = F)
 
 # BUILD FIGURE #################################################################
 # Repeat amin estiamtion but include all vessels
 semi_elasticity_twfe_fs <-
   feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-          treated + total_hp + n_vessels |
+          treated + n_vessels + norm_hp |
           eu + year ^ region,
         data = shrimp_panel,
         panel.id = ~eu + year,
@@ -103,7 +106,7 @@ semi_elasticity_twfe_fs <-
 semi_elasticity_owfe <-
   feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
           treated + log(mean_diesel_price_mxn_l) +
-          total_hp + n_vessels +
+          n_vessels + norm_hp +
           nino34_m + I(nino34_m^2) + year + I(year ^ 2) |
           eu,
         data = shrimp_panel,
@@ -116,7 +119,7 @@ semi_elasticity_owfe <-
 semi_elasticity_owfe_fs <-
   feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
           treated + log(mean_diesel_price_mxn_l) +
-          total_hp + n_vessels +
+          n_vessels + norm_hp +
           nino34_m + I(nino34_m^2) + year + I(year ^ 2) |
           eu,
         data = shrimp_panel,
@@ -181,7 +184,7 @@ saveRDS(object = semi_elasticity_twfe,
 
 restrict_n_times <- function(n_times = 9){
   feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-          treated + total_hp + n_vessels |
+          treated + n_vessels + norm_hp |
           eu + year ^ region,
         data = shrimp_panel %>% 
           filter(n_times_sub <= n_times),
