@@ -79,12 +79,12 @@ effect_plot <- function(data, var = hours, n = 1){
                  position = pos) +
     labs(x = "Status") +
     theme(legend.position = "None") +
-    scale_shape_manual(values = c(22, 21, 23)) +
-    annotate(x = 1.4,
-             y = 1.01 * height,
-             geom = "text",
-             label = paste0(num, " change"),
-             color = fill)
+    scale_shape_manual(values = c(22, 21, 23)) #+
+    # annotate(x = 1.4,
+    #          y = 1.01 * height,
+    #          geom = "text",
+    #          label = paste0(num, " change"),
+    #          color = fill)
 }
 
 ## VISUALIZE ###################################################################
@@ -102,7 +102,7 @@ area <- effect_plot(data = shrimp_panel %>%
                              fg_area_km > 0),
                     var = fg_area_km,
                     n = 2) +
-  labs(title = "Fishing area (Km^2)",
+  labs(title = expression(Fishing~area~(Km^2)),
        y = "log(area)")
 
 # Plot for landings ------------------------------------------------------------
@@ -116,7 +116,7 @@ landings <- effect_plot(data = shrimp_panel %>%
        x = "")
 
 # Combine ---------------------------------------------------------------
-l_with_leg <- landings +
+l_with_leg <- hrs +
   theme(legend.position = "bottom") +
   guides(shape = guide_legend(title = "Sub-sample",
                               override.aes = list(size = 0.5,
@@ -124,7 +124,7 @@ l_with_leg <- landings +
                                                   color = "black")),
          linetype = "none")
 
-leg <- cowplot::get_legend(plot = l_with_leg)
+leg <- cowplot::get_plot_component(plot = l_with_leg, pattern = "guide-box-bottom", return_all = T)
 
 p1 <- cowplot::plot_grid(hrs, area, landings,
                          labels = c("a)", "b)", "c)"),
