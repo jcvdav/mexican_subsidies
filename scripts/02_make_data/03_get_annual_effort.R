@@ -60,7 +60,7 @@ vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20230803") %>%
          str_detect(gear_type, "ARRASTRE"))
 
 # tracks, filtered -------------------------------------------------------------
-tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20240615") %>% 
+tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20250319") %>% 
   filter(between(year, 2011, 2019)) %>% 
   filter(between(implied_speed_knots, 1, 5)) %>% # Trawling occurs between 1 and 5 knots
   filter(between(depth_m, -100, -9.15)) %>%  # And at depths between 9.15m and 100m
@@ -81,8 +81,7 @@ annual_activity <- tracks %>%
     shrimp,
     others,
     fleet,
-    fuel_type
-  ) %>%
+    fuel_type) %>%
   summarize(hours = sum(hours, na.rm = T)) %>%
   ungroup()
 

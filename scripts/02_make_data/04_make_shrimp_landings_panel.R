@@ -7,7 +7,7 @@
 # date
 #
 # Description
-#
+# En 2023 se contabilizaron 244 mil 043 toneladas de camarón. https://www.gob.mx/agricultura/es/articulos/arranca-captura-de-camaron-de-altamar-2024-2025?idiom=es
 ################################################################################
 
 ## SET UP ######################################################################

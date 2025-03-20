@@ -48,7 +48,7 @@ coefs <- c("log(ph)" = "log(fuel price)",
            "norm_hp" = "Norm. power (hp / vessel)")
 
 # QUICK FIGURE 
-shrimp_panel %>%
+n_times_sub <- shrimp_panel %>%
   select(eu, n_times_sub) %>%
   distinct() %>% 
   ggplot(mapping = aes(x = n_times_sub)) +
@@ -58,6 +58,13 @@ shrimp_panel %>%
        y = "N economic units",
        title = "Historgram of frequency with which economic units are subsidized (2011-2019)",
        subtitle = "N = 0 implies never subsidized, N = 9 implies always subsidized.") 
+
+
+ggsave(plot = n_times_sub,
+       filename = here("results", "img", "fig_N_times_subsidized_histogram.pdf"),
+       width = 7,
+       height = 3.5,
+       units = "in")
 
 ## ESTIMATION ##################################################################
 # Main specification -----------------------------------------------------------
