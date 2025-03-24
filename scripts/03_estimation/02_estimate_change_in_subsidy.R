@@ -54,7 +54,7 @@ shrimp_panel <- shrimp_panel_raw %>%
 # Main specification -----------------------------------------------------------
 # TWFE and time-varying covariates
 elasticity_twfe <- feols(fml = c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-                           log(subsidy_pesos) + n_vessels + norm_hp |
+                           log(subsidy_pesos) |
                            eu + year^region,
                          data = shrimp_panel,
                          panel.id = ~eu + year,
@@ -68,7 +68,7 @@ extra <- tibble(V1 = "\\% Change",
                 V3 = scales::percent((((1 + 0.01)^coefficients(elasticity_twfe[[2]])[1])-1), accuracy = 0.01, suffix = "\\%"),
                 V4 = scales::percent((((1 + 0.01)^coefficients(elasticity_twfe[[3]])[1])-1), accuracy = 0.01, suffix = "\\%")) %>% 
   set_names(c("V1", model_names))
-attr(extra, 'position') <- c(7, 7)
+attr(extra, 'position') <- c(3, 3)
 
 # Build table ------------------------------------------------------------------
 modelsummary(models = elasticity_twfe,
@@ -92,9 +92,18 @@ feols(fml = c(log(hours), log(fg_area_km), log(landed_weight)) ~
 
 
 ## ALTERNATIVE SPECIFICATIONS ##################################################
+# Two-way fixed effects with coviariates
+elasticity_twfe_cov <- twfe <- feols(fml = c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+                           log(subsidy_pesos) + n_vessels + norm_hp|
+                           eu + year^region,
+                         data = shrimp_panel,
+                         panel.id = ~eu + year,
+                         vcov = "NW") %>% 
+  set_names(model_names)
+
 # Two-way fixed-effects estimation, splitting sample by "always" and "sometimes" subsidized
 elasticity_twfe_split <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-                                 log(subsidy_pesos) + n_vessels + total_hp |
+                                 log(subsidy_pesos) |
                                  eu + year^region,
                                data = shrimp_panel,
                                panel.id = ~eu + year,
@@ -105,7 +114,6 @@ elasticity_twfe_split <- feols(c(log(hours), log(fg_area_km), log(landed_weight)
 # Drop year-by-region fixed-effects, add fuel price and NINO (quadratic), as well year (quadratic)
 elasticity_owfe <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
                            log(subsidy_pesos) + log(mean_diesel_price_mxn_l) +
-                           total_hp + n_vessels +
                            nino34_m + I(nino34_m^2) + year + I(year ^ 2) 
                          | eu,
                          data = shrimp_panel,
@@ -113,24 +121,11 @@ elasticity_owfe <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~
                          vcov = "NW") %>% 
   set_names(model_names)
 
-# Drop year-fixed effects, add fuel price and NINO, as well as a quadratic term 
-# or year, and split the sample by "always" and "sometimes" subsidized
-elasticity_owfe_split <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-                                 log(subsidy_pesos) + log(mean_diesel_price_mxn_l) +
-                                 total_hp + n_vessels +
-                                 nino34_m + I(nino34_m^2) + year + I(year ^ 2) 
-                               | eu,
-                               data = shrimp_panel,
-                               panel.id = ~eu + year,
-                               vcov = "NW",
-                               split = ~subsidy_frequency) %>% 
-  set_names(split_model_names)
-
 ## BUILD FIGURE ################################################################
 all_models <- c("TWFE Main" = elasticity_twfe,
+                "Cov" = elasticity_twfe_cov,
                 "OWFE Main" = elasticity_owfe,
-                "TWFE Split" = elasticity_twfe_split,
-                "OWFE Split" = elasticity_owfe_split)
+                "TWFE Split" = elasticity_twfe_split)
 
 p1 <- map_dfr(all_models,
               tidy,
@@ -141,16 +136,16 @@ p1 <- map_dfr(all_models,
          var = fct_relevel(var, "Fishing time", "Fishing area", "Landings"),
          split = str_extract(model, "Split\\..{1}"),
          split = ifelse(is.na(split), "Main", str_remove(split, "Split\\.")),
-         model = str_extract(model, "OWFE|TWFE"),
+         model = str_extract(model, "OWFE|TWFE|Cov"),
          group = paste(model, split),
-         group = fct_relevel(group, "TWFE Main", "TWFE S", "TWFE A", "OWFE Main", "OWFE S", "OWFE A")) %>% 
+         group = fct_relevel(group, "TWFE Main", "TWFE S", "TWFE A", "OWFE Main")) %>% 
   ggplot(aes(x = var, y = estimate, fill = var, color = var, shape = group)) +
   geom_hline(yintercept = 0, linetype = "solid") +
   geom_linerange(aes(ymin = conf.low,
                      ymax = conf.high),
                  color = "black",
                  position = position_dodge(width = 0.5),
-                 linewidth = 0.1)+
+                 linewidth = 0.1) +
   geom_pointrange(aes(ymin = estimate - std.error,
                       ymax = estimate + std.error),
                   position = position_dodge(width = 0.5),
@@ -166,7 +161,7 @@ p1 <- map_dfr(all_models,
                                                   size = 1))) +
   labs(x = "",
        y = "Estimate and 95% Conf.Int.",
-       shape = "Specification and sample")+
+       shape = "Specification and sample") +
   theme(legend.position = c(0, 1),
         legend.justification = c(0, 1))
 

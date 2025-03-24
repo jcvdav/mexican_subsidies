@@ -359,20 +359,19 @@ p3 <- ggplot(data = alternative_landings %>%
   scale_fill_manual(values = palette) +
   labs(title = "Landings",
        x = "Year",
-       y = "Total Landings\n(Million tons)",
+       y = "Total Landings\n(Thousand tonnes)",
        fill = "Source",
        linetype = "% Subsidy reduction") +
   theme(legend.position = "None")
 
-leg <- cowplot::get_legend(
+leg <- cowplot::get_plot_component(
   p3 +
     theme(legend.position = "bottom") +
     guides(fill = guide_legend(ncol = 1, title.position = "top"),
-           linetype = guide_legend(ncol = 2, title.position = "top"))
+           linetype = guide_legend(ncol = 2, title.position = "top")),
+  pattern = "guide-box-bottom",
+  return_all = T
 )
-
-leg <- cowplot::get_plot_component(,
-                                   'guide-box-top', return_all = TRUE)
 
 plot <- cowplot::plot_grid(p1, p2, p3, leg,
                            ncol = 2, labels = c("a)", "b)", "c)"),
@@ -382,7 +381,6 @@ ggsave(plot = plot,
        filename = here("results", "img", "fig_temporal_attribution.pdf"),
        width = 7,
        height = 4)
-
 
 
 

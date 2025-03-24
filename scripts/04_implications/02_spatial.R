@@ -27,7 +27,7 @@ semi_mod <- readRDS(here("results", "models", "semi_elasticity_twfe.rds"))
 
 regions <- st_read(here("data", "raw", "mexico_fishing_regions.gpkg")) %>% 
   mutate(region = as.character(as.roman(region)))
-mex <- rnaturalearth::ne_countries(country = "Mexico", returnclas = "sf")
+mex <- rnaturalearth::ne_countries(country = "Mexico", returnclass = "sf")
 continent <- rnaturalearth::ne_countries(continent = "North America", returnclass = "sf") %>% 
   sf::st_crop(sf::st_buffer(mex, dist = 1.5))
 
@@ -65,7 +65,7 @@ tracks_info <- shrimp_tracks %>%
   st_drop_geometry() %>% 
   drop_na() %>% 
   rename(lon = X, lat = Y) %>% 
-  mutate(rank = percent_rank(difference))
+  mutate(rank = percent_rank(additional))
 
 ## VISUALIZE ###################################################################
 
@@ -174,6 +174,16 @@ p <- cowplot::plot_grid(total_hours,
 
 ggsave(plot = p,
        filename = here("results", "img", "fig_spatial_attribution.pdf"),
+       width = 10,
+       height = 6)
+
+ggsave(plot = relative,
+       filename = here("results", "img", "fig_relative_spatial_attribution.pdf"),
+       width = 10,
+       height = 6)
+
+ggsave(plot = rank,
+       filename = here("results", "img", "fig_rank_spatial_attribution.pdf"),
        width = 10,
        height = 6)
 

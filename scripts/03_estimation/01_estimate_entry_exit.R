@@ -71,7 +71,7 @@ ggsave(plot = n_times_sub,
 # TWFE and time-varying covariates
 semi_elasticity_twfe <-
   feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-          treated + n_vessels + norm_hp |
+          treated |
           eu + year ^ region,
         data = shrimp_panel,
         panel.id = ~eu + year,
@@ -84,7 +84,7 @@ extra <- tibble(V1 = "\\% Change",
                 V2 = scales::percent((exp(coefficients(semi_elasticity_twfe[[1]])[1])-1), accuracy = 0.01, suffix = "\\%"),
                 V3 = scales::percent((exp(coefficients(semi_elasticity_twfe[[2]])[1])-1), accuracy = 0.01, suffix = "\\%"),
                 V4 = scales::percent((exp(coefficients(semi_elasticity_twfe[[3]])[1])-1), accuracy = 0.01, suffix = "\\%"),)
-attr(extra, 'position') <- c(7, 7)
+attr(extra, 'position') <- c(3, 3)
 
 # Build table ------------------------------------------------------------------
 modelsummary(models = semi_elasticity_twfe,
@@ -99,10 +99,21 @@ modelsummary(models = semi_elasticity_twfe,
              escape = F)
 
 # BUILD FIGURE #################################################################
+# Add covariates
+semi_elasticity_twfe_cov <- 
+  feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
+          treated +  n_vessels |
+          eu + year ^ region,
+        data = shrimp_panel,
+        panel.id = ~eu + year,
+        vcov = "NW",
+        subset = ~sometimes == 1) %>% 
+  set_names(model_names)
+
 # Repeat amin estiamtion but include all vessels
 semi_elasticity_twfe_fs <-
   feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-          treated + n_vessels + norm_hp |
+          treated |
           eu + year ^ region,
         data = shrimp_panel,
         panel.id = ~eu + year,
@@ -113,7 +124,6 @@ semi_elasticity_twfe_fs <-
 semi_elasticity_owfe <-
   feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
           treated + log(mean_diesel_price_mxn_l) +
-          n_vessels + norm_hp +
           nino34_m + I(nino34_m^2) + year + I(year ^ 2) |
           eu,
         data = shrimp_panel,
@@ -126,7 +136,6 @@ semi_elasticity_owfe <-
 semi_elasticity_owfe_fs <-
   feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
           treated + log(mean_diesel_price_mxn_l) +
-          n_vessels + norm_hp +
           nino34_m + I(nino34_m^2) + year + I(year ^ 2) |
           eu,
         data = shrimp_panel,
@@ -135,9 +144,10 @@ semi_elasticity_owfe_fs <-
   set_names(model_names)
 
 all_models <- c("TWFE Main" = semi_elasticity_twfe,
+                "TWFE Cov" = semi_elasticity_twfe_cov,
                 "OWFE Main" = semi_elasticity_owfe,
-                "TWFE Full" = semi_elasticity_twfe_fs,
-                "OWFE Full" = semi_elasticity_owfe_fs)
+                "TWFE Full" = semi_elasticity_twfe_fs)#,
+                # "OWFE Full" = semi_elasticity_owfe_fs)
 
 p1 <- map_dfr(all_models,
               tidy,
@@ -146,17 +156,17 @@ p1 <- map_dfr(all_models,
   filter(term == "treated") %>% 
   mutate(var = str_extract(model, "Fishing time|Fishing area|Landings"),
          var = fct_relevel(var, "Fishing time", "Fishing area", "Landings"),
-         sample = str_extract(model, "Main|Full"),
+         sample = str_extract(model, "Main|Full|Cov"),
          model = str_extract(model, "OWFE|TWFE"),
          group = paste(model, sample),
-         group = fct_relevel(group, "TWFE Main", "TWFE Full", "OWFE Main", "OWFE Full")) %>% 
+         group = fct_relevel(group, "TWFE Main", "TWFE Cov", "OWFE Main", "TWFE Full")) |> #, "OWFE Full")) %>% 
   ggplot(aes(x = var, y = estimate, fill = var, color = var, shape = group)) +
   geom_hline(yintercept = 0, linetype = "solid") +
   geom_linerange(aes(ymin = conf.low,
                      ymax = conf.high),
                  color = "black",
                  position = position_dodge(width = 0.5),
-                 linewidth = 0.1)+
+                 linewidth = 0.1) +
   geom_pointrange(aes(ymin = estimate - std.error,
                       ymax = estimate + std.error),
                   position = position_dodge(width = 0.5),
@@ -225,6 +235,61 @@ p2 <- ggplot(data = rob2,
 
 ggsave(plot = p2,
        filename = here("results", "img", "fig_semi_elasticity_by_frequency.pdf"),
+       width = 7,
+       height = 3.5,
+       units = "in")
+
+
+## DiD MultipleGT
+library(DIDmultiplegtDYN)
+hours <- did_multiplegt_dyn(df = shrimp_panel |> mutate(h = log(hours)),
+                            outcome = "h",
+                            group = "eu",
+                            time = "year",
+                            treatment = "treated",
+                            effects = 5,
+                            placebo = 3)
+area <- did_multiplegt_dyn(df = shrimp_panel |> drop_na(fg_area_km) |> filter(fg_area_km > 0) |>  mutate(a = log(fg_area_km)),
+                            outcome = "a",
+                            group = "eu",
+                            time = "year",
+                            treatment = "treated",
+                            effects = 5,
+                            placebo = 3)
+landings <- did_multiplegt_dyn(df = shrimp_panel |> mutate(l = log(landed_weight)),
+                            outcome = "l",
+                            group = "eu",
+                            time = "year",
+                            treatment = "treated",
+                            effects = 5,
+                            placebo = 3)
+
+get_coefs <- function(x) {
+  bind_rows(hours$results$Effects |> as.data.frame() |> rownames_to_column(var = "Coefficient"),
+            x$results$Placebo |> as.data.frame() |> rownames_to_column(var = "Coefficient")) |> 
+    mutate(event = str_extract(Coefficient, "[:digit:]"),
+           event = as.numeric(event),
+           event = ifelse(str_detect(Coefficient, "Placebo"), -1, 1) * event) |> 
+    janitor::clean_names() |> 
+    bind_rows(tibble(event = 0, estimate = 0, se = 0, lb_ci = 0, ub_ci = 0))
+}
+
+did_mltiple_gt_plot <- list("hours" = hours, "area" = area, "landings" = landings) |> 
+  map_dfr(get_coefs, .id = "var") |> 
+  mutate(var= str_to_sentence(var),
+         var = fct_relevel(var, "Hours", "Area", "Landings")) |> 
+  ggplot(aes(x = event, y = estimate)) + 
+  geom_hline(yintercept = 0) +
+  geom_linerange(aes(ymin = lb_ci, ymax = ub_ci), linewidth = 0.25) +
+  geom_pointrange(aes(ymin = estimate - se, ymax = estimate + se, color = var), linewidth = 1) +
+  facet_wrap(~var, ncol = 2, scales = "free_y") +
+  scale_colour_brewer(palette = 'Set2') +
+  labs(x = "Time to last period before treatment changes",
+       y = "Estimate ± SE & 95% CI") +
+  theme(legend.position = "None")
+
+ggsave(plot = did_mltiple_gt_plot,
+       filename = here("results", "img", "did_mltiple_gt_plot.pdf"),
        width = 7,
        height = 3.5,
        units = "in")
