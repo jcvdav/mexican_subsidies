@@ -102,7 +102,7 @@ modelsummary(models = semi_elasticity_twfe,
 # Add covariates
 semi_elasticity_twfe_cov <- 
   feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-          treated +  n_vessels |
+          treated + n_vessels |
           eu + year ^ region,
         data = shrimp_panel,
         panel.id = ~eu + year,
@@ -110,7 +110,7 @@ semi_elasticity_twfe_cov <-
         subset = ~sometimes == 1) %>% 
   set_names(model_names)
 
-# Repeat amin estiamtion but include all vessels
+# Repeat main estimation but include all vessels
 semi_elasticity_twfe_fs <-
   feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
           treated |
@@ -146,8 +146,7 @@ semi_elasticity_owfe_fs <-
 all_models <- c("TWFE Main" = semi_elasticity_twfe,
                 "TWFE Cov" = semi_elasticity_twfe_cov,
                 "OWFE Main" = semi_elasticity_owfe,
-                "TWFE Full" = semi_elasticity_twfe_fs)#,
-                # "OWFE Full" = semi_elasticity_owfe_fs)
+                "TWFE Full" = semi_elasticity_twfe_fs)
 
 p1 <- map_dfr(all_models,
               tidy,

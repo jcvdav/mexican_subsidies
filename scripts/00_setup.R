@@ -1,14 +1,6 @@
-##########################
-## Paths to directories ##
-##########################
-# Check for OS
-sys_path <- ifelse(Sys.info()["sysname"]=="Windows", "G:/","/Users/juancarlosvillasenorderbez/Library/CloudStorage/GoogleDrive-juancarlos@ucsb.edu/")
-# Path to our emLab's data folder
-data_path <- paste0(sys_path,"Shared drives/emlab/data")
-# Path to this project's folder
-project_path <- paste0(sys_path,"Shared drives/emlab/projects/current-projects/mexican-subsidies")
-# Path to all Mexican data
-mex_path <- paste0(sys_path,"Shared drives/emlab/projects/current-projects/mex-fisheries")
+# Bq table versions
+vi <- "vessel_info_v_20250815"
+vms <- "mex_vms_processed_v_20250623"
 
 # Reset theme
 ggplot2::theme_set(ggplot2::theme_bw())

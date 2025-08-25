@@ -20,6 +20,8 @@ pacman::p_load(
   tidyverse
 )
 
+source(here("scripts/00_setup.R"))
+
 # Authenticate using local token -----------------------------------------------
 bq_auth("juancarlos.villader@gmail.com")
 
@@ -35,18 +37,28 @@ mex_fisheries <- dbConnect(
 
 ## PROCESSING ##################################################################
 # vessel registry --------------------------------------------------------------
-vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20230803") %>% #"vessel_info_v_20230803") %>% # "vessel_info_v_20221104") %>%
+vessel_registry <- tbl(mex_fisheries, vi) %>% 
   group_by(vessel_rnpa) %>%
   mutate(n = n()) %>%
   ungroup() %>%
   filter(n == 1,
-         shrimp == 1, tuna == 0, sardine == 0, others == 0,
+         # Keep only vessels that exclusively target shrimp
+         target_finfish == 0,
+         target_sardine == 0,
+         target_shark == 0,
+         target_shrimp == 1,
+         target_tuna == 0,
+         target_other == 0,
+         # Keep only vessels that only use trawl nets
+         gear_trawler == 1,
+         gear_purse_seine == 0,
+         gear_longline == 0,
          fuel_type == "Diesel",
-         str_detect(gear_type, "ARRASTRE")) %>% 
-  select(eu_rnpa, vessel_rnpa, state, gear_type, engine_power_hp)
+         fleet == "large scale") |> 
+  select(eu_rnpa, vessel_rnpa, state, gear_type, main_engine_power_hp)
 
 # tracks, filtered -------------------------------------------------------------
-tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20250319") %>% #"mex_vms_processed_v_20231207") %>%# "mex_vms_processed_v_20231003") %>% # "mex_vms_processed_v_20220323") %>%
+tracks <- tbl(mex_fisheries, vms) %>% 
   inner_join(vessel_registry, by = "vessel_rnpa") %>% 
   filter(between(year, 2011, 2019)) %>% 
   filter(between(implied_speed_knots, 1, 5)) %>% # Trawling occurs between 1 and 5 knots

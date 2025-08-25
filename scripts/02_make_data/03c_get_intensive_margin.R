@@ -20,59 +20,25 @@ pacman::p_load(
 )
 
 ## Read data -------------------------------------------------------------------
-# Subsidy allocations
-# eu_subsidy_panel <- readRDS(
-#   file = here("data",
-#               "processed",
-#               "economic_unit_subsidy_panel.rds"))
-
-# # Fuel prices
-# fuel_prices <- readRDS(
-#   here(
-#     "data",
-#     "processed",
-#     "annual_national_diesel_prices_2011_2020.rds"))
-
-# Fuel consumption
+# Vessel activity
 vessel_activity_raw <- readRDS(
   file = here("data", "processed", "vms_annual_vessel_activity.rds"))
 
 ## PROCESSING ##################################################################
 # Summarize vessel activity by economic unit -----------------------------------
-eu_panel <- vessel_activity_raw %>%
-  filter(fleet == "large scale") %>% 
+eu_activity_panel <- vessel_activity_raw %>%
   group_by(year, state, eu_rnpa, fleet, fuel_type) %>% 
-  summarize(total_hp = sum(engine_power_hp),
+  summarize(total_hp = sum(main_engine_power_hp),
             n_vessels = n_distinct(vessel_rnpa),
             hours = sum(hours, na.rm = T),
-            tuna = 1 * (sum(tuna) > 0),
-            sardine = 1 * (sum(sardine) > 0),
-            shrimp = 1 * (sum(shrimp) > 0),
-            others = 1 * (sum(others) > 0)) %>% 
-  ungroup() %>% 
-  mutate(state = str_to_sentence(state))
-
-# Keep shrimp EUs only ---------------------------------------------------------
-shrimp_eus <- eu_panel %>% 
-  group_by(eu_rnpa, state) %>% 
-  summarize(shrimp = 1 * all(shrimp == 1),
-            tuna = 1 * any(tuna == 1),
-            sardine = 1 * any(sardine == 1),
-            others = 1 * any(others == 1),
-            n = n()) %>% 
-  ungroup() %>% 
-  filter(shrimp == 1, tuna == 0, sardine == 0, others == 0, n >= 2) %>% 
-  pull(eu_rnpa)
-
-# Create panels of "unique fishers"
-shrimp <- eu_panel %>% 
-  filter(eu_rnpa %in% shrimp_eus) %>% 
+            .groups = "drop") %>% 
+  mutate(state = str_to_sentence(state)) %>% 
   mutate(region = case_when(state %in% c("Baja california", "Baja california sur", "Sinaloa", "Sonora", "Nayarit") ~ "GoC",
                             state %in% c("Campeche", "Tamaulipas", "Veracruz", "Quintana roo", "Yucatan") ~ "GoM",
                             state %in% c("Chiapas", "Oaxaca") ~ "Pacific")) 
 
 ## EXPORT ######################################################################
-saveRDS(object = shrimp,
+saveRDS(object = eu_activity_panel,
         file = here("data", "processed", "intensive_margin.rds"))
 
 

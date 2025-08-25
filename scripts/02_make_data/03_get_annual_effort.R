@@ -33,6 +33,8 @@ pacman::p_load(
   tidyverse
 )
 
+source(here("scripts/00_setup.R"))
+
 # Authenticate using local token -----------------------------------------------
 bq_auth("juancarlos.villader@gmail.com")
 
@@ -50,17 +52,27 @@ mex_fisheries <- dbConnect(
 ## PROCESSING ##################################################################
 
 # vessel registry --------------------------------------------------------------
-vessel_registry <- tbl(mex_fisheries, "vessel_info_v_20230803") %>%
+vessel_registry <- tbl(mex_fisheries, vi) %>%
   group_by(vessel_rnpa) %>%
   mutate(n = n()) %>%
   ungroup() %>%
   filter(n == 1,
-         shrimp == 1, tuna == 0, sardine == 0, others == 0,
+         # Keep only vessels that exclusively target shrimp
+         target_finfish == 0,
+         target_sardine == 0,
+         target_shark == 0,
+         target_shrimp == 1,
+         target_tuna == 0,
+         target_other == 0,
+         # Keep only vessels that only use trawl nets
+         gear_trawler == 1,
+         gear_purse_seine == 0,
+         gear_longline == 0,
          fuel_type == "Diesel",
-         str_detect(gear_type, "ARRASTRE"))
+         fleet == "large scale")
 
 # tracks, filtered -------------------------------------------------------------
-tracks <- tbl(mex_fisheries, "mex_vms_processed_v_20250319") %>% 
+tracks <- tbl(mex_fisheries, vms) %>% 
   filter(between(year, 2011, 2019)) %>% 
   filter(between(implied_speed_knots, 1, 5)) %>% # Trawling occurs between 1 and 5 knots
   filter(between(depth_m, -100, -9.15)) %>%  # And at depths between 9.15m and 100m
@@ -74,22 +86,22 @@ annual_activity <- tracks %>%
     eu_rnpa,
     state,
     year,
-    engine_power_hp,
-    engine_power_bin_hp,
-    tuna,
-    sardine,
-    shrimp,
-    others,
+    main_engine_power_hp,
+    # target_finfish,
+    # target_sardine,
+    # target_shark,
+    # target_shrimp,
+    # target_tuna,
+    # target_other,
     fleet,
     fuel_type) %>%
   summarize(hours = sum(hours, na.rm = T)) %>%
   ungroup()
 
-
 # Collect the query ------------------------------------------------------------
 annual_activity_local <- annual_activity %>%
   collect() %>%
-  drop_na(engine_power_hp)
+  drop_na(main_engine_power_hp)
 
 ## EXPORT ######################################################################
 saveRDS(object = annual_activity_local,
