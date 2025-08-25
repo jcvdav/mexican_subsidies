@@ -1,7 +1,6 @@
-all: main_figures main_tables supp_figures supp_tables README.md dag
+all: main_figures main_tables supp_tables README.md dag
 main_figures: results/img/cap_always_subsidized.pdf
 main_tables: results/tab/not_sub.tex results/tab/loglin_not_sub.tex results/tab/fuel_left.tex results/tab/fuel_right.tex
-supp_figures:
 supp_tables: results/tab/supp_not_sub.tex results/tab/supp_loglin_not_sub.tex results/tab/hours_left.tex results/tab/hours_right.tex
 dag: makefile-dag.png workflow.png
 
