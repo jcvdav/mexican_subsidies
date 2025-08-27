@@ -1,0 +1,85 @@
+################################################################################
+# title
+################################################################################
+#
+# Juan Carlos Villaseñor-Derbez
+# jc_villasenor@miami.edu
+# date
+#
+# Description
+#
+################################################################################
+  
+# SET UP #######################################################################
+
+## Load packages ---------------------------------------------------------------
+pacman::p_load(
+  here,
+  tidyverse,
+  broom,
+  fixest
+)
+
+## Load data -------------------------------------------------------------------
+all_models <- readRDS(file = here("data", "output", "all_semi_elasticity_models.rds"))
+
+
+# PROCESSING ###################################################################
+
+## Some step -------------------------------------------------------------------
+coefficients <- c("TWFE sometimes sub." = all_models$`TWFE sometimes sub.`,
+  "Cov sometimes sub." = all_models$`Cov sometimes sub.`,
+  "TWFE all" = all_models$`TWFE all`) |> 
+  map_dfr(tidy,
+          conf.int = T,
+          .id = "model") %>% 
+  filter(term == "treated") %>% 
+  mutate(var = str_extract(model, "Fishing time|Fishing area|Landings"),
+         var = fct_relevel(var, "Fishing time", "Fishing area", "Landings"),
+         sample = str_extract(model, "sometimes sub\\.|all"),
+         model = str_extract(model, "TWFE|Cov"),
+         group = paste(model, sample),
+         group = fct_relevel(group, "TWFE sometimes sub.", "Cov sometimes sub.", "TWFE all"))
+
+# VISUALIZE ####################################################################
+
+## Another step ----------------------------------------------------------------
+
+p1 <- ggplot(data = coefficients,
+             mapping = aes(x = var, y = estimate, fill = var, color = var, shape = group)) +
+  geom_hline(yintercept = 0, linetype = "solid") +
+  geom_linerange(aes(ymin = conf.low,
+                     ymax = conf.high),
+                 color = "black",
+                 position = position_dodge(width = 0.5),
+                 linewidth = 0.1) +
+  geom_pointrange(aes(ymin = estimate - std.error,
+                      ymax = estimate + std.error),
+                  position = position_dodge(width = 0.5),
+                  fatten = 6,
+                  linewidth = 1.5) +
+  scale_shape_manual(values = c(21, 22, 23)) +
+  scale_colour_brewer(palette = 'Set2') +
+  scale_fill_brewer(palette = 'Set2') +
+  guides(fill = "none",
+         color = "none",
+         shape = guide_legend(ncol = 2,
+                              override.aes = list(fill = "black",
+                                                  size = 1))) +
+  labs(x = "",
+       y = "Estimate, SE, and 95% Conf.Int.",
+       shape = "Specification and sample") +
+  theme(legend.position = "inside",
+        legend.position.inside = c(0, 1),
+        legend.justification = c(0, 1))
+
+
+# EXPORT #######################################################################
+
+## Export figure ---------------------------------------------------------------
+ggsave(plot = p1,
+       filename = here("content", "figures", "fig_semi_elasticity.pdf"),
+       width = 6,
+       height = 4,
+       units = "in")
+
