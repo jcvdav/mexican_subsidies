@@ -44,7 +44,7 @@ setFixest_dict(
 # Model names so that modelsummary represents them
 model_names <- c("Fishing time", "Fishing area", "Landings")
 
-setFixest_fml(..outcomes = "c(log(hours), log(fg_area_km), log(landed_weight))",
+setFixest_fml(..outcomes = "c(log(hours), log(fg_area_km), log(live_weight))",
               ..twfe = ~treated | eu + year ^ region,
               ..covs = ~treated + n_vessels + total_hp + log(mean_diesel_price_mxn_l) +
                 nino34_m:region)
@@ -134,3 +134,4 @@ saveRDS(object = all_models,
 
 saveRDS(object = subsidized_n_times_models,
         file = here(output_dir, "subsidized_n_times_models.rds"))
+
