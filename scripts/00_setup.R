@@ -5,10 +5,9 @@ vms <- "mex_vms_processed_v_20250623"
 # Reset theme
 ggplot2::theme_set(ggplot2::theme_bw())
 
-# gray <- "#f8f4f4"
-gray <- "transparent"
-
 ggplot2::theme_update(
+  text = ggplot2::element_text(color = "black"),
+  axis.text = ggplot2::element_text(color = "black"),
   axis.title.y = ggplot2::element_text(size = 10),
   axis.title.x = ggplot2::element_text(size = 10),
   axis.text.y = ggplot2::element_text(size = 8),
@@ -51,23 +50,3 @@ ggplot2::update_geom_defaults(geom = "segment",
 ggplot2::update_geom_defaults(geom = "hline",
                               new = list(color = "black",
                                          linetype = "dashed"))
-
-
-# Turn off dplyr's anoying messages
-options(dplyr.summarise.inform = FALSE)
-
-# Functions
-
-statab <- function(data, var) {
-  count(data, {{var}}) %>% 
-    mutate(percent = n / sum(n),
-           cum = cumsum(percent) * 100)
-}
-
-get_alpha <- function(model){
-  beta <- coefficients(model)[1]
-  theta <- coefficients(model)[2]
-  
-  alpha <- round(1 + (theta/beta), 3)
-  return(alpha)
-}
