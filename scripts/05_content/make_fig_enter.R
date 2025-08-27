@@ -79,12 +79,7 @@ effect_plot <- function(data, var = hours, n = 1){
                  position = pos) +
     labs(x = "Status") +
     theme(legend.position = "None") +
-    scale_shape_manual(values = c(22, 21, 23)) #+
-    # annotate(x = 1.4,
-    #          y = 1.01 * height,
-    #          geom = "text",
-    #          label = paste0(num, " change"),
-    #          color = fill)
+    scale_shape_manual(values = c(22, 21, 23))
 }
 
 ## VISUALIZE ###################################################################
@@ -138,8 +133,8 @@ p2 <- cowplot::plot_grid(p1, leg,
 ## EXPORT ######################################################################
 # X ----------------------------------------------------------------------------
 ggsave(plot = p2,
-       filename = here("results", "img", "fig_enter.pdf"),
-       width = 7,
+       filename = here("content", "figures", "fig_enter.pdf"),
+       width = 8,
        height = 4,
        units = "in")
 

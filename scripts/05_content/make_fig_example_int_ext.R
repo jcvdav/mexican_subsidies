@@ -32,10 +32,6 @@ theme_set(theme_minimal(base_size = 10))
 
 res <- 0.1
 
-mex <- ne_countries(country = c("Mexico", "United States of America"),
-                    returnclass = "sf",
-                    scale = "large")
-
 # X ----------------------------------------------------------------------------
 hour_changes <- shrimp_panel %>% 
   filter(n_vessels == 1,
@@ -57,17 +53,18 @@ hour_highest <- head(hour_changes, 1)
 
 shrimp_panel %>% 
   filter(eu == hour_highest$eu,
-         hours %in% c(hour_highest$not, hour_highest$sub))
+         hours %in% c(hour_highest$not, hour_highest$sub)) |> 
+  select(year, region, state, eu, treated)
 
-hours_tracks_least <- readRDS(here("data", "processed", "2011_shrimp_tracks.rds")) %>% 
+hours_tracks_least <- readRDS(here("data", "processed", "2012_shrimp_tracks.rds")) %>% 
   filter(eu_rnpa == hour_highest$eu)
 
-hours_tracks_most <- readRDS(here("data", "processed", "2016_shrimp_tracks.rds")) %>% 
+hours_tracks_most <- readRDS(here("data", "processed", "2018_shrimp_tracks.rds")) %>% 
   filter(eu_rnpa == hour_highest$eu)
 
 hour_tracks <- bind_rows(hours_tracks_least,
                          hours_tracks_most) %>% 
-  mutate(year = ifelse(year == 2011, "Not subsidized", "Subsidized")) %>% 
+  mutate(year = ifelse(year == 2012, "Not subsidized", "Subsidized")) %>% 
   mutate(lon = (floor(lon / res) * res) + (res / 2),
          lat = (floor(lat / res) * res) + (res / 2)) %>% 
   group_by(year, lat, lon) %>% 
@@ -77,8 +74,8 @@ hour_tracks <- bind_rows(hours_tracks_least,
 hour_raster <- rasterize(x = hour_tracks %>% 
                            vect(geom = c("lon", "lat"),
                                 crs = "EPSG:4326"),
-                         y = rast(xmin = -98, xmax = -96,
-                                  ymin = 22, ymax = 26,
+                         y = rast(xmin = -99, xmax = -90,
+                                  ymin = 18, ymax = 26.5,
                                   res = res, crs = "EPSG:4326"),
                          fun = "mean",
                          field = "hours",
@@ -98,11 +95,12 @@ hr_stats <- hour_tracks %>%
 stats <- hr_stats |> 
   mutate(area = c(area_unsub, area_sub)) |> 
   mutate(hours = paste(round(hours / 24), "days"),
-         area = paste(format(round(area), big.mark = ","), "km2"))
+         area = paste0("'",format(round(area), big.mark = ","),"'", "~km^{2}"))
 
-outline <- as.polygons(!is.na(hour_raster[[2]])) %>% 
-  st_as_sf() %>% 
-  filter(Subsidized == 1)
+mex <- ne_countries(country = c("Mexico", "United States of America"),
+                    returnclass = "sf",
+                    scale = "large") |> 
+  st_crop(hour_raster)
 
 ## VISUALIZE ###################################################################
 hour_map <- ggplot(data = hour_tracks) + 
@@ -111,32 +109,23 @@ hour_map <- ggplot(data = hour_tracks) +
           fill = "gray50",
           color = "black",
           linewidth = 0.5) +
-  geom_text(data = stats, aes(x = -98.5, y = 26, label = hours)) +
-  geom_text(data = stats, aes(x = -98.5, y = 25.75, label = area)) +
+  geom_text(data = stats, aes(x = -94, y = 26, label = hours)) +
+  geom_text(data = stats, aes(x = -94, y = 25.5, label = area), parse = T) +
   facet_wrap(~year) +
-  scale_fill_viridis_c(option = "viridis",
-                       direction = -1) +
-  scale_x_continuous(limits = c(-99, -96.5),
-                     breaks = c(seq(-98.5, -96, by = 1))) +
-  scale_y_continuous(limits = c(22, 26.5)) +
+  scale_fill_gradientn(colours = EVR628tools::palette_IPCC(var = "prec", type = "seq")) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
   theme(legend.position = "inside",
-        legend.position.inside = c(0, 0),
-        legend.justification.inside = c(0, 0),
+        legend.position.inside = c(1, 1),
+        legend.justification.inside = c(1, 1),
         axis.title = element_blank()) +
   guides(fill = guide_colorbar(frame.colour = "black",
                                ticks.colour = "black")) +
-  labs(fill = "Time fishing\n(log-hours)")
+  labs(fill = "Time fishing\n(log-hours)") +
+  annotation_scale(location = 'bl')
 
 hour_map
 
-hour_map_outlined <- hour_map + 
-  geom_sf(data = outline,
-          fill = "transparent",
-          color = "red3",
-          linewidth = 0.5)
-
-hour_map_outlined
-  
 hour_diff_map <- hour_tracks %>% 
   pivot_wider(names_from = "year",
               values_from = "hours") %>% 
@@ -152,21 +141,20 @@ hour_diff_map <- hour_tracks %>%
           linewidth = 0.5) +
   facet_wrap(~year) +
   scale_fill_gradient2(midpoint = 0) +
-  scale_x_continuous(limits = c(-99, -96.5),
-                     breaks = c(seq(-98.5, -96, by = 1))) +
-  scale_y_continuous(limits = c(22, 26.5)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
   theme(legend.position = "inside",
-        legend.position.inside = c(0, 0),
-        legend.justification.inside = c(0, 0),
+        legend.position.inside = c(1, 1),
+        legend.justification.inside = c(1, 1),
         axis.title = element_blank(),
         axis.text.y = element_blank()) +
   guides(fill = guide_colorbar(frame.colour = "black",
                                ticks.colour = "black")) +
-  labs(fill = "Difference in\nfishing time\n(hours)") +
-  annotation_scale(location = 'br')
+  labs(fill = "Difference \n(hours)") +
+  annotation_scale(location = 'bl')
 
 
-hours <- plot_grid(hour_map_outlined, hour_diff_map,
+hours <- plot_grid(hour_map, hour_diff_map,
                    rel_widths = c(2.05, 1))
 
 hours
@@ -174,22 +162,18 @@ hours
 ## EXPORT ######################################################################
 
 # X ----------------------------------------------------------------------------
+output_dir <- "content/figures"
+
 ggsave(plot = hours,
-       filename = here("results", "img", "fig_example_int_ext.pdf"),
-       width = 7.5,
-       height = 5,
+       filename = here(output_dir, "fig_example_int_ext_diff.pdf"),
+       width = 11,
+       height = 4,
        units = "in")
 
 ggsave(plot = hour_map,
-       filename = here("results", "img", "fig_example_int_ext_base.pdf"),
-       width = 5,
-       height = 5,
-       units = "in")
-
-ggsave(plot = hour_map_outlined,
-       filename = here("results", "img", "fig_example_int_ext_base_outlined.pdf"),
-       width = 5,
-       height = 5,
+       filename = here(output_dir, "fig_example_int_ext.pdf"),
+       width = 8,
+       height = 4,
        units = "in")
 
 
