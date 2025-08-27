@@ -18,7 +18,6 @@
 pacman::p_load(
   here,
   fixest,
-  # modelsummary,
   broom,
   tidyverse
 )
