@@ -27,7 +27,7 @@ landings <- readRDS(file = url("https://github.com/jcvdav/mex_fisheries/raw/refs
 # Filter shrimp only -----------------------------------------------------------
 filtered <- landings %>%
   filter(main_species_group == "CAMARON") %>% 
-  select(year, eu = eu_rnpa, landed_weight)
+  select(year, eu = eu_rnpa, live_weight, landed_weight)
 
 ## EXPORT ######################################################################
 saveRDS(object = filtered,
