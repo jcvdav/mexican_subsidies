@@ -87,12 +87,6 @@ annual_activity <- tracks %>%
     state,
     year,
     main_engine_power_hp,
-    # target_finfish,
-    # target_sardine,
-    # target_shark,
-    # target_shrimp,
-    # target_tuna,
-    # target_other,
     fleet,
     fuel_type) %>%
   summarize(hours = sum(hours, na.rm = T)) %>%
