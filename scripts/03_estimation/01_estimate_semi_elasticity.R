@@ -43,13 +43,13 @@ setFixest_dict(
 # Model names so that modelsummary represents them
 model_names <- c("Fishing time", "Fishing area", "Landings")
 
-setFixest_fml(..outcomes = "c(log(hours), log(fg_area_km), log(live_weight))",
+setFixest_fml(..outcomes = ~c(log(hours), log(fg_area_km), log(live_weight)),
               ..twfe = ~treated | eu + year ^ region,
               ..covs = ~treated + n_vessels + total_hp + log(mean_diesel_price_mxn_l) +
                 nino34_m:region)
 
 ## ESTIMATION ##################################################################
-# 1) Main specification -----------------------------------------------------------
+# 1) Main specification --------------------------------------------------------
 # TWFE with economic units whose subsidy status changes only
 semi_elasticity_twfe <-
   feols(..outcomes ~  ..twfe,
@@ -132,5 +132,5 @@ saveRDS(object = all_models,
         file = here(output_dir, "all_semi_elasticity_models.rds"))
 
 saveRDS(object = subsidized_n_times_models,
-        file = here(output_dir, "subsidized_n_times_models.rds"))
+        file = here(output_dir, "subsidized_n_times_semi_elasticity_models.rds"))
 

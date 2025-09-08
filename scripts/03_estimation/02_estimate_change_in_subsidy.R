@@ -7,7 +7,6 @@
 # date
 #
 # Description
-# How many times does a vessel enter / exit the roster?
 ################################################################################
 
 ## SET UP ######################################################################
@@ -16,30 +15,9 @@
 pacman::p_load(
   here,
   fixest,
-  modelsummary,
   broom,
   tidyverse
 )
-
-# Define some defaults ---------------------------------------------------------
-# Model names to use
-model_names <- c("Fishing time", "Fishing area", "Landings")
-split_model_names <- c("S Fishing time", "S Fishing area", "S Landings", "A Fishing time", "A Fishing area", "A Landings")
-
-# Information to omit from the regression tables to make the more tidy
-omit <- "(Intercept)|RMSE|With|IC"
-
-# Change the appearance of what will appear in the regression table
-gm <- tribble(~raw, ~clean, ~fmt,
-              "nobs", "N", 0,
-              "adj.r.squared", "R2 Adj", 3
-)
-
-# Rename coefficients
-coefs <- c("log(ph)" = "log(fuel price)",
-           "log(subsidy_pesos)" = "log(subsidy amount[MXP])",
-           "n_vessels" = "\\# Vessels",
-           "norm_hp" = "Norm. power (hp / vessel)")
 
 # Load data --------------------------------------------------------------------
 shrimp_panel_raw <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds"))
@@ -47,131 +25,125 @@ shrimp_panel_raw <- readRDS(here("data", "estimation_panels", "shrimp_estimation
 ## PROCESSING ##################################################################
 shrimp_panel <- shrimp_panel_raw %>% 
   filter(treated == 1,
-         n_times_sub >= 2) %>% 
-  mutate(y2014 = year == 2014)
+         n_times_sub >= 2)
 
 ## ESTIMATION ##################################################################
+# Define some defaults ---------------------------------------------------------
+setFixest_dict(
+  # Outcomes of interest
+  c("log(hours)" = "Fishing time",
+    "log(fg_area_km)" = "Fishing area",
+    "log(landed_weight)" = "Landings",
+    # Variables
+    "log(ph)" = "log(fuel price)",
+    "treated" = "Subsidized",
+    "n_vessels" = "vessels",
+    # Fixed effects
+    "eu" = "Economic Unit",
+    "year^region" = "Region-by-year"))
+
+# Model names so that modelsummary represents them
+model_names <- c("Fishing time", "Fishing area", "Landings")
+
+setFixest_fml(..outcomes = ~c(log(hours), log(fg_area_km), log(live_weight)),
+              ..twfe = ~log(subsidy_pesos) | eu + year^region,
+              ..covs = ~log(subsidy_pesos) + n_vessels + total_hp + nino34_m:region)
+
+
 # Main specification -----------------------------------------------------------
-# TWFE and time-varying covariates
-elasticity_twfe <- feols(fml = c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-                           log(subsidy_pesos) |
-                           eu + year^region,
+# 1) Main specification --------------------------------------------------------
+# TWFE with economic units subsidized at least twice and that are subsidized
+elasticity_twfe <- feols(fml = ..outcomes ~ ..twfe,
                          data = shrimp_panel,
                          panel.id = ~eu + year,
                          vcov = "NW") %>% 
   set_names(model_names)
 
-
-# Calculate percent changes to add to the table --------------------------------
-extra <- tibble(V1 = "\\% Change",
-                V2 = scales::percent((((1 + 0.01)^coefficients(elasticity_twfe[[1]])[1])-1), accuracy = 0.01, suffix = "\\%"),
-                V3 = scales::percent((((1 + 0.01)^coefficients(elasticity_twfe[[2]])[1])-1), accuracy = 0.01, suffix = "\\%"),
-                V4 = scales::percent((((1 + 0.01)^coefficients(elasticity_twfe[[3]])[1])-1), accuracy = 0.01, suffix = "\\%")) %>% 
-  set_names(c("V1", model_names))
-attr(extra, 'position') <- c(3, 3)
-
-# Build table ------------------------------------------------------------------
-modelsummary(models = elasticity_twfe,
-             stars = panelsummary:::econ_stars(),
-             coef_omit = omit,
-             gof_map = gm,
-             add_rows = extra,
-             output = here("results", "tab", "table_elasticity.tex"),
-             title = "\\label{tab:elasticity}Effect of increasing subsidy amounts on intensive and extensive behavioral margins, and fisheries production. Identification comes from exogenous variations in the amount of subsidy allocated toe ach economic unit.",
-             coef_rename = coefs,
-             notes = "\\tiny The unit of observation is an economic unit by year. All models include fixed effects by economic unit and by region-year. Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag). Differences in sample size across columns are due to missing coordinates on some VMS messages or missing landings data.",
-             escape = F)
-
-## ROBUSTNESS TESTS ############################################################
-feols(fml = c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-        log(subsidy_pesos) + total_hp |
-        eu + year^region,
-      data = shrimp_panel |> group_by(eu) |> mutate(n = max(n_vessels)) |> ungroup() |> filter(n == 1),
-      panel.id = ~eu + year,
-      vcov = "NW")
+etable(elasticity_twfe)
 
 
-## ALTERNATIVE SPECIFICATIONS ##################################################
-# Two-way fixed effects with coviariates
-elasticity_twfe_cov <- twfe <- feols(fml = c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-                           log(subsidy_pesos) + n_vessels + norm_hp|
-                           eu + year^region,
-                         data = shrimp_panel,
-                         panel.id = ~eu + year,
-                         vcov = "NW") %>% 
+# 2) Alternative specifications ------------------------------------------------
+# 2a) Same as main specification but only vessels always subsidized
+elasticity_twfe_always <- feols(fml = ..outcomes ~ ..twfe,
+                                data = shrimp_panel,
+                                panel.id = ~eu + year,
+                                subset = ~always == 1,
+                                vcov = "NW") %>% 
   set_names(model_names)
 
-# Two-way fixed-effects estimation, splitting sample by "always" and "sometimes" subsidized
-elasticity_twfe_split <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-                                 log(subsidy_pesos) |
-                                 eu + year^region,
-                               data = shrimp_panel,
-                               panel.id = ~eu + year,
-                               vcov = "NW",
-                               split = ~subsidy_frequency) %>% 
-  set_names(split_model_names)
+etable(elasticity_twfe_always)
 
-# Drop year-by-region fixed-effects, add fuel price and NINO (quadratic), as well year (quadratic)
-elasticity_owfe <- feols(c(log(hours), log(fg_area_km), log(landed_weight)) ~ 
-                           log(subsidy_pesos) + log(mean_diesel_price_mxn_l) +
-                           nino34_m + I(nino34_m^2) + year + I(year ^ 2) 
-                         | eu,
-                         data = shrimp_panel,
-                         panel.id = ~eu + year,
-                         vcov = "NW") %>% 
+# 2b) Same as main specification but only vessels sometimes subsidized
+elasticity_twfe_sometimes <- feols(fml = ..outcomes ~ ..twfe,
+                                data = shrimp_panel,
+                                panel.id = ~eu + year,
+                                subset = ~sometimes == 1,
+                                vcov = "NW") %>% 
   set_names(model_names)
 
-## BUILD FIGURE ################################################################
-all_models <- c("TWFE Main" = elasticity_twfe,
-                "Cov" = elasticity_twfe_cov,
-                "OWFE Main" = elasticity_owfe,
-                "TWFE Split" = elasticity_twfe_split)
+etable(elasticity_twfe_sometimes)
 
-p1 <- map_dfr(all_models,
-              tidy,
-              conf.int = T,
-              .id = "model") %>% 
-  filter(term == "log(subsidy_pesos)") %>% 
-  mutate(var = str_extract(model, "Fishing time|Fishing area|Landings"),
-         var = fct_relevel(var, "Fishing time", "Fishing area", "Landings"),
-         split = str_extract(model, "Split\\..{1}"),
-         split = ifelse(is.na(split), "Main", str_remove(split, "Split\\.")),
-         model = str_extract(model, "OWFE|TWFE|Cov"),
-         group = paste(model, split),
-         group = fct_relevel(group, "TWFE Main", "TWFE S", "TWFE A", "OWFE Main")) %>% 
-  ggplot(aes(x = var, y = estimate, fill = var, color = var, shape = group)) +
-  geom_hline(yintercept = 0, linetype = "solid") +
-  geom_linerange(aes(ymin = conf.low,
-                     ymax = conf.high),
-                 color = "black",
-                 position = position_dodge(width = 0.5),
-                 linewidth = 0.1) +
-  geom_pointrange(aes(ymin = estimate - std.error,
-                      ymax = estimate + std.error),
-                  position = position_dodge(width = 0.5),
-                  fatten = 6,
-                  linewidth = 1.5) +
-  scale_shape_manual(values = c(21, 1, 10, 22, 0, 7)) +
-  scale_colour_brewer(palette = 'Set2') +
-  scale_fill_brewer(palette = 'Set2') +
-  guides(fill = "none",
-         color = "none",
-         shape = guide_legend(ncol = 3,
-                              override.aes = list(fill = "black",
-                                                  size = 1))) +
-  labs(x = "",
-       y = "Estimate and 95% Conf.Int.",
-       shape = "Specification and sample") +
-  theme(legend.position = c(0, 1),
-        legend.justification = c(0, 1))
+# 2c) Add covariates instead of fixed effects
+elasticity_cov <- twfe <- feols(fml = ..outcomes ~ ..covs,
+                                data = shrimp_panel,
+                                panel.id = ~eu + year,
+                                vcov = "NW") %>% 
+  set_names(model_names)
+
+etable(elasticity_cov)
+
+all_models <- list("TWFE" = elasticity_twfe,
+                   "TWFE Always" = elasticity_twfe_always,
+                   "TWFE Sometimes" = elasticity_twfe_sometimes,
+                   "Cov" = elasticity_cov)
+
+# 3) Restrict sample to EUs subsidized at least n_times -------------------------
+n_eus <- function(model){
+  tibble(neus = length(unique(fixef(model, notes = F)$eu)))
+}
+
+restrict_n_times <- function(n_times = 8){
+  # browser()
+  inside_data <- shrimp_panel |> 
+    filter(n_times_sub >= n_times,
+           treated == 1)
+  
+  models <- feols(..outcomes ~ ..twfe,
+                  data = inside_data,
+                  panel.id = ~eu + year,
+                  vcov = "NW") %>% 
+    set_names(model_names)
+  
+  coefs <- map_dfr(models, tidy, conf.int = T, .id = "var") |> 
+    filter(term == "log(subsidy_pesos)")
+  
+  nobs <- map_dfr(models, glance, .id = "var") |> 
+    select(var, nobs)
+  
+  neus <- map_dfr(models, n_eus, .id = "var")
+  
+  results <- coefs |> 
+    left_join(nobs, by = "var") |> 
+    left_join(neus, by = "var") |> 
+    mutate(n_times = n_times)
+  
+  return(results)
+}
 
 
-ggsave(plot = p1,
-       filename = here("results", "img", "fig_elasticity.pdf"),
-       width = 7,
-       height = 3.5,
-       units = "in")
+subsidized_n_times_models <- map_dfr(2:9, restrict_n_times)
 
 ## EXPORT ######################################################################
+output_dir <- "data/output"
+
 saveRDS(object = elasticity_twfe,
-        file = here("results", "models", "elasticity_twfe.rds"))
+        file = here(output_dir, "elasticity_twfe_model.rds"))
+
+saveRDS(object = all_models,
+        file = here(output_dir, "all_elasticity_models.rds"))
+
+saveRDS(object = subsidized_n_times_models,
+        file = here(output_dir, "subsidized_n_times_elasticity_models.rds"))
+
+## BUILD FIGURE ################################################################
+

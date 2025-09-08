@@ -9,7 +9,7 @@
 # Description
 #
 ################################################################################
-  
+
 # SET UP #######################################################################
 
 ## Load packages ---------------------------------------------------------------
@@ -21,21 +21,21 @@ pacman::p_load(
 )
 
 ## Load data -------------------------------------------------------------------
-semi_elasticity_twfe <- readRDS(file = here("data", "output", "semi_elasticity_twfe_model.rds"))
-subsidized_n_times_models <- readRDS(file = here("data", "output", "subsidized_n_times_semi_elasticity_models.rds")) |> 
+elasticity_twfe <- readRDS(file = here("data", "output", "elasticity_twfe_model.rds"))
+subsidized_n_times_models <- readRDS(file = here("data", "output", "subsidized_n_times_elasticity_models.rds")) |> 
   mutate(var = fct_relevel(var, "Fishing time", "Fishing area", "Landings"))
 
 # PROCESSING ###################################################################
 
 ## Some step -------------------------------------------------------------------
-coefficients <- map_dfr(semi_elasticity_twfe, tidy, .id = "var") |> 
+coefficients <- map_dfr(elasticity_twfe, tidy, .id = "var") |> 
   mutate(var = fct_relevel(var, "Fishing time", "Fishing area", "Landings"))
 
 # VISUALIZE ####################################################################
 
 ## Another step ----------------------------------------------------------------
 p <- ggplot(data = subsidized_n_times_models,
-             aes(x = n_times, y = estimate)) +
+            aes(x = n_times, y = estimate)) +
   geom_hline(yintercept = 0, linetype = "solid") +
   geom_hline(data = coefficients, aes(yintercept = estimate, color = var)) +
   geom_pointrange(aes(ymin = conf.low, ymax = conf.high)) +
@@ -46,7 +46,7 @@ p <- ggplot(data = subsidized_n_times_models,
                   linewidth = 1.5) +
   scale_colour_brewer(palette = 'Set2') +
   guides(color = "none") +
-  labs(x = "Subsidized at most # times",
+  labs(x = "Subsidized at least # times",
        y = "Estimate ± (SE, and 95% Conf.Int.)") +
   facet_wrap(~var, ncol = 3)
 
@@ -54,7 +54,7 @@ p <- ggplot(data = subsidized_n_times_models,
 
 ## The final step --------------------------------------------------------------
 ggsave(plot = p,
-       filename = here("content", "figures", "fig_semi_elasticity_by_frequency.pdf"),
+       filename = here("content", "figures", "fig_elasticity_by_frequency.pdf"),
        width = 6,
        height = 4,
        units = "in")  

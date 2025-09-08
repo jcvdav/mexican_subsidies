@@ -21,30 +21,32 @@ pacman::p_load(
 )
 
 ## Load data -------------------------------------------------------------------
-all_models <- readRDS(file = here("data", "output", "all_semi_elasticity_models.rds"))
+all_models <- readRDS(file = here("data", "output", "all_elasticity_models.rds"))
 
 
 # PROCESSING ###################################################################
 
 ## Some step -------------------------------------------------------------------
-coefficients <- c("TWFE sometimes sub." = all_models$`TWFE sometimes sub.`,
-  "Cov sometimes sub." = all_models$`Cov sometimes sub.`,
-  "TWFE all" = all_models$`TWFE all`) |> 
+coefficients <- c("TWFE" = all_models$TWFE,
+                  "TWFE Always" = all_models$`TWFE Always`,
+                  "TWFE Sometimes" = all_models$`TWFE Sometimes`,
+                  "Cov" = all_models$Cov) |> 
   map_dfr(tidy,
           conf.int = T,
           .id = "model") %>% 
-  filter(term == "treated") %>% 
+  filter(term == "log(subsidy_pesos)") %>% 
   mutate(var = str_extract(model, "Fishing time|Fishing area|Landings"),
          var = fct_relevel(var, "Fishing time", "Fishing area", "Landings"),
-         sample = str_extract(model, "sometimes sub\\.|all"),
+         sample = str_extract(model, "Always|Sometimes"),
+         sample = replace_na(sample, ""),
          model = str_extract(model, "TWFE|Cov"),
-         group = paste(model, sample),
-         group = fct_relevel(group, "TWFE sometimes sub.", "Cov sometimes sub.", "TWFE all"))
+         group = str_squish(paste(model, sample)),
+         group = fct_relevel(group, "TWFE", "TWFE Always", "TWFE Sometimes", "Cov"))
+
 
 # VISUALIZE ####################################################################
 
 ## Another step ----------------------------------------------------------------
-
 p1 <- ggplot(data = coefficients,
              mapping = aes(x = var, y = estimate, fill = var, color = var, shape = group)) +
   geom_hline(yintercept = 0, linetype = "solid") +
@@ -58,7 +60,7 @@ p1 <- ggplot(data = coefficients,
                   position = position_dodge(width = 0.5),
                   fatten = 6,
                   linewidth = 1.5) +
-  scale_shape_manual(values = c(21, 22, 23)) +
+  scale_shape_manual(values = c(21, 5, 23, 22)) +
   scale_colour_brewer(palette = 'Set2') +
   scale_fill_brewer(palette = 'Set2') +
   guides(fill = "none",
@@ -76,10 +78,9 @@ p1 <- ggplot(data = coefficients,
 
 # EXPORT #######################################################################
 
-## Export figure ---------------------------------------------------------------
+## The final step --------------------------------------------------------------
 ggsave(plot = p1,
-       filename = here("content", "figures", "fig_semi_elasticity.pdf"),
+       filename = here("content", "figures", "fig_elasticity.pdf"),
        width = 6,
        height = 4,
        units = "in")
-
