@@ -25,34 +25,161 @@ theme_set(theme_minimal(base_size = 10))
 # Load data --------------------------------------------------------------------
 shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds"))
 
-semi_mod <- readRDS(here("results", "models", "semi_elasticity_twfe.rds"))
-elasticity_mod <- readRDS(here("results", "models", "elasticity_twfe.rds"))
+semi_mod <- readRDS(here("data", "output", "semi_elasticity_twfe_model.rds"))
+elasticity_mod <- readRDS(here("data", "output", "elasticity_twfe_model.rds"))
 
 
 pcts <- c(0.1, 0.3, 0.5, 0.9)
 
+## FUNCTIONS ####################################################################
+
+calculate_semi_elasticity_counterfactual <- function(model, var_col) {
+  
+  # Extract coefficient and calculate % change
+  semi_coef <- coef(model)[[1]]
+  change <- as.numeric(exp(semi_coef) - 1)
+  
+  # Calculate counterfactual
+  result <- shrimp_panel %>%
+    select(year, eu, treated, !!sym(var_col)) %>%
+    mutate(
+      additional = ifelse(treated == 1, change * !!sym(var_col), 0),
+      treated = ifelse(treated == 1, "Subsidized", "Not subsidized")
+    ) %>%
+    group_by(year, treated) %>%
+    summarize(
+      !!sym(var_col) := sum(!!sym(var_col)),
+      subsidy = sum(additional),
+      .groups = "drop"
+    ) %>%
+    mutate(baseline = !!sym(var_col) - subsidy) %>%
+    select(-!!sym(var_col)) %>%
+    pivot_longer(
+      cols = c(subsidy, baseline),
+      values_to = var_col,
+      names_to = "source"
+    ) %>%
+    mutate(treated = paste(treated, source, sep = "-")) %>%
+    filter(!!sym(var_col) > 0)
+  
+  return(result)
+}
+
+calculate_elasticity_counterfactual <- function(model, var_col, pct_reductions = c(0.1, 0.3, 0.5, 0.9)) {
+  
+  # Extract elasticity coefficient
+  elasticity <- as.numeric(coef(model)[[1]])
+  
+  # Calculate counterfactual for different reduction scenarios
+  result <- shrimp_panel %>%
+    drop_na(!!sym(var_col)) %>%
+    expand_grid(pct = pct_reductions) %>%
+    mutate(
+      factor = 1 + (((1 - pct)^elasticity) - 1),
+      additional = treated * (!!sym(var_col) - (factor * !!sym(var_col))),
+      treated = ifelse(treated == 1, "Subsidized", "Not subsidized")
+    ) %>%
+    group_by(year, treated, pct) %>%
+    summarize(
+      !!sym(var_col) := sum(!!sym(var_col)),
+      subsidy = sum(additional),
+      .groups = "drop"
+    ) %>%
+    mutate(baseline = !!sym(var_col) - subsidy) %>%
+    select(year, treated, pct, subsidy, baseline) %>%
+    pivot_longer(
+      cols = c(subsidy, baseline),
+      values_to = var_col,
+      names_to = "source"
+    ) %>%
+    filter(
+      !!sym(var_col) > 0,
+      treated == "Subsidized",
+      source == "subsidy"
+    ) %>%
+    mutate(treated = paste(treated, source, sep = "-"))
+  
+  return(result)
+}
+
+generate_counterfactual_summary <- function(data, var_col) {
+  
+  # Overall summary by year
+  overall_stats <- data %>%
+    group_by(year) %>%
+    summarize(!!sym(var_col) := sum(!!sym(var_col)), .groups = "drop") %>%
+    pull(!!sym(var_col)) %>%
+    summary()
+  
+  # Summary for subsidized vessels only
+  subsidized_stats <- data %>%
+    filter(treated != "Not subsidized-baseline") %>%
+    group_by(year) %>%
+    summarize(!!sym(var_col) := sum(!!sym(var_col)), .groups = "drop") %>%
+    pull(!!sym(var_col)) %>%
+    summary()
+  
+  # Values attributable to subsidy
+  subsidy_attributable_stats <- data %>%
+    filter(treated != "Not subsidized-baseline") %>%
+    filter(source == "subsidy") %>%
+    pull(!!sym(var_col)) %>%
+    summary()
+  
+  # Percentage of total attributable to subsidy
+  pct_attributable_stats <- data %>%
+    group_by(year) %>%
+    mutate(pct_total = !!sym(var_col) / sum(!!sym(var_col))) %>%
+    filter(source == "subsidy") %>%
+    pull(pct_total) %>%
+    summary()
+  
+  # Combine summaries
+  summary_table <- rbind(
+    data.frame(Statistic = "Overall", overall_stats),
+    data.frame(Statistic = "Subsidized", subsidized_stats),
+    data.frame(Statistic = "Subsidy Attributable", subsidy_attributable_stats),
+    data.frame(Statistic = "Pct Attributable", pct_attributable_stats)
+  )
+  
+  return(summary_table)
+}
+
 # ## PROCESSING ##################################################################
-# Implications -----------
-semi <- coef(semi_mod$`Fishing time`)[[1]]
-change <- (exp(semi)-1)
-factor <- 1 - change
 
-elasticity <- coef(elasticity_mod$`Fishing time`)[[1]]
+# Extract coefficients ---------------------------------------------------------
+# For semi-elasticity
+semi <- coef(semi_mod$`Fishing time`)[[1]] # Extract the semi-elasticity
+change <- (exp(semi)-1) # Calculate the % change equivalent
+# factor <- 1 - change # Calculate the reduction in the absence of subsidies
 
+# For elasticity
+elasticity <- coef(elasticity_mod$`Fishing time`)[[1]] # Extract elasticity coefficient
+
+# Calculate the counterfactual under no subsidies
 alternative_hours <- shrimp_panel %>% 
-  mutate(additional = treated * (hours - (factor * hours)),
-         treated = ifelse(treated == 1, "Subsidized", "Not subsidized")) %>% 
+  mutate(#additional = treated * (hours - (factor * hours)),
+         additional = ifelse(treated == 1, change * hours, 0),                  # Calculate total fishing effort attributable to subsidy
+         treated = ifelse(treated == 1, "Subsidized", "Not subsidized")         # Convert to useful character
+         ) %>% 
+  # Now calculate total effort and effort caused by subsidy by treatment group
   group_by(year, treated) %>% 
-  summarize(hours = sum(hours) / 1e6,
-            subsidy = sum(additional) / 1e6) %>% 
+  summarize(hours = sum(hours),                                           # Convert to millions of hours
+            subsidy = sum(additional),                                    # Convert to millions of hours. Always zero for treated == "Not subsidized
+            .groups = "drop") %>% 
+  # Calculate the amount of effort that we would have expected to see in the absence of subsidies
   mutate(baseline = hours - subsidy) %>% 
-  select(year, treated, subsidy, baseline) %>% 
+  select(-hours) %>% # We can now get rid of the actual observed hours
+  # And pivot the table so we now where the hours come from (subsidy or baseline)
   pivot_longer(cols = c(subsidy, baseline),
                values_to = "hours",
                names_to = "source") %>% 
   mutate(treated = paste(treated, source, sep = "-")) %>% 
+  # And we now remove cases where hours is zero. This removes the "additional"
+  #effort by vessels not subsidized, which is always zero by construction
   filter(hours > 0)
 
+# We now repeat the same process as above, but this time using % changes to simulate policy reductions
 alternative_hours2 <- shrimp_panel %>% 
   expand_grid(pct = pcts) %>% 
   mutate(factor = 1 + (((1 - pct)^elasticity)-1)) %>% 
@@ -61,8 +188,9 @@ alternative_hours2 <- shrimp_panel %>%
                           "Subsidized",
                           "Not subsidized")) %>% 
   group_by(year, treated, pct) %>% 
-  summarize(hours = sum(hours) / 1e6,
-            subsidy = sum(additional) / 1e6) %>% 
+  summarize(hours = sum(hours),
+            subsidy = sum(additional),
+            .groups = "drop") %>% 
   mutate(baseline = hours - subsidy) %>% 
   select(year, treated, pct, subsidy, baseline) %>% 
   pivot_longer(cols = c(subsidy, baseline),
@@ -75,27 +203,46 @@ alternative_hours2 <- shrimp_panel %>%
 
 # Stats for text ---
 
-# Range of hours for fleet
+# Summary of hours for fleet
 alternative_hours %>% 
   group_by(year) %>% 
   summarize(hours = sum(hours), .groups = "drop") %>% 
   pull(hours) %>% 
-  range()
+  summary()
 
-# Range of hours for subsidized vessels
+alternative_hours %>% 
+  group_by(year) %>% 
+  summarize(hours = sum(hours), .groups = "drop") %>% 
+  pull(hours) %>% 
+  sd()
+
+# Summary of hours for subsidized vessels
 alternative_hours %>% 
   filter(treated != "Not subsidized-baseline") %>% 
   group_by(year) %>% 
   summarize(hours = sum(hours), .groups = "drop") %>% 
   pull(hours) %>% 
-  range()
+  summary()
+
+alternative_hours %>% 
+  filter(treated != "Not subsidized-baseline") %>% 
+  group_by(year) %>% 
+  summarize(hours = sum(hours), .groups = "drop") %>% 
+  pull(hours) %>% 
+  sd()
 
 # Range of hours by subsidized vessels, and attributable to the subsidy
 alternative_hours %>% 
   filter(treated != "Not subsidized-baseline") %>% 
   filter(source == "subsidy") %>%
   pull(hours) %>%
-  range()
+  summary()
+
+alternative_hours %>% 
+  filter(treated != "Not subsidized-baseline") %>% 
+  filter(source == "subsidy") %>%
+  pull(hours) %>%
+  sd()
 
 # % of total hours attributable to subsidy
 alternative_hours %>% 
@@ -108,7 +255,6 @@ alternative_hours %>%
 ## Area stuff ##############################################################
 a_semi <- coef(semi_mod$`Fishing area`)[[1]]
 a_change <- (exp(a_semi)-1)
-a_factor <- 1 - a_change
 
 a_elasticity <- coef(elasticity_mod$`Fishing area`)[[1]]
 
