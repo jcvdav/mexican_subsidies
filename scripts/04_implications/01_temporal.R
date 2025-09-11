@@ -33,10 +33,26 @@ pcts <- c(0.1, 0.3, 0.5, 0.9)
 
 ## FUNCTIONS ####################################################################
 
-calculate_semi_elasticity_counterfactual <- function(model, var_col) {
+calc_semielasticity_counterfactual <- function(model, var_name) {
+  # Get the actual variable name from the data and model index
+  var_col <- case_when(
+    var_name == "Fishing time" ~ "hours",
+    var_name == "Fishing area" ~ "fg_area_km", 
+    var_name == "Landings" ~ "landed_weight"
+  )
+  
+  model_idx <- case_when(
+    var_name == "Fishing time" ~ 1L,
+    var_name == "Fishing area" ~ 2L, 
+    var_name == "Landings" ~ 3L
+  )
+  
+  if (is.na(var_col) || is.na(model_idx)) {
+    stop("Variable name not recognized")
+  }
   
   # Extract coefficient and calculate % change
-  semi_coef <- coef(model)[[1]]
+  semi_coef <- coef(model[[model_idx]])[[1]]
   change <- as.numeric(exp(semi_coef) - 1)
   
   # Calculate counterfactual
@@ -48,8 +64,8 @@ calculate_semi_elasticity_counterfactual <- function(model, var_col) {
     ) %>%
     group_by(year, treated) %>%
     summarize(
-      !!sym(var_col) := sum(!!sym(var_col)),
-      subsidy = sum(additional),
+      !!sym(var_col) := sum(!!sym(var_col), na.rm = TRUE),
+      subsidy = sum(additional, na.rm = TRUE),
       .groups = "drop"
     ) %>%
     mutate(baseline = !!sym(var_col) - subsidy) %>%
@@ -65,14 +81,30 @@ calculate_semi_elasticity_counterfactual <- function(model, var_col) {
   return(result)
 }
 
-calculate_elasticity_counterfactual <- function(model, var_col, pct_reductions = c(0.1, 0.3, 0.5, 0.9)) {
+calc_elasticity_counterfactual <- function(model, var_name, pct_reductions = c(0.1, 0.3, 0.5, 0.9)) {
+  # Get the actual variable name from the data and model index
+  var_col <- case_when(
+    var_name == "Fishing time" ~ "hours",
+    var_name == "Fishing area" ~ "fg_area_km", 
+    var_name == "Landings" ~ "landed_weight"
+  )
+  
+  model_idx <- case_when(
+    var_name == "Fishing time" ~ 1L,
+    var_name == "Fishing area" ~ 2L, 
+    var_name == "Landings" ~ 3L
+  )
+  
+  if (is.na(var_col) || is.na(model_idx)) {
+    stop("Variable name not recognized")
+  }
   
   # Extract elasticity coefficient
-  elasticity <- as.numeric(coef(model)[[1]])
+  elasticity <- as.numeric(coef(model[[model_idx]])[[1]])
   
   # Calculate counterfactual for different reduction scenarios
   result <- shrimp_panel %>%
-    drop_na(!!sym(var_col)) %>%
+    select(year, eu, treated, !!sym(var_col)) %>%
     expand_grid(pct = pct_reductions) %>%
     mutate(
       factor = 1 + (((1 - pct)^elasticity) - 1),
@@ -81,8 +113,8 @@ calculate_elasticity_counterfactual <- function(model, var_col, pct_reductions =
     ) %>%
     group_by(year, treated, pct) %>%
     summarize(
-      !!sym(var_col) := sum(!!sym(var_col)),
-      subsidy = sum(additional),
+      !!sym(var_col) := sum(!!sym(var_col), na.rm = TRUE),
+      subsidy = sum(additional, na.rm = TRUE),
       .groups = "drop"
     ) %>%
     mutate(baseline = !!sym(var_col) - subsidy) %>%
@@ -103,304 +135,171 @@ calculate_elasticity_counterfactual <- function(model, var_col, pct_reductions =
 }
 
 generate_counterfactual_summary <- function(data, var_col) {
-  
   # Overall summary by year
   overall_stats <- data %>%
     group_by(year) %>%
-    summarize(!!sym(var_col) := sum(!!sym(var_col)), .groups = "drop") %>%
-    pull(!!sym(var_col)) %>%
-    summary()
+    summarize(!!sym(var_col) := sum(!!sym(var_col), na.rm = TRUE), .groups = "drop") %>%
+    pull(!!sym(var_col))
+  
+  overall_summary <- summary(overall_stats)
+  overall_sd <- sd(overall_stats, na.rm = TRUE)
   
   # Summary for subsidized vessels only
   subsidized_stats <- data %>%
     filter(treated != "Not subsidized-baseline") %>%
     group_by(year) %>%
-    summarize(!!sym(var_col) := sum(!!sym(var_col)), .groups = "drop") %>%
-    pull(!!sym(var_col)) %>%
-    summary()
+    summarize(!!sym(var_col) := sum(!!sym(var_col), na.rm = TRUE), .groups = "drop") %>%
+    pull(!!sym(var_col))
+  
+  subsidized_summary <- summary(subsidized_stats)
+  subsidized_sd <- sd(subsidized_stats, na.rm = TRUE)
   
   # Values attributable to subsidy
   subsidy_attributable_stats <- data %>%
     filter(treated != "Not subsidized-baseline") %>%
     filter(source == "subsidy") %>%
-    pull(!!sym(var_col)) %>%
-    summary()
+    pull(!!sym(var_col))
+  
+  subsidy_attributable_summary <- summary(subsidy_attributable_stats)
+  subsidy_attributable_sd <- sd(subsidy_attributable_stats, na.rm = TRUE)
   
   # Percentage of total attributable to subsidy
   pct_attributable_stats <- data %>%
     group_by(year) %>%
-    mutate(pct_total = !!sym(var_col) / sum(!!sym(var_col))) %>%
+    mutate(pct_total = !!sym(var_col) / sum(!!sym(var_col), na.rm = TRUE)) %>%
     filter(source == "subsidy") %>%
-    pull(pct_total) %>%
-    summary()
+    pull(pct_total)
   
-  # Combine summaries
-  summary_table <- rbind(
-    data.frame(Statistic = "Overall", overall_stats),
-    data.frame(Statistic = "Subsidized", subsidized_stats),
-    data.frame(Statistic = "Subsidy Attributable", subsidy_attributable_stats),
-    data.frame(Statistic = "Pct Attributable", pct_attributable_stats)
+  pct_attributable_summary <- summary(pct_attributable_stats)
+  pct_attributable_sd <- sd(pct_attributable_stats, na.rm = TRUE)
+  
+  # Combine summaries with SD
+  summary_table <- bind_rows(
+    Overall = c(overall_summary, SD = overall_sd),
+    Subsidized = c(subsidized_summary, SD = subsidized_sd),
+    Subsidy_Attributable = c(subsidy_attributable_summary, SD = subsidy_attributable_sd),
+    Pct_Attributable = c(pct_attributable_summary, SD = pct_attributable_sd)
   )
   
   return(summary_table)
 }
 
+plot_counterfactual_scenarios <- function(remove_data, reduce_data, var_col, y_label, title, 
+                                         show_linetype = FALSE) {
+  
+  # Define color palette based on variable type
+  if (var_col == "hours") {
+    # Greens for hours
+    palette <- c(
+      "Not subsidized-baseline" = "#B3B3B3",
+      "Subsidized-baseline" = "#66C2A5",
+      "Subsidized-subsidy" = "#A6C2A5"
+    )
+  } else if (var_col == "fg_area_km") {
+    # Purples for area
+    palette <- c(
+      "Not subsidized-baseline" = "#B3B3B3",
+      "Subsidized-baseline" = "#8DA0CB",
+      "Subsidized-subsidy" = "#ADA0CB"
+    )
+  } else if (var_col == "landed_weight") {
+    # Oranges for landings
+    palette <- c(
+      "Not subsidized-baseline" = "#B3B3B3",
+      "Subsidized-baseline" = "#FC8D62",
+      "Subsidized-subsidy" = "#CC8D62"
+    )
+  } else {
+    # Default palette
+    palette <- c(
+      "Not subsidized-baseline" = "#B3B3B3",
+      "Subsidized-baseline" = "#FC8D62",
+      "Subsidized-subsidy" = "#CC8D62"
+    )
+  }
+  
+  # Create the plot
+  p <- ggplot(data = remove_data,
+              mapping = aes_string(x = "year", y = var_col, fill = "treated")) +
+    stat_summary(aes_string(x = "year", y = var_col),
+                 geom = "line",
+                 fun = "sum",
+                 position = "stack",
+                 inherit.aes = FALSE) +
+    stat_summary(geom = "area", fun = "sum",
+                 position = "stack")
+  
+  # Add reduction lines
+  if (show_linetype) {
+    p <- p + geom_line(data = reduce_data,
+                       mapping = aes_string(x = "year",
+                                           y = var_col,
+                                           linetype = "paste0(pct * 100, \"%\")",
+                                           group = "pct"),
+                       inherit.aes = FALSE)
+  } else {
+    p <- p + geom_line(data = reduce_data,
+                       mapping = aes_string(x = "year",
+                                           y = var_col,
+                                           group = "pct"),
+                       color = "black",
+                       linewidth = 0.3,
+                       alpha = 0.5,
+                       inherit.aes = FALSE)
+  }
+  
+  # Add scales and labels
+  p <- p + scale_y_continuous(expand = c(0, 0)) +
+    scale_x_continuous(expand = c(0, 0),
+                       breaks = seq(2011, 2019, by = 2),
+                       limits = c(2011, 2019.5)) +
+    scale_fill_manual(values = palette) +
+    labs(title = title,
+         x = "Year",
+         y = y_label,
+         fill = "Source") +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+  
+  return(p)
+}
+
 # ## PROCESSING ##################################################################
 
-# Extract coefficients ---------------------------------------------------------
-# For semi-elasticity
-semi <- coef(semi_mod$`Fishing time`)[[1]] # Extract the semi-elasticity
-change <- (exp(semi)-1) # Calculate the % change equivalent
-# factor <- 1 - change # Calculate the reduction in the absence of subsidies
+## Get counterfacutual simulations -----------------------------------------------
+### For hours
+alternative_hours_remove <- calc_semielasticity_counterfactual(semi_mod, "Fishing time")
+alternative_hours_reduce <- calc_elasticity_counterfactual(elasticity_mod, "Fishing time")
+summary_hours <- generate_counterfactual_summary(alternative_hours_remove, "hours")
 
-# For elasticity
-elasticity <- coef(elasticity_mod$`Fishing time`)[[1]] # Extract elasticity coefficient
+# For fishing area
+alternative_area_remove <- calc_semielasticity_counterfactual(semi_mod, "Fishing area")
+alternative_area_reduce <- calc_elasticity_counterfactual(elasticity_mod, "Fishing area")
+summary_area <- generate_counterfactual_summary(alternative_area_remove, "fg_area_km")
 
-# Calculate the counterfactual under no subsidies
-alternative_hours <- shrimp_panel %>% 
-  mutate(#additional = treated * (hours - (factor * hours)),
-         additional = ifelse(treated == 1, change * hours, 0),                  # Calculate total fishing effort attributable to subsidy
-         treated = ifelse(treated == 1, "Subsidized", "Not subsidized")         # Convert to useful character
-         ) %>% 
-  # Now calculate total effort and effort caused by subsidy by treatment group
-  group_by(year, treated) %>% 
-  summarize(hours = sum(hours),                                           # Convert to millions of hours
-            subsidy = sum(additional),                                    # Convert to millions of hours. Always zero for treated == "Not subsidized
-            .groups = "drop") %>% 
-  # Calculate the amount of effort that we would have expected to see in the absence of subsidies
-  mutate(baseline = hours - subsidy) %>% 
-  select(-hours) %>% # We can now get rid of the actual observed hours
-  # And pivot the table so we now where the hours come from (subsidy or baseline)
-  pivot_longer(cols = c(subsidy, baseline),
-               values_to = "hours",
-               names_to = "source") %>% 
-  mutate(treated = paste(treated, source, sep = "-")) %>% 
-  # And we now remove cases where hours is zero. This removes the "additional"
-  #effort by vessels not subsidized, which is always zero by construction
-  filter(hours > 0)
-
-# We now repeat the same process as above, but this time using % changes to simulate policy reductions
-alternative_hours2 <- shrimp_panel %>% 
-  expand_grid(pct = pcts) %>% 
-  mutate(factor = 1 + (((1 - pct)^elasticity)-1)) %>% 
-  mutate(additional = treated * (hours - (factor * hours)),
-         treated = ifelse(treated == 1,
-                          "Subsidized",
-                          "Not subsidized")) %>% 
-  group_by(year, treated, pct) %>% 
-  summarize(hours = sum(hours),
-            subsidy = sum(additional),
-            .groups = "drop") %>% 
-  mutate(baseline = hours - subsidy) %>% 
-  select(year, treated, pct, subsidy, baseline) %>% 
-  pivot_longer(cols = c(subsidy, baseline),
-               values_to = "hours",
-               names_to = "source") %>% 
-  filter(hours > 0,
-         treated == "Subsidized",
-         source == "subsidy") %>% 
-  mutate(treated = paste(treated, source, sep = "-")) 
-
-# Stats for text ---
-
-# Summary of hours for fleet
-alternative_hours %>% 
-  group_by(year) %>% 
-  summarize(hours = sum(hours), .groups = "drop") %>% 
-  pull(hours) %>% 
-  summary()
-
-alternative_hours %>% 
-  group_by(year) %>% 
-  summarize(hours = sum(hours), .groups = "drop") %>% 
-  pull(hours) %>% 
-  sd()
-
-# Summary of hours for subsidized vessels
-alternative_hours %>% 
-  filter(treated != "Not subsidized-baseline") %>% 
-  group_by(year) %>% 
-  summarize(hours = sum(hours), .groups = "drop") %>% 
-  pull(hours) %>% 
-  summary()
-
-alternative_hours %>% 
-  filter(treated != "Not subsidized-baseline") %>% 
-  group_by(year) %>% 
-  summarize(hours = sum(hours), .groups = "drop") %>% 
-  pull(hours) %>% 
-  sd()
-
-# Range of hours by subsidized vessels, and attributable to the subsidy
-alternative_hours %>% 
-  filter(treated != "Not subsidized-baseline") %>% 
-  filter(source == "subsidy") %>%
-  pull(hours) %>%
-  summary()
-
-alternative_hours %>% 
-  filter(treated != "Not subsidized-baseline") %>% 
-  filter(source == "subsidy") %>%
-  pull(hours) %>%
-  sd()
-
-# % of total hours attributable to subsidy
-alternative_hours %>% 
-  group_by(year) %>%
-  mutate(pct_hours = hours / sum(hours)) %>%
-  filter(source == "subsidy") %>%
-  pull(pct_hours) %>%
-  range()
-
-## Area stuff ##############################################################
-a_semi <- coef(semi_mod$`Fishing area`)[[1]]
-a_change <- (exp(a_semi)-1)
-
-a_elasticity <- coef(elasticity_mod$`Fishing area`)[[1]]
-
-alternative_area <- shrimp_panel %>% 
-  drop_na(fg_area_km) %>% 
-  select(year, eu, treated, fg_area_km) %>% 
-  mutate(additional = treated * (fg_area_km - (a_factor * fg_area_km)),
-         treated = ifelse(treated == 1, "Subsidized", "Not subsidized")) %>% 
-  group_by(year, treated) %>% 
-  summarize(fg_area_km = sum(fg_area_km) / 1e6,
-            subsidy = sum(additional) / 1e6) %>% 
-  mutate(baseline = fg_area_km - subsidy) %>% 
-  select(year, treated, subsidy, baseline) %>% 
-  pivot_longer(cols = c(subsidy, baseline),
-               values_to = "fg_area_km",
-               names_to = "source") %>% 
-  mutate(treated = paste(treated, source, sep = "-")) %>% 
-  filter(fg_area_km > 0)
-
-alternative_area2 <- shrimp_panel %>% 
-  drop_na(fg_area_km) %>% 
-  expand_grid(pct = pcts) %>% 
-  mutate(factor = 1 + (((1 - pct)^a_elasticity)-1)) %>% 
-  mutate(additional = treated * (fg_area_km - (factor * fg_area_km)),
-         treated = ifelse(treated == 1,
-                          "Subsidized",
-                          "Not subsidized")) %>% 
-  group_by(year, treated, pct) %>% 
-  summarize(fg_area_km = sum(fg_area_km) / 1e6,
-            subsidy = sum(additional) / 1e6) %>% 
-  mutate(baseline = fg_area_km - subsidy) %>% 
-  select(year, treated, pct, subsidy, baseline) %>% 
-  pivot_longer(cols = c(subsidy, baseline),
-               values_to = "fg_area_km",
-               names_to = "source") %>% 
-  filter(fg_area_km > 0,
-         treated == "Subsidized",
-         source == "subsidy") %>% 
-  mutate(treated = paste(treated, source, sep = "-")) 
-
-# Range of annual area
-alternative_area %>% 
-  group_by(year) %>% 
-  summarize(fg_area_km = sum(fg_area_km)) %>% 
-  pull(fg_area_km) %>% 
-  range()
-
-# Range of annual area by subsidized vessels
-alternative_area %>% 
-  filter(treated != "Not subsidized-baseline") %>% 
-  group_by(year) %>% 
-  summarize(fg_area_km = sum(fg_area_km)) %>% 
-  pull(fg_area_km) %>% 
-  range()
-
-# Range of area by subsidized vessels, and attributable to the subsidy
-alternative_area %>%
-  filter(treated != "Not subsidized-baseline") %>% 
-  filter(source == "subsidy") %>%
-  pull(fg_area_km) %>%
-  range()
-
-# As percent
-alternative_area %>%
-  ungroup() %>% 
-  group_by(year) %>%
-  mutate(pct = fg_area_km / sum(fg_area_km)) %>% 
-  filter(source == "subsidy") %>%
-  pull(pct) %>%
-  range()
+# For landings
+alternative_landings_remove <- calc_semielasticity_counterfactual(semi_mod, "Landings")
+alternative_landings_reduce <- calc_elasticity_counterfactual(elasticity_mod, "Landings")
+summary_landings <- generate_counterfactual_summary(alternative_landings_remove, "landed_weight")
 
 
-## Landings stuff ##############################################################
-l_semi <- coef(semi_mod$`Landings`)[[1]]
-l_change <- (exp(l_semi)-1)
-l_factor <- 1 - l_change
+plot_counterfactual_scenarios(remove_data = alternative_hours_remove,
+                              reduce_data = alternative_hours_reduce,
+                              var_col = "hours",
+                              y_label = "Hours",
+                              title = "A", show_linetype = T)
 
-l_elasticity <- coef(elasticity_mod$`Landings`)[[1]]
+plot_counterfactual_scenarios(remove_data = alternative_area_remove,
+                              reduce_data = alternative_area_reduce,
+                              var_col = "fg_area_km",
+                              y_label = "Area",
+                              title = "A")
 
-alternative_landings <- shrimp_panel %>% 
-  drop_na(landed_weight) %>% 
-  select(year, eu, treated, landed_weight) %>% 
-  mutate(additional = treated * (landed_weight - (l_factor * landed_weight)),
-         treated = ifelse(treated == 1, "Subsidized", "Not subsidized")) %>% 
-  group_by(year, treated) %>% 
-  summarize(landed_weight = sum(landed_weight) / 1e6,
-            subsidy = sum(additional) / 1e6) %>% 
-  mutate(baseline = landed_weight - subsidy) %>% 
-  select(year, treated, subsidy, baseline) %>% 
-  pivot_longer(cols = c(subsidy, baseline),
-               values_to = "landed_weight",
-               names_to = "source") %>% 
-  mutate(treated = paste(treated, source, sep = "-")) %>% 
-  filter(landed_weight > 0)
-
-alternative_landings2 <- shrimp_panel %>% 
-  drop_na(landed_weight) %>% 
-  expand_grid(pct = pcts) %>% 
-  mutate(factor = 1 + (((1 - pct)^l_elasticity)-1)) %>% 
-  mutate(additional = treated * (landed_weight - (factor * landed_weight)),
-         treated = ifelse(treated == 1,
-                          "Subsidized",
-                          "Not subsidized")) %>% 
-  group_by(year, treated, pct) %>% 
-  summarize(landed_weight = sum(landed_weight) / 1e6,
-            subsidy = sum(additional) / 1e6) %>% 
-  mutate(baseline = landed_weight - subsidy) %>% 
-  select(year, treated, pct, subsidy, baseline) %>% 
-  pivot_longer(cols = c(subsidy, baseline),
-               values_to = "landed_weight",
-               names_to = "source") %>% 
-  filter(landed_weight > 0,
-         treated == "Subsidized",
-         source == "subsidy") %>% 
-  mutate(treated = paste(treated, source, sep = "-")) 
-
-# Range of annual landings
-alternative_landings %>% 
-  group_by(year) %>% 
-  summarize(landed_weight = sum(landed_weight)) %>% 
-  pull(landed_weight) %>% 
-  range()
-
-# Range of annual landings by subsidized vessels
-alternative_landings %>% 
-  filter(treated != "Not subsidized-baseline") %>% 
-  group_by(year) %>% 
-  summarize(landed_weight = sum(landed_weight)) %>% 
-  pull(landed_weight) %>% 
-  range()
-
-# Range of landings by subsidized vessels, and attributable to the subsidy
-alternative_landings %>%
-  filter(treated != "Not subsidized-baseline") %>% 
-  filter(source == "subsidy") %>%
-  pull(landed_weight) %>% 
-  range()
-
-alternative_landings %>%
-  ungroup() %>% 
-  group_by(year) %>%
-  mutate(pct = landed_weight / sum(landed_weight)) %>% 
-  filter(source == "subsidy") %>%
-  pull(pct) %>%
-  range()
-  
+plot_counterfactual_scenarios(remove_data = alternative_landings_remove,
+                              reduce_data = alternative_landings_reduce,
+                              var_col = "landed_weight",
+                              y_label = "Area",
+                              title = "A")
 
 ## VISUALIZE ###################################################################
 
@@ -411,7 +310,8 @@ palette <- c(
   "Subsidized-subsidy" = "#A6C2A5"
 )
 
-p1 <- ggplot(data = alternative_hours,
+
+p1 <- ggplot(data = alternative_hours_remove,
              mapping = aes(x = year, y = hours, fill = treated)) +
   stat_summary(aes(x = year, y = hours),
                geom = "line",
@@ -420,7 +320,7 @@ p1 <- ggplot(data = alternative_hours,
                inherit.aes = F) +
   stat_summary(geom = "area", fun = "sum",
                position = "stack") +
-  geom_line(data = alternative_hours2,
+  geom_line(data = alternative_hours_reduce,
             mapping = aes(x = year,
                           y = hours,
                           linetype = paste0(pct * 100, "%"),
@@ -439,13 +339,13 @@ p1 <- ggplot(data = alternative_hours,
   theme(legend.position = "None")
 
 # Area -------------------------------------------------------------------------
-palette <- c(
-  "Not subsidized-baseline" = "#B3B3B3",
-  "Subsidized-baseline" = "#FC8D62",
-  "Subsidized-subsidy" = "#CC8D62"
-)
 
-p2 <- ggplot(data = alternative_area,
+palette <- c(
+  "Not subsidized" = "#B3B3B3",
+  "Subsidized" = "#8DA0CB",
+  "Subsidy" = "#ADA0CB"
+)
+p2 <- ggplot(data = alternative_area_remove,
              mapping = aes(x = year, y = fg_area_km, fill = treated)) +
   stat_summary(aes(x = year, y = fg_area_km),
                geom = "line",
@@ -454,7 +354,7 @@ p2 <- ggplot(data = alternative_area,
                inherit.aes = F) +
   stat_summary(geom = "area", fun = "sum",
                position = "stack") +
-  geom_line(data = alternative_area2,
+  geom_line(data = alternative_area_reduce,
             mapping = aes(x = year,
                           y = fg_area_km,
                           linetype = paste0(pct * 100, "%"),
@@ -472,18 +372,14 @@ p2 <- ggplot(data = alternative_area,
        linetype = "% Subsidy reduction") +
   theme(legend.position = "None")
 
-
-# Landings ---------------------------------------------------------------------
-
 palette <- c(
-  "Not subsidized" = "#B3B3B3",
-  "Subsidized" = "#8DA0CB",
-  "Subsidy" = "#ADA0CB"
+  "Not subsidized-baseline" = "#B3B3B3",
+  "Subsidized-baseline" = "#FC8D62",
+  "Subsidized-subsidy" = "#CC8D62"
 )
 
-p3 <- ggplot(data = alternative_landings %>% 
-               mutate(treated = str_remove(treated, "-baseline"),
-                      treated = ifelse(treated == "Subsidized-subsidy", "Subsidy", treated)),
+# Landings ---------------------------------------------------------------------
+p3 <- ggplot(data = alternative_landings_remove,
              mapping = aes(x = year, y = landed_weight, fill = treated)) +
   stat_summary(aes(x = year, y = landed_weight),
                geom = "line",
@@ -492,7 +388,7 @@ p3 <- ggplot(data = alternative_landings %>%
                inherit.aes = F) +
   stat_summary(geom = "area", fun = "sum",
                position = "stack") +
-  geom_line(data = alternative_landings2,
+  geom_line(data = alternative_landings_reduce,
             mapping = aes(x = year,
                           y = landed_weight,
                           linetype = paste0(pct * 100, "%"),
