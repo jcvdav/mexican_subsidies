@@ -60,7 +60,7 @@ vessel_registry <- tbl(mex_fisheries, vi) %>%
 # tracks, filtered -------------------------------------------------------------
 tracks <- tbl(mex_fisheries, vms) %>% 
   inner_join(vessel_registry, by = "vessel_rnpa") %>% 
-  filter(between(year, 2011, 2019)) %>% 
+  filter(between(year, 2011, 2024)) %>% 
   filter(between(implied_speed_knots, 1, 5)) %>% # Trawling occurs between 1 and 5 knots
   filter(between(depth_m, -100, -9.15)) %>%  # And at depths between 9.15m and 100m
   arrange(vessel_rnpa, datetime) %>% 

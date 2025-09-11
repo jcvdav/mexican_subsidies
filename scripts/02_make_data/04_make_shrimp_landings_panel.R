@@ -20,7 +20,7 @@ pacman::p_load(
 
 # Load data --------------------------------------------------------------------
 # Landings data
-landings <- readRDS(file = url("https://github.com/jcvdav/mex_fisheries/raw/refs/heads/main/data/mex_landings/clean/mex_annual_landings_by_eu.rds"))
+landings <- readRDS(file = url("https://github.com/jcvdav/mex_fisheries/raw/c4427fa0b9ab18641dc1fe52afe4ca3c04263710/data/mex_landings/clean/mex_annual_landings_by_eu.rds")) # Points to c4427fa from late August 2025
 
 ## PROCESSING ##################################################################
 

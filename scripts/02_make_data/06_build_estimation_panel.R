@@ -85,7 +85,7 @@ shrimp <- subsidy_and_effort_panel |>
     always = 1 * (eu %in% always),
     never = 1 * (eu %in% never),
     sometimes = 1 * (always == 0 & never == 0)) |> 
-  select(year, region, state, eu, total_hp, n_vessels, norm_hp,
+  select(year, region, state, eu, total_hp, n_vessels,
          treated, subsidy_pesos, n_times_sub, subsidy_frequency, always, sometimes, never,
          mean_diesel_price_mxn_l, nino34_m,
          hours, fg_area_km, fg_hours, landed_weight, live_weight)
