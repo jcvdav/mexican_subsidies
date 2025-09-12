@@ -17,7 +17,8 @@ pacman::p_load(
   here,
   fixest,
   modelsummary,
-  tidyverse
+  tidyverse,
+  cowplot
 )
 
 theme_set(theme_minimal(base_size = 10))
@@ -33,6 +34,7 @@ pcts <- c(0.1, 0.3, 0.5, 0.9)
 
 ## FUNCTIONS ####################################################################
 
+# Calculate counterfactual scenarios assuming full subsidy removal using semi-elasticity model
 calc_semielasticity_counterfactual <- function(model, var_name) {
   # Get the actual variable name from the data and model index
   var_col <- case_when(
@@ -62,7 +64,7 @@ calc_semielasticity_counterfactual <- function(model, var_name) {
       additional = ifelse(treated == 1, change * !!sym(var_col), 0),
       treated = ifelse(treated == 1, "Subsidized", "Not subsidized")
     ) %>%
-    group_by(year, treated) %>%
+  group_by(year, treated) %>% 
     summarize(
       !!sym(var_col) := sum(!!sym(var_col), na.rm = TRUE),
       subsidy = sum(additional, na.rm = TRUE),
@@ -75,12 +77,13 @@ calc_semielasticity_counterfactual <- function(model, var_name) {
       values_to = var_col,
       names_to = "source"
     ) %>%
-    mutate(treated = paste(treated, source, sep = "-")) %>%
+  mutate(treated = paste(treated, source, sep = "-")) %>% 
     filter(!!sym(var_col) > 0)
   
   return(result)
 }
 
+# Calculate counterfactual scenarios for different subsidy reduction levels using elasticity model
 calc_elasticity_counterfactual <- function(model, var_name, pct_reductions = c(0.1, 0.3, 0.5, 0.9)) {
   # Get the actual variable name from the data and model index
   var_col <- case_when(
@@ -111,14 +114,14 @@ calc_elasticity_counterfactual <- function(model, var_name, pct_reductions = c(0
       additional = treated * (!!sym(var_col) - (factor * !!sym(var_col))),
       treated = ifelse(treated == 1, "Subsidized", "Not subsidized")
     ) %>%
-    group_by(year, treated, pct) %>%
+  group_by(year, treated, pct) %>% 
     summarize(
       !!sym(var_col) := sum(!!sym(var_col), na.rm = TRUE),
       subsidy = sum(additional, na.rm = TRUE),
       .groups = "drop"
     ) %>%
     mutate(baseline = !!sym(var_col) - subsidy) %>%
-    select(year, treated, pct, subsidy, baseline) %>%
+  select(year, treated, pct, subsidy, baseline) %>% 
     pivot_longer(
       cols = c(subsidy, baseline),
       values_to = var_col,
@@ -126,18 +129,19 @@ calc_elasticity_counterfactual <- function(model, var_name, pct_reductions = c(0
     ) %>%
     filter(
       !!sym(var_col) > 0,
-      treated == "Subsidized",
+         treated == "Subsidized",
       source == "subsidy"
     ) %>%
-    mutate(treated = paste(treated, source, sep = "-"))
-  
+  mutate(treated = paste(treated, source, sep = "-")) 
+
   return(result)
 }
 
+# Generate summary statistics for counterfactual scenarios
 generate_counterfactual_summary <- function(data, var_col) {
   # Overall summary by year
   overall_stats <- data %>%
-    group_by(year) %>%
+  group_by(year) %>% 
     summarize(!!sym(var_col) := sum(!!sym(var_col), na.rm = TRUE), .groups = "drop") %>%
     pull(!!sym(var_col))
   
@@ -146,8 +150,8 @@ generate_counterfactual_summary <- function(data, var_col) {
   
   # Summary for subsidized vessels only
   subsidized_stats <- data %>%
-    filter(treated != "Not subsidized-baseline") %>%
-    group_by(year) %>%
+  filter(treated != "Not subsidized-baseline") %>% 
+  group_by(year) %>% 
     summarize(!!sym(var_col) := sum(!!sym(var_col), na.rm = TRUE), .groups = "drop") %>%
     pull(!!sym(var_col))
   
@@ -156,8 +160,8 @@ generate_counterfactual_summary <- function(data, var_col) {
   
   # Values attributable to subsidy
   subsidy_attributable_stats <- data %>%
-    filter(treated != "Not subsidized-baseline") %>%
-    filter(source == "subsidy") %>%
+  filter(treated != "Not subsidized-baseline") %>% 
+  filter(source == "subsidy") %>%
     pull(!!sym(var_col))
   
   subsidy_attributable_summary <- summary(subsidy_attributable_stats)
@@ -165,9 +169,9 @@ generate_counterfactual_summary <- function(data, var_col) {
   
   # Percentage of total attributable to subsidy
   pct_attributable_stats <- data %>%
-    group_by(year) %>%
+  group_by(year) %>%
     mutate(pct_total = !!sym(var_col) / sum(!!sym(var_col), na.rm = TRUE)) %>%
-    filter(source == "subsidy") %>%
+  filter(source == "subsidy") %>%
     pull(pct_total)
   
   pct_attributable_summary <- summary(pct_attributable_stats)
@@ -178,278 +182,199 @@ generate_counterfactual_summary <- function(data, var_col) {
     Overall = c(overall_summary, SD = overall_sd),
     Subsidized = c(subsidized_summary, SD = subsidized_sd),
     Subsidy_Attributable = c(subsidy_attributable_summary, SD = subsidy_attributable_sd),
-    Pct_Attributable = c(pct_attributable_summary, SD = pct_attributable_sd)
-  )
+    Pct_Attributable = c(pct_attributable_summary, SD = pct_attributable_sd),
+    .id = "var"
+  ) |> 
+    janitor::clean_names()
   
   return(summary_table)
 }
 
-plot_counterfactual_scenarios <- function(remove_data, reduce_data, var_col, y_label, title, 
-                                         show_linetype = FALSE) {
+# Create dual-panel plots showing stacked areas and reduction scenarios
+plot_counterfactual_scenarios <- function(remove_data, reduce_data, var_col, x_label, y_label, labels = NULL, legend = F) {
+  
+  remove_data <- remove_data |> 
+    mutate(treated = case_when(treated == "Not subsidized-baseline" ~ "Not subsidized",
+                               treated == "Subsidized-subsidy" ~ "Subsidized",
+                               treated == "Subsidized-baseline" ~ "Induced by subsidies"),
+           treated = fct_relevel(treated, "Not subsidized", "Subsidized", "Induced by subsidies"),
+           !!sym(var_col) := !!sym(var_col) / 1e6)
+  
+  reduce_data <- reduce_data |> 
+    mutate(!!sym(var_col) := !!sym(var_col) / 1e6)
   
   # Define color palette based on variable type
   if (var_col == "hours") {
     # Greens for hours
-    palette <- c(
-      "Not subsidized-baseline" = "#B3B3B3",
-      "Subsidized-baseline" = "#66C2A5",
-      "Subsidized-subsidy" = "#A6C2A5"
+palette <- c(
+      "Not subsidized" = "#B3B3B3",
+      "Subsidized" = "#66C2A5",
+      "Induced by subsidies" = "#A6C2A5"
     )
   } else if (var_col == "fg_area_km") {
-    # Purples for area
-    palette <- c(
-      "Not subsidized-baseline" = "#B3B3B3",
-      "Subsidized-baseline" = "#8DA0CB",
-      "Subsidized-subsidy" = "#ADA0CB"
+    # Oranges for area
+palette <- c(
+      "Not subsidized" = "#B3B3B3",
+      "Subsidized" = "#FC8D62",
+      "Induced by subsidies" = "#CC8D62"
     )
+    
   } else if (var_col == "landed_weight") {
-    # Oranges for landings
-    palette <- c(
-      "Not subsidized-baseline" = "#B3B3B3",
-      "Subsidized-baseline" = "#FC8D62",
-      "Subsidized-subsidy" = "#CC8D62"
+    # Purples for landings
+palette <- c(
+  "Not subsidized" = "#B3B3B3",
+  "Subsidized" = "#8DA0CB",
+      "Induced by subsidies" = "#ADA0CB"
     )
   } else {
-    # Default palette
-    palette <- c(
-      "Not subsidized-baseline" = "#B3B3B3",
-      "Subsidized-baseline" = "#FC8D62",
-      "Subsidized-subsidy" = "#CC8D62"
-    )
+    stop("Palette not assigned")
   }
   
-  # Create the plot
-  p <- ggplot(data = remove_data,
-              mapping = aes_string(x = "year", y = var_col, fill = "treated")) +
+  # Create the stacked area plot
+  p1 <- ggplot(data = remove_data,
+               mapping = aes_string(x = "year", y = var_col, fill = "treated")) +
     stat_summary(aes_string(x = "year", y = var_col),
-                 geom = "line",
-                 fun = "sum",
-                 position = "stack",
+               geom = "line",
+               fun = "sum",
+               position = "stack",
                  inherit.aes = FALSE) +
-    stat_summary(geom = "area", fun = "sum",
-                 position = "stack")
+    stat_summary(geom = "area",
+                 fun = "sum",
+               position = "stack") +
+    geom_line(data = reduce_data,
+              mapping = aes_string(x = "year",
+                                   y = var_col,
+                                   linetype = "paste0(pct * 100, \"%\")",
+                                   group = "pct"),
+              inherit.aes = FALSE) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0),
+                       breaks = seq(2011, 2019, by = 2)) +
+  scale_fill_manual(values = palette) +
+    labs(x = x_label,
+         y = y_label,
+         fill = "Source of activity",
+         linetype = "% Subsidy reduction",) +
+    theme_minimal(base_size = 10) +
+    theme(legend.position = "None",
+          plot.margin = margin(t = 5, r = 5, b = 5, l = 15, unit = "pt"))
   
-  # Add reduction lines
-  if (show_linetype) {
-    p <- p + geom_line(data = reduce_data,
-                       mapping = aes_string(x = "year",
-                                           y = var_col,
-                                           linetype = "paste0(pct * 100, \"%\")",
-                                           group = "pct"),
-                       inherit.aes = FALSE)
+  # Extract units from y_label for the right panel
+  if (is.expression(y_label)) {
+    # For expressions, create an expression with proper formatting
+    change_y_label <- expression("Change\n(Million km"^2*")")
   } else {
-    p <- p + geom_line(data = reduce_data,
-                       mapping = aes_string(x = "year",
-                                           y = var_col,
-                                           group = "pct"),
-                       color = "black",
-                       linewidth = 0.3,
-                       alpha = 0.5,
-                       inherit.aes = FALSE)
+    # For character strings, extract units
+    units <- str_extract(y_label, "\\([^)]+\\)")
+    if (is.na(units)) {
+      change_y_label <- "Change"
+    } else {
+      change_y_label <- paste0("Change\n", units)
+    }
   }
   
-  # Add scales and labels
-  p <- p + scale_y_continuous(expand = c(0, 0)) +
-    scale_x_continuous(expand = c(0, 0),
-                       breaks = seq(2011, 2019, by = 2),
-                       limits = c(2011, 2019.5)) +
-    scale_fill_manual(values = palette) +
-    labs(title = title,
-         x = "Year",
-         y = y_label,
-         fill = "Source") +
-    theme_minimal() +
-    theme(legend.position = "bottom")
+  # Create the reduction plot
+  p2 <- reduce_data %>%
+    ggplot(aes_string(x = "pct", y = paste0("-", var_col))) +
+    stat_summary(geom = "linerange", fun.data = mean_cl_normal) +
+    stat_summary(geom = "point", fun = mean, fill = palette[2]) +
+    scale_x_continuous(labels = scales::percent) +
+    geom_hline(yintercept = 0, linetype = "dashed") + 
+    labs(x = ifelse(x_label == "", "", "% Subsidy reduction"),
+         y = change_y_label) +
+    theme_minimal(base_size = 10) +
+    theme(legend.position = "None",
+          plot.margin = margin(t = 5, r = 5, b = 5, l = 15, unit = "pt"))
   
-  return(p)
+  # Combine plots
+  combined_plot <- plot_grid(p1, p2,
+                             labels = labels,
+                             align = "hv",
+                             axis = "tr",
+                             ncol = 2,
+                             label_size = 10,
+                             rel_widths = c(1, 0.5))
+  
+  if(legend) {
+    # Get legend
+    leg <- get_plot_component(
+      p1 +
+        theme(legend.position = "top") +
+        guides(fill = guide_legend(ncol = 3, title.position = "top"),
+               linetype = guide_legend(ncol = 4, title.position = "top")),
+      pattern = "guide-box-top",
+      return_all = T)
+    
+    return(leg)
+  } else {
+    return(combined_plot)
+  }
 }
 
 # ## PROCESSING ##################################################################
 
-## Get counterfacutual simulations -----------------------------------------------
+## Get counterfactual simulations -----------------------------------------------
+# Calculate scenarios for full subsidy removal and partial reductions
 ### For hours
 alternative_hours_remove <- calc_semielasticity_counterfactual(semi_mod, "Fishing time")
 alternative_hours_reduce <- calc_elasticity_counterfactual(elasticity_mod, "Fishing time")
 summary_hours <- generate_counterfactual_summary(alternative_hours_remove, "hours")
+summary_hours
 
 # For fishing area
 alternative_area_remove <- calc_semielasticity_counterfactual(semi_mod, "Fishing area")
 alternative_area_reduce <- calc_elasticity_counterfactual(elasticity_mod, "Fishing area")
 summary_area <- generate_counterfactual_summary(alternative_area_remove, "fg_area_km")
+summary_area
 
 # For landings
 alternative_landings_remove <- calc_semielasticity_counterfactual(semi_mod, "Landings")
 alternative_landings_reduce <- calc_elasticity_counterfactual(elasticity_mod, "Landings")
 summary_landings <- generate_counterfactual_summary(alternative_landings_remove, "landed_weight")
 
-
-plot_counterfactual_scenarios(remove_data = alternative_hours_remove,
-                              reduce_data = alternative_hours_reduce,
-                              var_col = "hours",
-                              y_label = "Hours",
-                              title = "A", show_linetype = T)
-
-plot_counterfactual_scenarios(remove_data = alternative_area_remove,
-                              reduce_data = alternative_area_reduce,
-                              var_col = "fg_area_km",
-                              y_label = "Area",
-                              title = "A")
-
-plot_counterfactual_scenarios(remove_data = alternative_landings_remove,
-                              reduce_data = alternative_landings_reduce,
-                              var_col = "landed_weight",
-                              y_label = "Area",
-                              title = "A")
-
 ## VISUALIZE ###################################################################
+# Generate combined plots showing temporal attribution of fishing activity
+# Create individual plots for each outcome variable
 
-# Hours ------------------------------------------------------------------------
-palette <- c(
-  "Not subsidized-baseline" = "#B3B3B3",
-  "Subsidized-baseline" = "#66C2A5",
-  "Subsidized-subsidy" = "#A6C2A5"
-)
+p1 <- plot_counterfactual_scenarios(remove_data = alternative_hours_remove,
+                                    reduce_data = alternative_hours_reduce,
+                                    var_col = "hours",
+                                    labels = c("a)", "b)"),
+                                    x_label = "",
+                                    y_label = "Fishing time\n(Millions of hours)")
 
+p2 <- plot_counterfactual_scenarios(remove_data = alternative_area_remove,
+                                    reduce_data = alternative_area_reduce,
+                                    var_col = "fg_area_km",
+                                    labels = c("c)", "d)"),
+                                    x_label = "",
+                                    y_label = expression("Fishing area\n(Million km"^2*")"))
 
-p1 <- ggplot(data = alternative_hours_remove,
-             mapping = aes(x = year, y = hours, fill = treated)) +
-  stat_summary(aes(x = year, y = hours),
-               geom = "line",
-               fun = "sum",
-               position = "stack",
-               inherit.aes = F) +
-  stat_summary(geom = "area", fun = "sum",
-               position = "stack") +
-  geom_line(data = alternative_hours_reduce,
-            mapping = aes(x = year,
-                          y = hours,
-                          linetype = paste0(pct * 100, "%"),
-                          group = pct),
-            inherit.aes = F) +
-  scale_y_continuous(expand = c(0, 0)) +
-  scale_x_continuous(expand = c(0, 0),
-                     breaks = seq(2011, 2019, by = 2),
-                     limits = c(2011, 2019.5)) +
-  scale_fill_manual(values = palette) +
-  labs(title = "Fishing time",
-       x = "Year",
-       y = "Total activity\n(Millions of hours)",
-       fill = "Source",
-       linetype = "% Subsidy reduction") +
-  theme(legend.position = "None")
+p3 <- plot_counterfactual_scenarios(remove_data = alternative_landings_remove,
+                                    reduce_data = alternative_landings_reduce,
+                                    var_col = "landed_weight",
+                                    labels = c("e)", "f)"),
+                                    x_label = "Year",
+                                    y_label = "Landings\n(Thousand tons)")
+# Get legend
+leg <- plot_counterfactual_scenarios(remove_data = alternative_hours_remove,
+                                     reduce_data = alternative_hours_reduce,
+                                     var_col = "hours",
+                                     x_label = "",
+                                     y_label = "Fishing time\n(Millions of hours)",
+                                     legend = T)
 
-# Area -------------------------------------------------------------------------
+# Add the legend
+final_plot <- plot_grid(leg,
+                        plot_grid(p1, p2, p3,
+                                  ncol = 1,
+                                  axis = "bl",
+                                  align = "v"),
+                        ncol = 1, rel_heights = c(0.1, 1))
 
-palette <- c(
-  "Not subsidized" = "#B3B3B3",
-  "Subsidized" = "#8DA0CB",
-  "Subsidy" = "#ADA0CB"
-)
-p2 <- ggplot(data = alternative_area_remove,
-             mapping = aes(x = year, y = fg_area_km, fill = treated)) +
-  stat_summary(aes(x = year, y = fg_area_km),
-               geom = "line",
-               fun = "sum",
-               position = "stack",
-               inherit.aes = F) +
-  stat_summary(geom = "area", fun = "sum",
-               position = "stack") +
-  geom_line(data = alternative_area_reduce,
-            mapping = aes(x = year,
-                          y = fg_area_km,
-                          linetype = paste0(pct * 100, "%"),
-                          group = pct),
-            inherit.aes = F) +
-  scale_y_continuous(expand = c(0, 0)) +
-  scale_x_continuous(expand = c(0, 0),
-                     breaks = seq(2011, 2019, by = 2),
-                     limits = c(2011, 2019.5)) +
-  scale_fill_manual(values = palette) +
-  labs(title = "Fishing area",
-       x = "Year",
-       y = "Total area\n(Millions of Km2)",
-       fill = "Source",
-       linetype = "% Subsidy reduction") +
-  theme(legend.position = "None")
-
-palette <- c(
-  "Not subsidized-baseline" = "#B3B3B3",
-  "Subsidized-baseline" = "#FC8D62",
-  "Subsidized-subsidy" = "#CC8D62"
-)
-
-# Landings ---------------------------------------------------------------------
-p3 <- ggplot(data = alternative_landings_remove,
-             mapping = aes(x = year, y = landed_weight, fill = treated)) +
-  stat_summary(aes(x = year, y = landed_weight),
-               geom = "line",
-               fun = "sum",
-               position = "stack",
-               inherit.aes = F) +
-  stat_summary(geom = "area", fun = "sum",
-               position = "stack") +
-  geom_line(data = alternative_landings_reduce,
-            mapping = aes(x = year,
-                          y = landed_weight,
-                          linetype = paste0(pct * 100, "%"),
-                          group = pct),
-            inherit.aes = F) +
-  scale_y_continuous(expand = c(0, 0)) +
-  scale_x_continuous(expand = c(0, 0),
-                     breaks = seq(2011, 2019, by = 2),
-                     limits = c(2011, 2019.5)) +
-  scale_fill_manual(values = palette) +
-  labs(title = "Landings",
-       x = "Year",
-       y = "Total Landings\n(Thousand tonnes)",
-       fill = "Source",
-       linetype = "% Subsidy reduction") +
-  theme(legend.position = "None")
-
-leg <- cowplot::get_plot_component(
-  p3 +
-    theme(legend.position = "bottom") +
-    guides(fill = guide_legend(ncol = 1, title.position = "top"),
-           linetype = guide_legend(ncol = 2, title.position = "top")),
-  pattern = "guide-box-bottom",
-  return_all = T
-)
-
-plot <- cowplot::plot_grid(p1, p2, p3, leg,
-                           ncol = 2, labels = c("a)", "b)", "c)"),
-                           align = "hv")
-
-ggsave(plot = plot,
-       filename = here("results", "img", "fig_temporal_attribution.pdf"),
+# Export final figure
+ggsave(plot = final_plot,
+       filename = here("content", "figures", "fig_temporal_attribution.pdf"),
        width = 7,
-       height = 4)
-
-
-
-pp <- bind_rows(alternative_hours2 %>% rename(value = hours),
-          alternative_area2 %>% rename(value = fg_area_km),
-          alternative_landings2 %>% rename(value = landed_weight),
-          .id = "variable") %>% 
-  mutate(variable = case_when(variable == 1 ~ "d) Fishing time (Millions of hours)",
-                              variable == 2 ~ "e) Fishing area (Millions of Km2)",
-                              variable == 3 ~ "f) Landings (Tones)"),
-         variable = fct_relevel(variable,
-                                "d) Fishing time (hours)",
-                                "e) Fishing area (Km2)",
-                                "f) Landings (Kg)")) %>% 
-  ggplot(aes(x = pct, y = -value, color = variable)) +
-  stat_summary(geom = "pointrange", fun.data = mean_cl_normal, color = "black") +
-  stat_summary(geom = "pointrange", fun.data = mean_se, linewidth = 1.5) +
-  facet_wrap(~variable, scales = "free_y", ncol = 3) +
-  scale_x_continuous(labels = scales::percent) +
-  scale_color_brewer(palette = "Set2") +
-  geom_hline(yintercept = 0, linetype = "dashed") + 
-  labs(x = "%Change in subsidy allocations",
-       y = "Mean reduction") +
-  theme_minimal() +
-  theme(legend.position = "None")
-
-ggsave(plot = pp,
-       filename = here("results", "img", "fig_pct_reductions.pdf"),
-       width = 6,
-       height = 2)
+       height = 6,
+       device = cairo_pdf)
