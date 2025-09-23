@@ -135,7 +135,7 @@ p2 <- cowplot::plot_grid(p1, leg,
 # X ----------------------------------------------------------------------------
 ggsave(plot = p2,
        filename = here("content", "figures", "fig_enter.pdf"),
-       width = 8,
+       width = 7,
        height = 4,
        units = "in")
 
