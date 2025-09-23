@@ -40,10 +40,25 @@ nino <- readRDS(
 
 
 ## PROCESSING ##################################################################
+# Build balanced panel foundation
+first_year_by_eu <- intensive |> 
+  filter(year <= 2019) |> 
+  group_by(region, eu_rnpa, n_vessels, total_hp) |> 
+  slice_min(year) |> 
+  select(eu_rnpa, region, first_year = year)
+
+foundation <- expand_grid(year = min(intensive$year):max(intensive$year),
+                          eu_rnpa = unique(first_year_by_eu$eu_rnpa)) |> 
+  left_join(first_year_by_eu, by = join_by(eu_rnpa)) |> 
+  filter(year >= first_year) |> 
+  select(-first_year)
+
 # Build baseline panel of subsidy amounts and intensive margin
-subsidy_and_effort_panel <- intensive |> 
+subsidy_and_effort_panel <- foundation |> 
+  left_join(intensive |> 
+              select(year, eu_rnpa, hours), by = join_by(eu_rnpa, year)) |> 
   left_join(eu_subsidy_panel, by = c("year", "eu_rnpa")) |> 
-  replace_na(replace = list(treated = 0, subsidy_pesos = 0))
+  replace_na(replace = list(treated = 0, subsidy_pesos = 0, hours = 0))
 
 # Find vessels that are always subsidized
 always <- subsidy_and_effort_panel |> 
@@ -85,7 +100,7 @@ shrimp <- subsidy_and_effort_panel |>
     always = 1 * (eu %in% always),
     never = 1 * (eu %in% never),
     sometimes = 1 * (always == 0 & never == 0)) |> 
-  select(year, region, state, eu, total_hp, n_vessels,
+  select(year, region, eu, total_hp, n_vessels,
          treated, subsidy_pesos, n_times_sub, subsidy_frequency, always, sometimes, never,
          mean_diesel_price_mxn_l, nino34_m,
          hours, fg_area_km, fg_hours, landed_weight, live_weight)
@@ -101,3 +116,4 @@ saveRDS(
     "shrimp_estimation_panel.rds"
   )
 )
+
