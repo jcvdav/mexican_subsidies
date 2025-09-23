@@ -16,7 +16,6 @@ ggplot2::theme_update(
   plot.background = ggplot2::element_blank(),
   legend.background = ggplot2::element_blank(),
   legend.key = ggplot2::element_blank(),
-  panel.border = ggplot2::element_blank(),
   panel.grid.major.x = ggplot2::element_blank(),#element_line(colour = "gray", linewidth = 0.1),
   panel.grid.major.y = ggplot2::element_line(colour = "gray",
                                     linewidth = 0.1,

@@ -47,7 +47,7 @@ removed_2014 <- shrimp_panel %>%
 did_removed_vs_reduced <- shrimp_panel %>% 
   filter(year <= 2014,
          eu %in% always_bef) %>% 
-  select(eu, year, region,treated, subsidy_pesos, hours, fishing_hours, fg_area_km, fuel_consumption_l, landed_weight, total_hp, n_vessels, nino34_m, ph) %>% 
+  select(eu, year, region,treated, subsidy_pesos, hours, fg_area_km, landed_weight, total_hp, n_vessels, nino34_m) %>% 
   mutate(years_since = year - 2014,
          post = 1 * (year == 2014),
          removed = 1 * (eu %in% removed_2014)) %>% 

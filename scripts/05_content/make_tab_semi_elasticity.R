@@ -22,12 +22,28 @@ pacman::p_load(
 )
 
 ## Load data -------------------------------------------------------------------
-semi_elasticity_twfe <- readRDS(here("data", "output", "semi_elasticity_twfe_model.rds"))
+shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) |> 
+  filter(year <= 2019)
 
-all_models <- readRDS(file = here("data", "output", "all_semi_elasticity_models.rds")) |> 
+## Load models -----------------------------------------------------------------
+ext_twfe <- readRDS(here("data", "output", "ext_model.rds"))
+all_ext_models <- readRDS(file = here("data", "output", "all_ext_models.rds")) |> 
   set_names(c("A) Main text specification",
               "B) Covariates but no fixed effects",
               "C) Main text specification with all economic units"))
+
+levels_twfe <- readRDS(here("data", "output", "levels_model.rds"))
+all_level_models <- readRDS(file = here("data", "output", "all_level_models.rds")) |> 
+  set_names(c("A) Main text specification",
+              "B) Covariates but no fixed effects",
+              "C) Main text specification with all economic units"))
+
+semi_elasticity_twfe <- readRDS(here("data", "output", "semi_elasticity_twfe_model.rds"))
+all_semi_elasticity_models <- readRDS(file = here("data", "output", "all_semi_elasticity_models.rds")) |> 
+  set_names(c("A) Main text specification",
+              "B) Covariates but no fixed effects",
+              "C) Main text specification with all economic units"))
+
 
 # Set up user defined functions ------------------------------------------------
 # Function to extract number of observations in each model
@@ -39,8 +55,8 @@ n_eus <- function(model){
 coef_to_pct <- function(model){
   scales::percent((exp(coefficients(model)[1])-1), accuracy = 0.01, suffix = "\\%")
 }
-# PROCESSING ###################################################################
 
+# PROCESSING ###################################################################
 
 ## Define modelsummary presets ------------------------------------------------
 # Information to omit from the regression tables to make the more tidy
@@ -54,36 +70,99 @@ gm <- tribble(~raw, ~clean, ~fmt,
 
 coefs <- c("treated" = "Subsidized")
 
-# Calculate percent changes to add to the table --------------------------------
-extra <- bind_rows(map_dfc(semi_elasticity_twfe, coef_to_pct),
-                   map_dfc(semi_elasticity_twfe, n_eus)) |> 
-  mutate(var = c("\\%Change",
-                 "$N_{eu}$")) |> 
+
+## Calculate extra rows --------------------------------------------------------
+# Number of economic units
+N_eus <- map_dfc(semi_elasticity_twfe, n_eus) |> 
+  mutate(var = "$N_{eu}$") |> 
   select(var, everything())
 
-attr(extra, 'position') <- c(3, 4)
+# Mean of Y for untreated units
+mean_of_Y <- shrimp_panel |> 
+  filter(treated == 0,
+         sometimes == 1) |> 
+  mutate(var = "$\\bar{Y}_{\\text{Subsidized} = 0}$") |> 
+  group_by(var) |> 
+  summarize(`Fishing time` = as.character(round(mean(hours, na.rm = T))),
+            `Fishing area` = as.character(round(mean(fg_area_km, na.rm = T))),
+            Landings = as.character(round(mean(live_weight, na.rm = T))))
+
+# Convert log-log to %change
+pct_change <- map_dfc(semi_elasticity_twfe, coef_to_pct) |> 
+  mutate(var = "\\%Change") |> 
+  select(var, everything())
+
+# Put together
+extra <- bind_rows(N_eus, mean_of_Y, N_eus, N_eus)
+
+# Assign rows where they should appear in modelsummary table
+attr(extra, "position") <- c(3, 8, 9, 14)
 
 # VISUALIZE ####################################################################
-# Build and export main table --------------------------------------------------
-msummary(models = semi_elasticity_twfe,
+
+# 1) Main-text table  ----------------------------------------------------------
+
+msummary(list("A) Extensive margin" = ext_twfe,
+              "B) Intensive margin (levels)" = levels_twfe,
+              "C) Intensive margin (log-linear)" = semi_elasticity_twfe),
+         shape = "rbind",
          stars = panelsummary:::econ_stars(),
          coef_omit = omit,
          coef_rename = coefs,
          gof_map = gm,
          add_rows = extra,
-         output = here("content", "tables", "tab_semi_elasticity.tex"),
-         title = "\\label{tab:semi_elasticity}Effect of receiving a fuel subsidy on time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).",
-         notes = ("The unit of observation is an economic unit by year.
-                  All models include fixed effects by economic unit and by region-year.
+         output = here("content", "tables", "tab_main_entry_exit.tex"),
+         title = "\\label{tab:main_entry_exit}Effect of receiving a fuel subsidy on fishing behavior and fisheries production",
+         notes = ("\\footnotesize The unit of observation is an economic unit by year.
                   Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
-                  Differences in sample size across columns are due to missing coordinates on some
-                  VMS messages-fishing area can not be estimated- or because landings data were not available.
-                  The sample contains economic units subsidized two or more times.
-                  The number of economic units used in each column is shown by $N_{eu}$."),
+                  Panel A) shows estimates for the extensive margin, where the outcome variables indicate whether a vessel spent time fishing, had fishing grounds, or reported landings.
+                  Panel B) shows estimates where the outcome variables are time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).
+                  Panel C) shows semi-elasticity estimates, where the outcome variables are log-transformed time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).
+                  This last panel excludes vessels whose fishing activity or landings were exactly zero, mostly capturing the intensive margin."),
          escape = F)
 
-## Now a table for all other models --------------------------------------------
-msummary(models = all_models,
+# 2) Supplementary tables ------------------------------------------------------
+## Now a table for all levels models
+msummary(models = all_ext_models,
+         shape = "rbind",
+         stars = panelsummary:::econ_stars(),
+         coef_omit = omit,
+         coef_rename = coefs,
+         gof_map = gm,
+         output = here("content", "tables", "tab_ext_all_estimates.tex"),
+         title = "\\label{tab:supp_ext}Effect of receiving a fuel subsidy on time fishing (hours) \\textgreater 0,
+                   fishing area ($\\text{km}^2$) \\textgreater 0, and landings (kg) \\textgreater 0.",
+         notes = ("The unit of observation is an economic unit by year.
+                  Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                  Panel A) shows the same information as in \\autoref{tab:main_entry_exit}A.
+                  Panel B) uses the same sample of vessels subsidized at least once, but
+                  removes all fixed effects and adds covariates for number of vessels, total engine power,
+                  log-price of diesel fuel, and nino3.4 index interacted by region.
+                  Panel C) uses the same two-way fixed effects estimation as in A), but
+                  includes all vessels in our sample, regardless of number of times subsidized."),
+         escape = F)
+
+## Now a table for all levels models
+msummary(models = all_level_models,
+         shape = "rbind",
+         stars = panelsummary:::econ_stars(),
+         coef_omit = omit,
+         coef_rename = coefs,
+         gof_map = gm,
+         output = here("content", "tables", "tab_levels_all_estimates.tex"),
+         title = "\\label{tab:supp_levels}Effect of receiving a fuel subsidy on time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).",
+         notes = ("The unit of observation is an economic unit by year.
+                  Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                  Panel A) shows the same information as in \\autoref{tab:main_entry_exit}B.
+                  Panel B) uses the same sample of vessels subsidized at least once, but
+                  removes all fixed effects and adds covariates for number of vessels, total engine power,
+                  log-price of diesel fuel, and nino3.4 index interacted by region.
+                  Panel C) uses the same two-way fixed effects estimation as in A), but
+                  includes all vessels in our sample, regardless of number of times subsidized."),
+         escape = F)
+
+## Now a table for all semi-elasticity models
+msummary(models = all_semi_elasticity_models,
          shape = "rbind",
          stars = panelsummary:::econ_stars(),
          coef_omit = omit,
@@ -92,21 +171,11 @@ msummary(models = all_models,
          output = here("content", "tables", "tab_semi_elasticity_all_estimates.tex"),
          title = "\\label{tab:supp_semi_elasticity}Effect of receiving a fuel subsidy on time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).",
          notes = ("The unit of observation is an economic unit by year.
-         Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
-                  Panel A) shows the same information as in \\autoref{tab:semi_elasticity}.
+                  Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                  Panel A) shows the same information as in \\autoref{tab:main_entry_exit}C.
                   Panel B) uses the same sample of vessels subsidized at least once, but
                   removes all fixed effects and adds covariates for number of vessels, total engine power,
                   log-price of diesel fuel, and nino3.4 index interacted by region.
                   Panel C) uses the same two-way fixed effects estimation as in A), but
                   includes all vessels in our sample, regardless of number of times subsidized."),
          escape = F)
-
-
-
-
-
-
-
-
-
-  

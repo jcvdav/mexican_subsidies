@@ -20,7 +20,8 @@ pacman::p_load(
 )
 
 # Load data --------------------------------------------------------------------
-shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds"))
+shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) |> 
+  filter(year <= 2019)
 
 # Custom functions -------------------------------------------------------------
 effect_plot <- function(data, var = hours, n = 1){
@@ -56,7 +57,7 @@ effect_plot <- function(data, var = hours, n = 1){
   
   ggplot(data = plot_data,
          mapping = aes(x = treatment,
-                       y = log({{var}}),
+                       y = log1p({{var}}),
                        shape = subsidy_frequency)) + 
     stat_summary(geom = "linerange",
                  fun.data = mean_cl_normal,
@@ -88,7 +89,7 @@ effect_plot <- function(data, var = hours, n = 1){
 hrs <- effect_plot(data = shrimp_panel,
                    var = hours) +
   labs(title = "Fishing time (hours)",
-       y = "log(time)",
+       y = "log(time + 1)",
        x = "")
 
 # Plot for area ----------------------------------------------------------------
@@ -98,16 +99,16 @@ area <- effect_plot(data = shrimp_panel %>%
                     var = fg_area_km,
                     n = 2) +
   labs(title = expression(Fishing~area~(Km^2)),
-       y = "log(area)")
+       y = "log(area + 1)")
 
 # Plot for landings ------------------------------------------------------------
 landings <- effect_plot(data = shrimp_panel %>% 
-                          filter(!is.na(landed_weight),
-                                 landed_weight > 0),
-                        var = landed_weight,
+                          filter(!is.na(live_weight),
+                                 live_weight > 0),
+                        var = live_weight,
                         n = 3) +
   labs(title = "Landings (Kg)",
-       y = "log(landings)", 
+       y = "log(landings + 1)", 
        x = "")
 
 # Combine ---------------------------------------------------------------
