@@ -58,7 +58,7 @@ subsidy_and_effort_panel <- foundation |>
   left_join(intensive |> 
               select(year, eu_rnpa, hours), by = join_by(eu_rnpa, year)) |> 
   left_join(eu_subsidy_panel, by = c("year", "eu_rnpa")) |> 
-  replace_na(replace = list(treated = 0, subsidy_pesos = 0, hours = 0))
+  replace_na(list(treated = 0))
 
 # Find vessels that are always subsidized
 always <- subsidy_and_effort_panel |> 
@@ -91,6 +91,9 @@ shrimp <- subsidy_and_effort_panel |>
   left_join(fuel_prices, by = "year") |>
   left_join(n_times_sub, by = "eu_rnpa") |>
   rename(eu = eu_rnpa) |> 
+  replace_na(replace = list(subsidy_pesos = 0,
+                            hours = 0, fg_area_km = 0, fg_hours = 0,
+                            live_weight = 0, landed_weight = 0)) |> 
   mutate(
     subsidy_frequency = case_when(eu %in% always ~ "always",
                                   eu %in% never ~ "never",

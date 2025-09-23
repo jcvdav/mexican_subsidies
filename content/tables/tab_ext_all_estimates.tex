@@ -1,11 +1,12 @@
 \begin{table}
 \centering
 \begin{talltblr}[         %% tabularray outer open
-caption={\label{tab:supp_semi_elasticity}Effect of receiving a fuel subsidy on time fishing (hours), fishing area ($\text{km}^2$), and landings (kg).},
+caption={\label{tab:supp_ext}Effect of receiving a fuel subsidy on time fishing (hours) \textgreater 0,
+                   fishing area ($\text{km}^2$) \textgreater 0, and landings (kg) \textgreater 0.},
 note{}={* p \num{< 0.1}, ** p \num{< 0.05}, *** p \num{< 0.01}},
 note{ }={The unit of observation is an economic unit by year.
                   Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
-                  Panel A) shows the same information as in \autoref{tab:main_entry_exit}C.
+                  Panel A) shows the same information as in \autoref{tab:main_entry_exit}A.
                   Panel B) uses the same sample of vessels subsidized at least once, but
                   removes all fixed effects and adds covariates for number of vessels, total engine power,
                   log-price of diesel fuel, and nino3.4 index interacted by region.
@@ -21,20 +22,20 @@ cell{2,7,12}{1}={c=4,}{halign=l,},
 \toprule
 & Fishing time & Fishing area & Landings \\ \midrule %% TinyTableHeader
 A) Main text specification &  &  &  \\
-Subsidized & 0.341*** & 0.189*** & 0.532*** \\
-& (0.061) & (0.046) & (0.070) \\
-N & 1292 & 1289 & 1196 \\
-$R^2$ Adj & 0.727 & 0.726 & 0.757 \\
+Subsidized & 0.223*** & 0.228*** & 0.413*** \\
+& (0.022) & (0.022) & (0.027) \\
+N & 1431 & 1431 & 1431 \\
+$R^2$ Adj & 0.531 & 0.525 & 0.597 \\
 B) Covariates but no fixed effects &  &  &  \\
-Subsidized & 0.312*** & 0.226*** & 0.563*** \\
-& (0.078) & (0.060) & (0.085) \\
-N & 1292 & 1289 & 1196 \\
-$R^2$ Adj & 0.305 & 0.382 & 0.294 \\
+Subsidized & 0.253*** & 0.256*** & 0.488*** \\
+& (0.026) & (0.026) & (0.029) \\
+N & 1431 & 1431 & 1431 \\
+$R^2$ Adj & 0.206 & 0.207 & 0.373 \\
 C) Main text specification with all economic units &  &  &  \\
-Subsidized & 0.283*** & 0.133** & 0.485*** \\
-& (0.054) & (0.041) & (0.064) \\
-N & 2728 & 2714 & 2539 \\
-$R^2$ Adj & 0.793 & 0.830 & 0.848 \\
+Subsidized & 0.205*** & 0.210*** & 0.385*** \\
+& (0.021) & (0.022) & (0.026) \\
+N & 2942 & 2942 & 2942 \\
+$R^2$ Adj & 0.520 & 0.527 & 0.702 \\
 \bottomrule
 \end{talltblr}
 \end{table}

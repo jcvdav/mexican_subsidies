@@ -19,7 +19,8 @@ pacman::p_load(
 )
 
 ## Load data -------------------------------------------------------------------
-shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds"))
+shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) |> 
+  filter(year <= 2019)
 
 # PROCESSING ###################################################################
 
