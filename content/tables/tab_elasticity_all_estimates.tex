@@ -1,7 +1,8 @@
 \begin{table}
 \centering
 \begin{talltblr}[         %% tabularray outer open
-caption={\label{tab:supp_elasticity}Effect of receiving a fuel subsidy on time fishing (hours), fishing area ($\text{km}^2$), and landings (kg).},
+caption={\label{tab:supp_elasticity}Elasticity estimates for time fishing (hours),
+         fishing area ($\text{km}^2$), and landings (kg) with respect to changes in subsidy amount.},
 note{}={* p \num{< 0.1}, ** p \num{< 0.05}, *** p \num{< 0.01}},
 note{ }={The unit of observation is an economic unit by year.
          Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
@@ -20,25 +21,25 @@ cell{2,7,12,17}{1}={c=4,}{halign=l,},
 \toprule
 & Fishing time & Fishing area & Landings \\ \midrule %% TinyTableHeader
 A) Main text specification &  &  &  \\
-log(subsidy amount[MXP]) & 0.139*** & 0.078*** & 0.196*** \\
+log(subsidy amount[MXP]) & 0.139*** & 0.078*** & 0.198*** \\
 & (0.023) & (0.019) & (0.021) \\
-N & 2240 & 2238 & 2227 \\
-$R^2$ Adj & 0.850 & 0.860 & 0.878 \\
+N & 2242 & 2240 & 2247 \\
+$R^2$ Adj & 0.850 & 0.860 & 0.876 \\
 B) Always subsidized &  &  &  \\
 log(subsidy amount[MXP]) & 0.150*** & 0.068** & 0.151*** \\
 & (0.032) & (0.026) & (0.029) \\
 N & 1278 & 1277 & 1278 \\
 $R^2$ Adj & 0.884 & 0.894 & 0.905 \\
 C) Sometimes subsidized &  &  &  \\
-log(subsidy amount[MXP]) & 0.129*** & 0.092** & 0.228*** \\
-& (0.033) & (0.028) & (0.032) \\
-N & 962 & 961 & 949 \\
-$R^2$ Adj & 0.749 & 0.771 & 0.812 \\
+log(subsidy amount[MXP]) & 0.129*** & 0.092** & 0.231*** \\
+& (0.033) & (0.028) & (0.031) \\
+N & 964 & 963 & 969 \\
+$R^2$ Adj & 0.748 & 0.770 & 0.810 \\
 D) Covariates but no fixed effects &  &  &  \\
-log(subsidy amount[MXP]) & 0.207*** & 0.154*** & 0.373*** \\
+log(subsidy amount[MXP]) & 0.206*** & 0.153*** & 0.374*** \\
 & (0.025) & (0.020) & (0.024) \\
-N & 2240 & 2238 & 2227 \\
-$R^2$ Adj & 0.518 & 0.589 & 0.543 \\
+N & 2242 & 2240 & 2247 \\
+$R^2$ Adj & 0.517 & 0.589 & 0.540 \\
 \bottomrule
 \end{talltblr}
 \end{table}

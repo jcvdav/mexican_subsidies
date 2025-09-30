@@ -73,7 +73,8 @@ msummary(models = elasticity_twfe,
          gof_map = gm,
          add_rows = extra,
          output = here("content", "tables", "tab_elasticity.tex"),
-         title = "\\label{tab:elasticity}Effect of increasing subsidy amounts on time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).",
+         title = "\\label{tab:elasticity}Elasticity estimates for time fishing (hours),
+         fishing area ($\\text{km}^2$), and landings (kg) with respect to changes in subsidy amount.",
          notes = ("The unit of observation is an economic unit by year.
                   All models include fixed effects by economic unit and by region-year.
                   Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
@@ -91,7 +92,8 @@ msummary(models = all_models,
          coef_rename = coefs,
          gof_map = gm,
          output = here("content", "tables", "tab_elasticity_all_estimates.tex"),
-         title = "\\label{tab:supp_elasticity}Effect of receiving a fuel subsidy on time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).",
+         title = "\\label{tab:supp_elasticity}Elasticity estimates for time fishing (hours),
+         fishing area ($\\text{km}^2$), and landings (kg) with respect to changes in subsidy amount.",
          notes = ("The unit of observation is an economic unit by year.
          Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
                   Panel A) shows the same information as in \\autoref{tab:elasticity}.

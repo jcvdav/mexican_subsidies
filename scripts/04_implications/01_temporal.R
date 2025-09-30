@@ -24,7 +24,8 @@ pacman::p_load(
 theme_set(theme_minimal(base_size = 10))
 
 # Load data --------------------------------------------------------------------
-shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds"))
+shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) |> 
+  filter(year <= 2019)
 
 semi_mod <- readRDS(here("data", "output", "semi_elasticity_twfe_model.rds"))
 elasticity_mod <- readRDS(here("data", "output", "elasticity_twfe_model.rds"))
@@ -321,12 +322,6 @@ alternative_hours_reduce <- calc_elasticity_counterfactual(elasticity_mod, "Fish
 summary_hours <- generate_counterfactual_summary(alternative_hours_remove, "hours")
 summary_hours
 
-# For fishing area
-alternative_area_remove <- calc_semielasticity_counterfactual(semi_mod, "Fishing area")
-alternative_area_reduce <- calc_elasticity_counterfactual(elasticity_mod, "Fishing area")
-summary_area <- generate_counterfactual_summary(alternative_area_remove, "fg_area_km")
-summary_area
-
 # For landings
 alternative_landings_remove <- calc_semielasticity_counterfactual(semi_mod, "Landings")
 alternative_landings_reduce <- calc_elasticity_counterfactual(elasticity_mod, "Landings")
@@ -343,17 +338,10 @@ p1 <- plot_counterfactual_scenarios(remove_data = alternative_hours_remove,
                                     x_label = "",
                                     y_label = "Fishing time\n(Millions of hours)")
 
-p2 <- plot_counterfactual_scenarios(remove_data = alternative_area_remove,
-                                    reduce_data = alternative_area_reduce,
-                                    var_col = "fg_area_km",
-                                    labels = c("c)", "d)"),
-                                    x_label = "",
-                                    y_label = expression("Fishing area\n(Million km"^2*")"))
-
-p3 <- plot_counterfactual_scenarios(remove_data = alternative_landings_remove,
+p2 <- plot_counterfactual_scenarios(remove_data = alternative_landings_remove,
                                     reduce_data = alternative_landings_reduce,
                                     var_col = "landed_weight",
-                                    labels = c("e)", "f)"),
+                                    labels = c("c)", "d)"),
                                     x_label = "Year",
                                     y_label = "Landings\n(Thousand tons)")
 # Get legend
@@ -366,7 +354,7 @@ leg <- plot_counterfactual_scenarios(remove_data = alternative_hours_remove,
 
 # Add the legend
 final_plot <- plot_grid(leg,
-                        plot_grid(p1, p2, p3,
+                        plot_grid(p1, p2,
                                   ncol = 1,
                                   axis = "bl",
                                   align = "v"),
@@ -376,5 +364,5 @@ final_plot <- plot_grid(leg,
 ggsave(plot = final_plot,
        filename = here("content", "figures", "fig_temporal_attribution.pdf"),
        width = 7,
-       height = 6,
+       height = 4,
        device = cairo_pdf)

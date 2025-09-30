@@ -104,7 +104,6 @@ n_eus <- function(model){
 }
 
 restrict_n_times <- function(n_times = 8){
-  # browser()
   inside_data <- shrimp_panel |> 
     filter(n_times_sub >= n_times,
            treated == 1)
