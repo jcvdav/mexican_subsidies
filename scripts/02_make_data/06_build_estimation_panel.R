@@ -23,6 +23,11 @@ pacman::p_load(
 # Treatment --------------------------------------------------------------------
 eu_subsidy_panel <- readRDS(file = here("data", "processed", "economic_unit_subsidy_panel.rds"))
 
+# EUs to exclude ---------------------------------------------------------------
+eu_modernized <- readRDS(file = here("data/processed/economic_unit_modernized_vessels.rds")) |> 
+  rename(m_year = year,
+         m_eu = rnpa)
+
 # Outcome variables ------------------------------------------------------------
 # Intensive (Time)
 intensive <- readRDS(file = here("data", "processed", "intensive_margin.rds"))
@@ -90,8 +95,9 @@ shrimp <- subsidy_and_effort_panel |>
   left_join(nino, by = "year") |>
   left_join(fuel_prices, by = "year") |>
   left_join(n_times_sub, by = "eu_rnpa") |>
+  left_join(eu_modernized, by = join_by(eu_rnpa == m_eu, year >= m_year)) |>
   rename(eu = eu_rnpa) |> 
-  replace_na(replace = list(subsidy_pesos = 0,
+  replace_na(replace = list(subsidy_pesos = 0, modernized = 0,
                             hours = 0, fg_area_km = 0, fg_hours = 0,
                             live_weight = 0, landed_weight = 0)) |> 
   mutate(
@@ -104,7 +110,7 @@ shrimp <- subsidy_and_effort_panel |>
     never = 1 * (eu %in% never),
     sometimes = 1 * (always == 0 & never == 0)) |> 
   select(year, region, eu, total_hp, n_vessels,
-         treated, subsidy_pesos, n_times_sub, subsidy_frequency, always, sometimes, never,
+         modernized, treated, subsidy_pesos, n_times_sub, subsidy_frequency, always, sometimes, never,
          mean_diesel_price_mxn_l, nino34_m,
          hours, fg_area_km, fg_hours, landed_weight, live_weight)
 
