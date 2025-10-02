@@ -249,7 +249,7 @@ palette <- c(
                                    group = "pct"),
               inherit.aes = FALSE) +
   scale_y_continuous(expand = c(0, 0)) +
-  scale_x_continuous(expand = c(0, 0),
+  scale_x_continuous(expand = c(0, 0.1),
                        breaks = seq(2011, 2019, by = 2)) +
   scale_fill_manual(values = palette) +
     labs(x = x_label,
@@ -275,7 +275,7 @@ palette <- c(
   }
   
   # Create the reduction plot
-  p2 <- reduce_data %>%
+  p2 <- reduce_data |> 
     ggplot(aes_string(x = "pct", y = paste0("-", var_col))) +
     stat_summary(geom = "linerange", fun.data = mean_cl_normal) +
     stat_summary(geom = "point", fun = mean, fill = palette[2]) +
@@ -364,5 +364,4 @@ final_plot <- plot_grid(leg,
 ggsave(plot = final_plot,
        filename = here("content", "figures", "fig_temporal_attribution.pdf"),
        width = 7,
-       height = 4,
-       device = cairo_pdf)
+       height = 4.5)

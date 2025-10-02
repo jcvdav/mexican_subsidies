@@ -28,20 +28,21 @@ all_models <- readRDS(file = here("data", "output", "all_elasticity_models.rds")
 
 ## Some step -------------------------------------------------------------------
 coefficients <- c("TWFE" = all_models$TWFE,
-                  "TWFE Always" = all_models$`TWFE Always`,
-                  "TWFE Sometimes" = all_models$`TWFE Sometimes`,
-                  "Cov" = all_models$Cov) |> 
+                  "TWFE always" = all_models$`TWFE Always`,
+                  "TWFE sometimes" = all_models$`TWFE Sometimes`,
+                  "Cov" = all_models$Cov,
+                  "TWFE modernized" = all_models$`TWFE Modernized`) |> 
   map_dfr(tidy,
           conf.int = T,
           .id = "model") %>% 
   filter(term == "log(subsidy_pesos)") %>% 
   mutate(var = str_extract(model, "Fishing time|Fishing area|Landings"),
          var = fct_relevel(var, "Fishing time", "Fishing area", "Landings"),
-         sample = str_extract(model, "Always|Sometimes"),
+         sample = str_extract(model, "always|sometimes|modernized"),
          sample = replace_na(sample, ""),
          model = str_extract(model, "TWFE|Cov"),
          group = str_squish(paste(model, sample)),
-         group = fct_relevel(group, "TWFE", "TWFE Always", "TWFE Sometimes", "Cov"))
+         group = fct_relevel(group, "TWFE", "TWFE always", "TWFE sometimes", "TWFE modernized", "Cov"))
 
 
 # VISUALIZE ####################################################################
@@ -60,7 +61,7 @@ p1 <- ggplot(data = coefficients,
                   position = position_dodge(width = 0.5),
                   fatten = 6,
                   linewidth = 1.5) +
-  scale_shape_manual(values = c(21, 5, 23, 22)) +
+  scale_shape_manual(values = c(21, 5, 23, 22, 25)) +
   scale_colour_brewer(palette = 'Set2') +
   scale_fill_brewer(palette = 'Set2') +
   guides(fill = "none",

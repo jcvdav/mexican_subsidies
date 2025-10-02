@@ -30,12 +30,14 @@ theme_set(theme_minimal(base_size = 10))
 
 ## PROCESSING ##################################################################
 
+## Define spatial resolution
 res <- 0.1
 
 # X ----------------------------------------------------------------------------
 hour_changes <- shrimp_panel %>% 
   filter(n_vessels == 1,
-         sometimes == 1) %>% 
+         sometimes == 1,
+         year <= 2019) %>% 
   group_by(eu, treated) %>% 
   summarize(max = max(hours, na.rm = T),
             min = min(hours, na.rm = T),
@@ -49,22 +51,24 @@ hour_changes <- shrimp_panel %>%
   mutate(difference = sub - not) %>% 
   arrange(desc(difference))
 
-hour_highest <- head(hour_changes, 1)
+hour_highest <- head(hour_changes, 2) |> 
+  tail(1)
 
 shrimp_panel %>% 
-  filter(eu == hour_highest$eu,
+  filter(eu %in% hour_highest$eu,
          hours %in% c(hour_highest$not, hour_highest$sub)) |> 
-  select(year, region, state, eu, treated)
+  select(year, eu, treated) |> 
+  arrange(eu, treated)
 
-hours_tracks_least <- readRDS(here("data", "processed", "2012_shrimp_tracks.rds")) %>% 
+hours_tracks_least <- readRDS(here("data", "processed", "2011_shrimp_tracks.rds")) %>% 
   filter(eu_rnpa == hour_highest$eu)
 
-hours_tracks_most <- readRDS(here("data", "processed", "2018_shrimp_tracks.rds")) %>% 
+hours_tracks_most <- readRDS(here("data", "processed", "2017_shrimp_tracks.rds")) %>% 
   filter(eu_rnpa == hour_highest$eu)
 
 hour_tracks <- bind_rows(hours_tracks_least,
                          hours_tracks_most) %>% 
-  mutate(year = ifelse(year == 2012, "Not subsidized", "Subsidized")) %>% 
+  mutate(year = ifelse(year == 2011, "Not subsidized", "Subsidized")) %>% 
   mutate(lon = (floor(lon / res) * res) + (res / 2),
          lat = (floor(lat / res) * res) + (res / 2)) %>% 
   group_by(year, lat, lon) %>% 
@@ -112,7 +116,7 @@ hour_map <- ggplot(data = hour_tracks) +
   geom_text(data = stats, aes(x = -94, y = 26, label = hours)) +
   geom_text(data = stats, aes(x = -94, y = 25.5, label = area), parse = T) +
   facet_wrap(~year) +
-  scale_fill_gradientn(colours = EVR628tools::palette_IPCC(var = "prec", type = "seq")) +
+  scale_fill_gradient(low = "#FEFEE4", high = "#003C30") +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   theme(legend.position = "inside",
