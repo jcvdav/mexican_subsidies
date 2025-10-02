@@ -67,7 +67,8 @@ subsidy_and_effort_panel <- foundation |>
 
 # Find vessels that are always subsidized
 always <- subsidy_and_effort_panel |> 
-  filter(treated == 1) |> 
+  filter(treated == 1,
+         modernized == 0) |> 
   group_by(eu_rnpa) |> 
   add_count() |> 
   ungroup() |>
