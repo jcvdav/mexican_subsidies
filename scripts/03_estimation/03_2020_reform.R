@@ -20,7 +20,8 @@ pacman::p_load(
 )
 
 ## Load data -------------------------------------------------------------------
-shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds"))
+shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) |> 
+  mutate(post = ifelse(year >= 2020, 1, 0))
 
 # PROCESSING ###################################################################
 
@@ -52,14 +53,15 @@ model_names <- c("Fishing time", "Fishing area", "Landings")
 
 setFixest_fml(..ext_outcomes = ~c(hours == 0, fg_area_km == 0, live_weight == 0),
               ..level_outcomes = ~c(hours, fg_area_km, live_weight),
-              ..outcomes = ~c(log(hours), log(fg_area_km), log(live_weight)),
               ..es_self = ~i(year, "2019") | eu,
-              ..es = ~i(year, treated, "2019") | eu + year ^ region)
+              ..post = ~post | eu)
 
 
 # ESTIMATION ###################################################################
 
-## Another step ----------------------------------------------------------------
+## Estimate models -------------------------------------------------------------
+# Extensvie outcomes
+# Event study
 event_study_self_ext <- feols(..ext_outcomes ~ ..es_self,
                               data = shrimp_panel,
                               panel.id = ~eu + year,
@@ -67,6 +69,16 @@ event_study_self_ext <- feols(..ext_outcomes ~ ..es_self,
                               vcov = "NW") |> 
   set_names(model_names)
 
+# Pre-post
+prepost_self_ext <- feols(..ext_outcomes ~ ..post,
+                          data = shrimp_panel,
+                          panel.id = ~eu + year,
+                          subset = ~n_times_sub == 9,
+                          vcov = "NW") |> 
+  set_names(model_names)
+
+# Intensive outcomes
+# Event study
 event_study_self_levels <- feols(..level_outcomes ~ ..es_self,
                                  data = shrimp_panel,
                                  panel.id = ~eu + year,
@@ -74,11 +86,12 @@ event_study_self_levels <- feols(..level_outcomes ~ ..es_self,
                                  vcov = "NW") |> 
   set_names(model_names)
 
-event_study_self_log <- feols(..outcomes ~ ..es_self,
-                              data = shrimp_panel,
-                              panel.id = ~eu + year,
-                              subset = ~n_times_sub == 9,
-                              vcov = "NW") |> 
+# Pre-post
+prepost_self_levels <- feols(..level_outcomes ~ ..post,
+                             data = shrimp_panel,
+                             panel.id = ~eu + year,
+                             subset = ~n_times_sub == 9,
+                             vcov = "NW") |> 
   set_names(model_names)
 
 # EXPORT #######################################################################
@@ -91,6 +104,12 @@ write_rds(x = event_study_self_levels,
           file = here("data/output/es_self_reform_model_levels.rds"))
 write_rds(x = event_study_self_log,
           file = here("data/output/es_self_reform_model_log.rds"))
+
+
+write_rds(x = prepost_self_ext,
+          file = here("data/output/prepost_reform_model_ext.rds"))
+write_rds(x = prepost_self_levels,
+          file = here("data/output/prepost_reform_model_levels.rds"))
 
 
 
