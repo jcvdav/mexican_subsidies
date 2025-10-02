@@ -28,6 +28,7 @@ all_models <- readRDS(file = here("data", "output", "all_elasticity_models.rds")
   set_names(c("A) Main text specification",
               "B) Always subsidized",
               "C) Sometimes subsidized",
+              "D) Removing modernized",
               "D) Covariates but no fixed effects"))
 
 # Set up user defined functions ------------------------------------------------
@@ -62,11 +63,13 @@ extra <- bind_rows(map_dfc(elasticity_twfe, coef_to_pct),
                  "$N_{eu}$")) |> 
   select(var, everything())
 
-attr(extra, 'position') <- c(3, 4)
+attr(extra, 'position') <- c(2, 3)
 
 # VISUALIZE ####################################################################
 # Build table ------------------------------------------------------------------
 msummary(models = elasticity_twfe,
+         estimate="{estimate} ({std.error}){stars}",
+         statistic = NULL,
          stars = panelsummary:::econ_stars(),
          coef_omit = omit,
          coef_rename = coefs,
@@ -75,18 +78,19 @@ msummary(models = elasticity_twfe,
          output = here("content", "tables", "tab_elasticity.tex"),
          title = "\\label{tab:elasticity}Elasticity estimates for time fishing (hours),
          fishing area ($\\text{km}^2$), and landings (kg) with respect to changes in subsidy amount.",
-         notes = ("The unit of observation is an economic unit by year.
+         notes = c("\\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$",
+                   "\\footnotesize The unit of observation is an economic unit by year.
                   All models include fixed effects by economic unit and by region-year.
                   Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
-                  Differences in sample size across columns are due to missing coordinates on some
-                  VMS messages-fishing area can not be estimated- or because landings data were not available.
-                  The sample contains economic units subsidized at least twice and whose subsidy amount $>$ 0.
+                  The sample contains economic units subsidized at least twice and with subsidy amount $>$ 0.
                   The number of economic units used in each column is shown by $N_{eu}$."),
          escape = F)
 
 ## Now a table for all other models --------------------------------------------
 msummary(models = all_models,
          shape = "rbind",
+         estimate="{estimate} ({std.error}){stars}",
+         statistic = NULL,
          stars = panelsummary:::econ_stars(),
          coef_omit = omit,
          coef_rename = coefs,
@@ -94,12 +98,14 @@ msummary(models = all_models,
          output = here("content", "tables", "tab_elasticity_all_estimates.tex"),
          title = "\\label{tab:supp_elasticity}Elasticity estimates for time fishing (hours),
          fishing area ($\\text{km}^2$), and landings (kg) with respect to changes in subsidy amount.",
-         notes = ("The unit of observation is an economic unit by year.
-         Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+         notes = c("\\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$",
+                   "\\footnotesize The unit of observation is an economic unit by year.
+                   Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
                   Panel A) shows the same information as in \\autoref{tab:elasticity}.
                   Panel B) restricts the sample to economic units always subsidized.
                   Panel C) restricts the sample to economic units sometimes subsidized.
-                  Panel D) uses the same sample of vessels, but removes all fixed effects and adds
+                  Panel D) removes economic units that received fleet modernization subsidies.
+                  Panel E) uses the same sample of vessels, but removes all fixed effects and adds
                   covariates for number of vessels, total engine power, and nino3.4 index interacted by region."),
          escape = F)
 
