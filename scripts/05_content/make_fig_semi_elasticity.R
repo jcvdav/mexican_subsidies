@@ -32,14 +32,15 @@ all_semi_elasticity_models <- readRDS(file = here("data", "output", "all_semi_el
 get_coefficients <- function(models){
   coefficients <- c("TWFE sometimes sub." = models$`TWFE sometimes sub.`,
                     "Cov sometimes sub." = models$`Cov sometimes sub.`,
-                    "TWFE all" = models$`TWFE all`) |> 
+                    "TWFE all" = models$`TWFE all`,
+                    "TWFE modernized" = models$`TWFE modernized`) |> 
     map_dfr(tidy,
             conf.int = T,
             .id = "model") %>% 
     filter(term == "treated") %>% 
     mutate(var = str_extract(model, "Fishing time|Fishing area|Landings"),
            var = fct_relevel(var, "Fishing time", "Fishing area", "Landings"),
-           sample = str_extract(model, "sometimes sub\\.|all"),
+           sample = str_extract(model, "sometimes sub\\.|all|modernized"),
            model = str_extract(model, "TWFE|Cov"),
            group = paste(model, sample),
            group = fct_relevel(group, "TWFE sometimes sub.", "Cov sometimes sub.", "TWFE all"))

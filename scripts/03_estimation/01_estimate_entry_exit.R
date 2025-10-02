@@ -95,6 +95,17 @@ semi_elasticity_twfe_fs <-
 
 etable(semi_elasticity_twfe_fs)
 
+# 1d) Repeat main estimation but exclude economic units who received new vessels
+semi_elasticity_twfe_modern <-
+  feols(..outcomes ~  ..twfe,
+        data = shrimp_panel,
+        panel.id = ~eu + year,
+        vcov = "NW",
+        subset = ~sometimes == 1 & modernized == 0) |> 
+  set_names(model_names)
+
+etable(semi_elasticity_twfe_modern)
+
 # 2) Estimate in levels --------------------------------------------------------
 # 2a) Main specification
 levels_twfe <-
@@ -127,6 +138,17 @@ levels_twfe_fs <-
   set_names(model_names)
 
 etable(levels_twfe_fs)
+
+# 2d) Without modernized eus
+levels_twfe_modern <-
+  feols(..level_outcomes ~  ..twfe,
+        data = shrimp_panel,
+        panel.id = ~eu + year,
+        vcov = "NW",
+        subset = ~sometimes == 1 & modernized == 0) |> 
+  set_names(model_names)
+
+etable(levels_twfe_modern)
 
 # 3) Fishing / not fishing -----------------------------------------------------
 # 3a) Main specification
@@ -162,6 +184,16 @@ ext_twfe_fs <-
 
 etable(ext_twfe_fs)
 
+# 3d) Without modern
+ext_twfe_modern <-
+  feols(..ext_outcomes ~  ..twfe,
+        data = shrimp_panel,
+        panel.id = ~eu + year,
+        vcov = "NW",
+        subset = ~sometimes == 1 & modernized == 0) |> 
+  set_names(model_names)
+
+etable(ext_twfe_modern)
 
 # 4) Restrict sample to EUs subsidized at most n_times -------------------------
 n_eus <- function(model){
@@ -218,15 +250,18 @@ subsidized_n_times_ext_models <- map_dfr(1:8, restrict_n_times, model_type = "ex
 ## COLLECT ALL MODELS ##########################################################
 all_semi_elasticity_models <- list("TWFE sometimes sub." = semi_elasticity_twfe,
                                    "Cov sometimes sub." = semi_elasticity_cov,
-                                   "TWFE all" = semi_elasticity_twfe_fs)
+                                   "TWFE all" = semi_elasticity_twfe_fs,
+                                   "TWFE modernized" = semi_elasticity_twfe_modern)
 
 all_level_models <- list("TWFE sometimes sub." = levels_twfe,
                          "Cov sometimes sub." = levels_cov,
-                         "TWFE all" = levels_twfe_fs)
+                         "TWFE all" = levels_twfe_fs,
+                         "TWFE modernized" = levels_twfe_modern)
 
 all_ext_models <- list("TWFE sometimes sub." = ext_twfe,
                        "Cov sometimes sub." = ext_cov,
-                       "TWFE all" = ext_twfe_fs)
+                       "TWFE all" = ext_twfe_fs,
+                       "TWFE modernized" = ext_twfe_modern)
 
 # EXPORT #######################################################################
 output_dir <- "data/output"
