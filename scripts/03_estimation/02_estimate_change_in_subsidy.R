@@ -84,7 +84,17 @@ elasticity_twfe_sometimes <- feols(fml = ..outcomes ~ ..twfe,
 
 etable(elasticity_twfe_sometimes)
 
-# 2c) Add covariates instead of fixed effects
+# 2c) Same as main specification but without vessels modernized
+elasticity_twfe_modern <- feols(fml = ..outcomes ~ ..twfe,
+                                   data = shrimp_panel,
+                                   panel.id = ~eu + year,
+                                   subset = ~modernized == 0,
+                                   vcov = "NW") %>% 
+  set_names(model_names)
+
+etable(elasticity_twfe_modern)
+
+# 2d) Add covariates instead of fixed effects
 elasticity_cov <- twfe <- feols(fml = ..outcomes ~ ..covs,
                                 data = shrimp_panel,
                                 panel.id = ~eu + year,
@@ -93,9 +103,11 @@ elasticity_cov <- twfe <- feols(fml = ..outcomes ~ ..covs,
 
 etable(elasticity_cov)
 
+
 all_models <- list("TWFE" = elasticity_twfe,
                    "TWFE Always" = elasticity_twfe_always,
                    "TWFE Sometimes" = elasticity_twfe_sometimes,
+                   "TWFE Modernized" = elasticity_twfe_modern,
                    "Cov" = elasticity_cov)
 
 # 3) Restrict sample to EUs subsidized at least n_times -------------------------

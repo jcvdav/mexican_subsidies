@@ -3,28 +3,25 @@
 \begin{talltblr}[         %% tabularray outer open
 caption={\label{tab:elasticity}Elasticity estimates for time fishing (hours),
          fishing area ($\text{km}^2$), and landings (kg) with respect to changes in subsidy amount.},
-note{}={* p \num{< 0.1}, ** p \num{< 0.05}, *** p \num{< 0.01}},
-note{ }={The unit of observation is an economic unit by year.
+note{}={\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$},
+note{ }={\footnotesize The unit of observation is an economic unit by year.
                   All models include fixed effects by economic unit and by region-year.
                   Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
-                  Differences in sample size across columns are due to missing coordinates on some
-                  VMS messages-fishing area can not be estimated- or because landings data were not available.
-                  The sample contains economic units subsidized at least twice and whose subsidy amount $>$ 0.
+                  The sample contains economic units subsidized at least twice.
                   The number of economic units used in each column is shown by $N_{eu}$.},
 ]                     %% tabularray outer close
 {                     %% tabularray inner open
 colspec={Q[]Q[]Q[]Q[]},
 column{2-4}={}{halign=c,},
 column{1}={}{halign=l,},
-hline{4}={1-4}{solid, black, 0.05em},
+hline{3}={1-4}{solid, black, 0.05em},
 }                     %% tabularray inner close
 \toprule
 & Fishing time & Fishing area & Landings \\ \midrule %% TinyTableHeader
-log(subsidy amount[MXP]) & \num{0.139}*** & \num{0.078}*** & \num{0.198}*** \\
-& (\num{0.023}) & (\num{0.019}) & (\num{0.021}) \\
+log(subsidy amount[MXP]) & \num{0.139} (\num{0.025})*** & \num{0.078} (\num{0.021})*** & \num{0.198} (\num{0.023})*** \\
 \%Change & 0.14\% & 0.08\% & 0.20\% \\
-$N_{eu}$ & 299 & 299 & 296 \\
-N & \num{2242} & \num{2240} & \num{2247} \\
+$N_{eu}$ & 297 & 297 & 295 \\
+N & \num{2240} & \num{2238} & \num{2246} \\
 $R^2$ Adj & \num{0.850} & \num{0.860} & \num{0.876} \\
 \bottomrule
 \end{talltblr}
