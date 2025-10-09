@@ -163,6 +163,29 @@ hours <- plot_grid(hour_map, hour_diff_map,
 
 hours
 
+sf_use_s2(F)
+
+e <- ext(-120, -75, 10, 40)
+
+reference_map <- ggplot(data = mex <- ne_countries(returnclass = "sf", scale = "large") |> 
+                          st_crop(hour_raster |> extend(e))) + 
+  geom_sf(fill = "gray50",
+          color = "black",
+          linewidth = 0.5) +
+  geom_rect(xmin = -99, xmax = -90, ymin = 18, ymax = 26.5,
+            color = "darkred",
+            fill = "transparent",
+            linewidth = 1) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(legend.position = "inside",
+        legend.position.inside = c(1, 1),
+        legend.justification.inside = c(1, 1),
+        axis.title = element_blank()) +
+  guides(fill = guide_colorbar(frame.colour = "black",
+                               ticks.colour = "black")) +
+  annotation_scale(location = 'bl')
+
 ## EXPORT ######################################################################
 
 # X ----------------------------------------------------------------------------
@@ -177,6 +200,12 @@ ggsave(plot = hours,
 ggsave(plot = hour_map,
        filename = here(output_dir, "fig_example_int_ext.pdf"),
        width = 8,
+       height = 4,
+       units = "in")
+
+ggsave(plot = reference_map,
+       filename = here(output_dir, "fig_example_int_ext_ref_map.pdf"),
+       width = 6,
        height = 4,
        units = "in")
 
