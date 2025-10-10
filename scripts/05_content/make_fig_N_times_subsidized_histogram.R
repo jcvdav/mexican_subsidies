@@ -36,8 +36,8 @@ n_times_sub <- ggplot(data = data,
                       mapping = aes(x = n_times_sub)) +
   geom_histogram(binwidth = 1) +
   scale_x_continuous(labels = c(0:9), breaks = c(0:9)) +
-  labs(x = "N times subsidized",
-       y = "# economic units") 
+  labs(x = "Number of times subsidized (2011-2019)",
+       y = "Number of  economic units") 
 
 # EXPORT #######################################################################
 ## Save figure -----------------------------------------------------------------
