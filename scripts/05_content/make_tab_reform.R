@@ -68,11 +68,11 @@ msummary(models,
          gof_map = gm,
          add_rows = mean_of_Y,
          output = here("content", "tables", "tab_reform.tex"),
-         title = "\\label{tab:prepost_reform}Effect of Mexico's \textit{impromptu}
+         title = "\\label{tab:prepost_reform}Effect of Mexico's \\textit{impromptu}
          fuel subsidy reform on probability of economic units exiting the fishery.",
          notes = c("\\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$",
                    "\\footnotesize The unit of observation is an economic unit by year.
-                   Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                   Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
                   Panel A) shows estimates for the extensive margin, where the outcome variables indicates whether a vessel spent time fishing, had fishing grounds, or reported landings.
                   Panel B) shows estimates for the intensive margin, where the outcome variables are time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg)."),
          escape = F)

@@ -1,11 +1,11 @@
 \begin{table}
 \centering
 \begin{talltblr}[         %% tabularray outer open
-caption={\label{tab:prepost_reform}Effect of Mexico's 	extit{impromptu}
+caption={\label{tab:prepost_reform}Effect of Mexico's \textit{impromptu}
          fuel subsidy reform on probability of economic units exiting the fishery.},
 note{}={\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$},
 note{ }={\footnotesize The unit of observation is an economic unit by year.
-                   Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                   Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
                   Panel A) shows estimates for the extensive margin, where the outcome variables indicates whether a vessel spent time fishing, had fishing grounds, or reported landings.
                   Panel B) shows estimates for the intensive margin, where the outcome variables are time fishing (hours), fishing area ($\text{km}^2$), and landings (kg).},
 ]                     %% tabularray outer close
@@ -18,11 +18,11 @@ cell{2,6}{1}={c=4,}{halign=l,},
 \toprule
 & Fishing time & Fishing area & Landings \\ \midrule %% TinyTableHeader
 A) Extensive margin &  &  &  \\
-Post & 0.189 (0.016)*** & 0.206 (0.016)*** & 0.225 (0.017)*** \\
+Post & 0.189 (0.010)*** & 0.206 (0.011)*** & 0.225 (0.011)*** \\
 N & 1988 & 1988 & 1988 \\
 $R^2$ Adj & 0.260 & 0.269 & 0.294 \\
 B) Intensive margin &  &  &  \\
-Post & -3523.413 (246.568)*** & -1719.850 (183.352)*** & -41269.267 (4047.258)*** \\
+Post & -3523.413 (163.966)*** & -1719.850 (125.754)*** & -41269.267 (3049.427)*** \\
 $\bar{Y}_{\text{Post} = 0}$ & 4472 & 3977 & 107863 \\
 N & 1988 & 1988 & 1988 \\
 $R^2$ Adj & 0.790 & 0.864 & 0.873 \\

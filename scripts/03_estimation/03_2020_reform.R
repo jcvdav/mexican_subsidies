@@ -56,7 +56,7 @@ setFixest_fml(..ext_outcomes = ~c(hours == 0, fg_area_km == 0, live_weight == 0)
               ..es_self = ~i(year, "2019") | eu,
               ..post = ~post | eu)
 
-
+setFixest_vcov(panel = "cluster")
 # ESTIMATION ###################################################################
 
 ## Estimate models -------------------------------------------------------------
@@ -65,16 +65,14 @@ setFixest_fml(..ext_outcomes = ~c(hours == 0, fg_area_km == 0, live_weight == 0)
 event_study_self_ext <- feols(..ext_outcomes ~ ..es_self,
                               data = shrimp_panel,
                               panel.id = ~eu + year,
-                              subset = ~n_times_sub == 9,
-                              vcov = "NW") |> 
+                              subset = ~n_times_sub == 9) |> 
   set_names(model_names)
 
 # Pre-post
 prepost_self_ext <- feols(..ext_outcomes ~ ..post,
                           data = shrimp_panel,
                           panel.id = ~eu + year,
-                          subset = ~n_times_sub == 9,
-                          vcov = "NW") |> 
+                          subset = ~n_times_sub == 9) |> 
   set_names(model_names)
 
 # Intensive outcomes
@@ -82,16 +80,14 @@ prepost_self_ext <- feols(..ext_outcomes ~ ..post,
 event_study_self_levels <- feols(..level_outcomes ~ ..es_self,
                                  data = shrimp_panel,
                                  panel.id = ~eu + year,
-                                 subset = ~n_times_sub == 9,
-                                 vcov = "NW") |> 
+                                 subset = ~n_times_sub == 9) |> 
   set_names(model_names)
 
 # Pre-post
 prepost_self_levels <- feols(..level_outcomes ~ ..post,
                              data = shrimp_panel,
                              panel.id = ~eu + year,
-                             subset = ~n_times_sub == 9,
-                             vcov = "NW") |> 
+                             subset = ~n_times_sub == 9) |> 
   set_names(model_names)
 
 # EXPORT #######################################################################
@@ -102,8 +98,6 @@ write_rds(x = event_study_self_ext,
           file = here("data/output/es_self_reform_model_ext.rds"))
 write_rds(x = event_study_self_levels,
           file = here("data/output/es_self_reform_model_levels.rds"))
-write_rds(x = event_study_self_log,
-          file = here("data/output/es_self_reform_model_log.rds"))
 
 
 write_rds(x = prepost_self_ext,

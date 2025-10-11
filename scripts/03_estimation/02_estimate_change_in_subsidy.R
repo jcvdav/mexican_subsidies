@@ -43,6 +43,7 @@ setFixest_dict(
     "eu" = "Economic Unit",
     "year^region" = "Region-by-year"))
 
+
 # Model names so that modelsummary represents them
 model_names <- c("Fishing time", "Fishing area", "Landings")
 
@@ -51,13 +52,13 @@ setFixest_fml(..outcomes = ~c(log(hours), log(fg_area_km), log(live_weight)),
               ..covs = ~log(subsidy_pesos) + n_vessels + total_hp + nino34_m:region)
 
 
+setFixest_vcov(panel = "cluster")
 # Main specification -----------------------------------------------------------
 # 1) Main specification --------------------------------------------------------
 # TWFE with economic units subsidized at least twice and that are subsidized
 elasticity_twfe <- feols(fml = ..outcomes ~ ..twfe,
                          data = shrimp_panel,
-                         panel.id = ~eu + year,
-                         vcov = "NW") %>% 
+                         panel.id = ~eu + year) %>% 
   set_names(model_names)
 
 etable(elasticity_twfe)
@@ -68,8 +69,7 @@ etable(elasticity_twfe)
 elasticity_twfe_always <- feols(fml = ..outcomes ~ ..twfe,
                                 data = shrimp_panel,
                                 panel.id = ~eu + year,
-                                subset = ~always == 1,
-                                vcov = "NW") %>% 
+                                subset = ~always == 1) %>% 
   set_names(model_names)
 
 etable(elasticity_twfe_always)
@@ -78,8 +78,7 @@ etable(elasticity_twfe_always)
 elasticity_twfe_sometimes <- feols(fml = ..outcomes ~ ..twfe,
                                 data = shrimp_panel,
                                 panel.id = ~eu + year,
-                                subset = ~sometimes == 1,
-                                vcov = "NW") %>% 
+                                subset = ~sometimes == 1) %>% 
   set_names(model_names)
 
 etable(elasticity_twfe_sometimes)
@@ -88,8 +87,7 @@ etable(elasticity_twfe_sometimes)
 elasticity_twfe_modern <- feols(fml = ..outcomes ~ ..twfe,
                                    data = shrimp_panel,
                                    panel.id = ~eu + year,
-                                   subset = ~modernized == 0,
-                                   vcov = "NW") %>% 
+                                   subset = ~modernized == 0) %>% 
   set_names(model_names)
 
 etable(elasticity_twfe_modern)
@@ -97,8 +95,7 @@ etable(elasticity_twfe_modern)
 # 2d) Add covariates instead of fixed effects
 elasticity_cov <- twfe <- feols(fml = ..outcomes ~ ..covs,
                                 data = shrimp_panel,
-                                panel.id = ~eu + year,
-                                vcov = "NW") %>% 
+                                panel.id = ~eu + year) %>% 
   set_names(model_names)
 
 etable(elasticity_cov)
@@ -122,8 +119,7 @@ restrict_n_times <- function(n_times = 8){
   
   models <- feols(..outcomes ~ ..twfe,
                   data = inside_data,
-                  panel.id = ~eu + year,
-                  vcov = "NW") %>% 
+                  panel.id = ~eu + year) %>% 
     set_names(model_names)
   
   coefs <- map_dfr(models, tidy, conf.int = T, .id = "var") |> 

@@ -5,7 +5,7 @@ caption={\label{tab:supp_ext}Effect of receiving a fuel subsidy on time fishing 
                    fishing area ($\text{km}^2$) \textgreater 0, and landings (kg) \textgreater 0.},
 note{}={\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$},
 note{ }={\footnotesize The unit of observation is an economic unit by year.
-                  Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                  Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
                   Panel A) shows the same information as in \autoref{tab:main_entry_exit}A.
                   Panel B) uses the same sample of vessels subsidized at least once, but
                   removes all fixed effects and adds covariates for number of vessels, total engine power,
@@ -24,19 +24,19 @@ cell{2,6,10,14}{1}={c=4,}{halign=l,},
 \toprule
 & Fishing time & Fishing area & Landings \\ \midrule %% TinyTableHeader
 A) Main text specification &  &  &  \\
-Subsidized & 0.223 (0.024)*** & 0.228 (0.024)*** & 0.413 (0.029)*** \\
+Subsidized & 0.223 (0.015)*** & 0.228 (0.015)*** & 0.413 (0.018)*** \\
 N & 1431 & 1431 & 1431 \\
 $R^2$ Adj & 0.531 & 0.525 & 0.597 \\
 B) Covariates but no fixed effects &  &  &  \\
-Subsidized & 0.253 (0.026)*** & 0.256 (0.026)*** & 0.488 (0.029)*** \\
+Subsidized & 0.253 (0.015)*** & 0.256 (0.015)*** & 0.488 (0.017)*** \\
 N & 1431 & 1431 & 1431 \\
 $R^2$ Adj & 0.206 & 0.207 & 0.373 \\
 C) Main text specification with all units &  &  &  \\
-Subsidized & 0.205 (0.023)*** & 0.210 (0.023)*** & 0.385 (0.028)*** \\
+Subsidized & 0.205 (0.013)*** & 0.210 (0.013)*** & 0.385 (0.013)*** \\
 N & 2941 & 2941 & 2941 \\
 $R^2$ Adj & 0.520 & 0.527 & 0.703 \\
 D) Main text specification without modernized units &  &  &  \\
-Subsidized & 0.219 (0.024)*** & 0.224 (0.024)*** & 0.405 (0.030)*** \\
+Subsidized & 0.219 (0.015)*** & 0.224 (0.016)*** & 0.405 (0.018)*** \\
 N & 1411 & 1411 & 1411 \\
 $R^2$ Adj & 0.531 & 0.525 & 0.603 \\
 \bottomrule

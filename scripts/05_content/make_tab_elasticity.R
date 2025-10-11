@@ -81,7 +81,7 @@ msummary(models = elasticity_twfe,
          notes = c("\\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$",
                    "\\footnotesize The unit of observation is an economic unit by year.
                   All models include fixed effects by economic unit and by region-year.
-                  Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                  Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
                   The sample contains economic units subsidized at least twice and with subsidy amount $>$ 0.
                   The number of economic units used in each column is shown by $N_{eu}$."),
          escape = F)
@@ -100,7 +100,7 @@ msummary(models = all_models,
          fishing area ($\\text{km}^2$), and landings (kg) with respect to changes in subsidy amount.",
          notes = c("\\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$",
                    "\\footnotesize The unit of observation is an economic unit by year.
-                   Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                   Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
                   Panel A) shows the same information as in \\autoref{tab:elasticity}.
                   Panel B) restricts the sample to economic units always subsidized.
                   Panel C) restricts the sample to economic units sometimes subsidized.

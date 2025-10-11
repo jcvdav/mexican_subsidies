@@ -124,7 +124,7 @@ msummary(list("A) Extensive margin" = ext_twfe,
          title = "\\label{tab:main_entry_exit}Effect of receiving a fuel subsidy on fishing behavior and fisheries production.",
          notes = c("\\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$",
                    "\\footnotesize The unit of observation is an economic unit by year.
-                  Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                  Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
                   Panel A) shows estimates for the extensive margin, where the outcome variables indicate whether a vessel spent time fishing, had fishing grounds, or reported landings.
                   Panel B) shows estimates for the intensive margin, where the outcome variables are time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).
                   Panel C) shows semi-elasticity estimates for log-transformed time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).
@@ -146,7 +146,7 @@ msummary(models = all_ext_models,
                    fishing area ($\\text{km}^2$) \\textgreater 0, and landings (kg) \\textgreater 0.",
          notes = c("\\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$",
                    "\\footnotesize The unit of observation is an economic unit by year.
-                  Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                  Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
                   Panel A) shows the same information as in \\autoref{tab:main_entry_exit}A.
                   Panel B) uses the same sample of vessels subsidized at least once, but
                   removes all fixed effects and adds covariates for number of vessels, total engine power,
@@ -170,7 +170,7 @@ msummary(models = all_level_models,
          title = "\\label{tab:supp_levels}Effect of receiving a fuel subsidy on time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).",
          notes = c("\\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$",
                    "\\footnotesize The unit of observation is an economic unit by year.
-                  Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                  Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
                   Panel A) shows the same information as in \\autoref{tab:main_entry_exit}B.
                   Panel B) uses the same sample of vessels subsidized at least once, but
                   removes all fixed effects and adds covariates for number of vessels, total engine power,
@@ -194,7 +194,7 @@ msummary(models = all_semi_elasticity_models,
          title = "\\label{tab:supp_semi_elasticity}Effect of receiving a fuel subsidy on time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).",
          notes = c("\\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$",
                    "\\footnotesize The unit of observation is an economic unit by year.
-                  Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                  Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
                   Panel A) shows the same information as in \\autoref{tab:main_entry_exit}C.
                   Panel B) uses the same sample of vessels subsidized at least once, but
                   removes all fixed effects and adds covariates for number of vessels, total engine power,

@@ -60,6 +60,7 @@ setFixest_fml(..outcomes = ~c(log(hours), log(fg_area_km), log(live_weight)),
               ..covs = ~treated + n_vessels + total_hp + log(mean_diesel_price_mxn_l) +
                 nino34_m:region)
 
+setFixest_vcov(panel = "cluster")
 ## ESTIMATION ##################################################################
 
 # 1) Log-linear specification --------------------------------------------------
@@ -68,7 +69,6 @@ semi_elasticity_twfe <-
   feols(..outcomes ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year,
-        vcov = "NW",
         subset = ~sometimes == 1) |> 
   set_names(model_names)
 
@@ -79,7 +79,6 @@ semi_elasticity_cov <-
   feols(..outcomes ~ ..covs,
         data = shrimp_panel,
         panel.id = ~eu + year,
-        vcov = "NW",
         subset = ~sometimes == 1) %>% 
   set_names(model_names)
 
@@ -89,8 +88,7 @@ etable(semi_elasticity_cov)
 semi_elasticity_twfe_fs <-
   feols(..outcomes  ~  ..twfe,
         data = shrimp_panel,
-        panel.id = ~eu + year,
-        vcov = "NW") %>% 
+        panel.id = ~eu + year) %>% 
   set_names(model_names)
 
 etable(semi_elasticity_twfe_fs)
@@ -100,7 +98,6 @@ semi_elasticity_twfe_modern <-
   feols(..outcomes ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year,
-        vcov = "NW",
         subset = ~sometimes == 1 & modernized == 0) |> 
   set_names(model_names)
 
@@ -112,7 +109,6 @@ levels_twfe <-
   feols(..level_outcomes ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year,
-        vcov = "NW",
         subset = ~sometimes == 1) |> 
   set_names(model_names)
 
@@ -123,7 +119,6 @@ levels_cov <-
   feols(..level_outcomes ~  ..covs,
         data = shrimp_panel,
         panel.id = ~eu + year,
-        vcov = "NW",
         subset = ~sometimes == 1) |> 
   set_names(model_names)
 
@@ -133,8 +128,7 @@ etable(levels_cov)
 levels_twfe_fs <-
   feols(..level_outcomes  ~  ..twfe,
         data = shrimp_panel,
-        panel.id = ~eu + year,
-        vcov = "NW") %>% 
+        panel.id = ~eu + year) %>% 
   set_names(model_names)
 
 etable(levels_twfe_fs)
@@ -144,7 +138,6 @@ levels_twfe_modern <-
   feols(..level_outcomes ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year,
-        vcov = "NW",
         subset = ~sometimes == 1 & modernized == 0) |> 
   set_names(model_names)
 
@@ -156,7 +149,6 @@ ext_twfe <-
   feols(..ext_outcomes ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year,
-        vcov = "NW",
         subset = ~sometimes == 1) |> 
   set_names(model_names)
 
@@ -167,7 +159,6 @@ ext_cov <-
   feols(..ext_outcomes ~  ..covs,
         data = shrimp_panel,
         panel.id = ~eu + year,
-        vcov = "NW",
         subset = ~sometimes == 1) |> 
   set_names(model_names)
 
@@ -177,8 +168,7 @@ etable(ext_cov)
 ext_twfe_fs <-
   feols(..ext_outcomes  ~  ..twfe,
         data = shrimp_panel,
-        panel.id = ~eu + year,
-        vcov = "NW") %>% 
+        panel.id = ~eu + year) %>% 
   set_names(model_names) |> 
   set_names(model_names)
 
@@ -189,7 +179,6 @@ ext_twfe_modern <-
   feols(..ext_outcomes ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year,
-        vcov = "NW",
         subset = ~sometimes == 1 & modernized == 0) |> 
   set_names(model_names)
 
@@ -209,20 +198,17 @@ restrict_n_times <- function(n_times = 8, model_type = "elasticity"){
   if(model_type == "elasticity") {
     models <- feols(..outcomes ~ ..twfe,
                     data = inside_data,
-                    panel.id = ~eu + year,
-                    vcov = "NW") %>% 
+                    panel.id = ~eu + year) %>% 
       set_names(model_names)
   } else if (model_type == "levels") {
     models <- feols(..level_outcomes ~ ..twfe,
                     data = inside_data,
-                    panel.id = ~eu + year,
-                    vcov = "NW") %>% 
+                    panel.id = ~eu + year) %>% 
       set_names(model_names)
   } else if (model_type == "ext") {
     models <- feols(..ext_outcomes ~ ..twfe,
                     data = inside_data,
-                    panel.id = ~eu + year,
-                    vcov = "NW") %>% 
+                    panel.id = ~eu + year) %>% 
       set_names(model_names)
   }
   

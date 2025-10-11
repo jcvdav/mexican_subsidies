@@ -22,7 +22,6 @@ pacman::p_load(
 ## Load models -----------------------------------------------------------------
 event_study_self_ext <- read_rds(file = here("data/output/es_self_reform_model_ext.rds"))
 event_study_self_levels <- read_rds(file = here("data/output/es_self_reform_model_levels.rds"))
-event_study_self_log <- read_rds(file = here("data/output/es_self_reform_model_log.rds"))
 
 # VISUALIZE ####################################################################
 
@@ -56,7 +55,6 @@ my_iplot <- function(model){
 ## Generate plots --------------------------------------------------------------
 es_ext <- my_iplot(event_study_self_ext)
 es_levels <- my_iplot(event_study_self_levels)
-es_log <- my_iplot(event_study_self_log)
 
 # EXPORT #######################################################################
 
@@ -67,8 +65,4 @@ ggsave(plot = es_ext,
 
 ggsave(plot = es_levels,
        filename = here("content/figures/event_study_2020_reform_levels.pdf"), width = 8, height = 2)
-
-ggsave(plot = es_log,
-       filename = here("content/figures/event_study_2020_reform_log.pdf"), width = 8, height = 2)
-
 

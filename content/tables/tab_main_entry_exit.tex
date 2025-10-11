@@ -4,7 +4,7 @@
 caption={\label{tab:main_entry_exit}Effect of receiving a fuel subsidy on fishing behavior and fisheries production.},
 note{}={\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$},
 note{ }={\footnotesize The unit of observation is an economic unit by year.
-                  Numbers in parentheses are panel-robust standard errors (Newey-West with a 1yr lag).
+                  Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
                   Panel A) shows estimates for the extensive margin, where the outcome variables indicate whether a vessel spent time fishing, had fishing grounds, or reported landings.
                   Panel B) shows estimates for the intensive margin, where the outcome variables are time fishing (hours), fishing area ($\text{km}^2$), and landings (kg).
                   Panel C) shows semi-elasticity estimates for log-transformed time fishing (hours), fishing area ($\text{km}^2$), and landings (kg).
@@ -19,18 +19,18 @@ cell{2,7,13}{1}={c=4,}{halign=l,},
 \toprule
 & Fishing time & Fishing area & Landings \\ \midrule %% TinyTableHeader
 A) Extensive margin &  &  &  \\
-Subsidized & 0.223 (0.024)*** & 0.228 (0.024)*** & 0.413 (0.029)*** \\
+Subsidized & 0.223 (0.015)*** & 0.228 (0.015)*** & 0.413 (0.018)*** \\
 $N_{eu}$ & 167 & 167 & 167 \\
 N & 1431 & 1431 & 1431 \\
 $R^2$ Adj & 0.531 & 0.525 & 0.597 \\
 B) Intensive margin (levels) &  &  &  \\
-Subsidized & 350.248 (58.922)*** & 329.060 (54.218)*** & 32347.423 (4271.960)*** \\
+Subsidized & 350.248 (57.365)*** & 329.060 (52.474)*** & 32347.423 (2876.989)*** \\
 $\bar{Y}_{\text{Subsidized} = 0}$ & 1411 & 1360 & 18968 \\
 $N_{eu}$ & 167 & 167 & 167 \\
 N & 1431 & 1431 & 1431 \\
 $R^2$ Adj & 0.924 & 0.931 & 0.710 \\
 C) Semi-elasticities &  &  &  \\
-Subsidized & 0.341 (0.066)*** & 0.189 (0.050)*** & 0.532 (0.077)*** \\
+Subsidized & 0.341 (0.051)*** & 0.189 (0.041)*** & 0.532 (0.052)*** \\
 $N_{eu}$ & 134 & 134 & 117 \\
 N & 1290 & 1287 & 1192 \\
 $R^2$ Adj & 0.726 & 0.725 & 0.757 \\

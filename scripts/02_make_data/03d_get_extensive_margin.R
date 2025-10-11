@@ -59,7 +59,7 @@ get_extensive <- function(data) {
     # Find clusters
     clusters <- spat %>%
       st_distance() %>%
-      dbscan(eps = 50000, # Distance in meters
+      dbscan(eps = 100e3, # Distance in meters
              minPts = 6 # Minimum points per cluster
       )
     

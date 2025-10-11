@@ -326,6 +326,7 @@ summary_hours
 alternative_landings_remove <- calc_semielasticity_counterfactual(semi_mod, "Landings")
 alternative_landings_reduce <- calc_elasticity_counterfactual(elasticity_mod, "Landings")
 summary_landings <- generate_counterfactual_summary(alternative_landings_remove, "landed_weight")
+summary_landings
 
 ## VISUALIZE ###################################################################
 # Generate combined plots showing temporal attribution of fishing activity

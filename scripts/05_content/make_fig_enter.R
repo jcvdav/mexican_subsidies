@@ -57,12 +57,12 @@ effect_plot <- function(data, var = hours, n = 1){
   
   ggplot(data = plot_data,
          mapping = aes(x = treatment,
-                       y = log1p({{var}}),
+                       y = log({{var}}),
                        shape = subsidy_frequency)) + 
     stat_summary(geom = "linerange",
                  fun.data = mean_cl_normal,
                  color = "black",
-                 linewidth = 0.1,
+                 linewidth = 0.25,
                  position = pos) +
     stat_summary(geom = "line",
                  fun = mean,
@@ -70,11 +70,14 @@ effect_plot <- function(data, var = hours, n = 1){
                  linetype = "dashed",
                  aes(group = subsidy_frequency),
                  position = pos) +
-    stat_summary(geom = "pointrange",
+    stat_summary(geom = "linerange",
                  fun.data = mean_se,
+                 linewidth = 1,
+                 color = fill,
+                 position = pos) +
+    stat_summary(geom = "point",
+                 fun= mean,
                  size = 3,
-                 linewidth = 1.5,
-                 fatten = 1,
                  fill = fill,
                  color = fill,
                  position = pos) +
@@ -89,7 +92,7 @@ effect_plot <- function(data, var = hours, n = 1){
 hrs <- effect_plot(data = shrimp_panel,
                    var = hours) +
   labs(title = "Fishing time (hours)",
-       y = "log(time + 1)",
+       y = "log(time)",
        x = "")
 
 # Plot for area ----------------------------------------------------------------
@@ -99,7 +102,7 @@ area <- effect_plot(data = shrimp_panel %>%
                     var = fg_area_km,
                     n = 2) +
   labs(title = expression(Fishing~area~(Km^2)),
-       y = "log(area + 1)")
+       y = "log(area)")
 
 # Plot for landings ------------------------------------------------------------
 landings <- effect_plot(data = shrimp_panel %>% 
@@ -108,19 +111,21 @@ landings <- effect_plot(data = shrimp_panel %>%
                         var = live_weight,
                         n = 3) +
   labs(title = "Landings (Kg)",
-       y = "log(landings + 1)", 
+       y = "log(landings)", 
        x = "")
 
 # Combine ---------------------------------------------------------------
 l_with_leg <- hrs +
   theme(legend.position = "bottom") +
   guides(shape = guide_legend(title = "Sub-sample",
-                              override.aes = list(size = 0.5,
+                              override.aes = list(size = 5,
                                                   fill = "black",
                                                   color = "black")),
          linetype = "none")
 
-leg <- cowplot::get_plot_component(plot = l_with_leg, pattern = "guide-box-bottom", return_all = T)
+leg <- cowplot::get_plot_component(plot = l_with_leg,
+                                   pattern = "guide-box-bottom",
+                                   return_all = T)
 
 p1 <- cowplot::plot_grid(hrs, area, landings,
                          labels = c("a)", "b)", "c)"),
