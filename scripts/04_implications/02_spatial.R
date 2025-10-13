@@ -17,13 +17,14 @@ pacman::p_load(
   here,
   rnaturalearth,
   sf,
+  fixest,
   tidyverse
 )
 
 # Load data --------------------------------------------------------------------
 shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds"))
 shrimp_tracks <- readRDS(here("data", "processed",  "2019_shrimp_tracks.rds"))
-semi_mod <- readRDS(here("results", "models", "semi_elasticity_twfe.rds"))
+semi_mod <- readRDS(here("data/output/semi_elasticity_twfe_model.rds"))
 
 regions <- st_read(here("data", "raw", "mexico_fishing_regions.gpkg")) %>% 
   mutate(region = as.character(as.roman(region)))
@@ -50,7 +51,6 @@ tracks_info <- shrimp_tracks %>%
   mutate(lon = (floor(lon / res) * res) + (res / 2),
          lat = (floor(lat / res) * res) + (res / 2),
          treated = 1 * (eu_rnpa %in% treated_in_2019)) %>% 
-  # expand_grid(pct = seq(0.1, 0.9, by = .2)) %>%
   mutate(factor = factor) %>% 
   mutate(additional = treated * (hours - (factor * hours))) %>% 
   group_by(lat, lon) %>% 
@@ -134,8 +134,8 @@ relative <- ggplot() +
           color = "black",
           linewidth = 0.1) +
   geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = difference)) +
-  scale_fill_viridis_c(labels = scales::percent, option = "E") +
-  guides(fill = guide_legend(title = "% Subsidized",
+  scale_fill_viridis_c(labels = scales::percent, option = "C") +
+  guides(fill = guide_colorbar(title = "% Subsidized",
                              frame.colour = "black",
                              ticks.colour = "black")) +
   scale_x_continuous(expand = c(0,0)) +
@@ -156,7 +156,7 @@ rank <- ggplot() +
           linewidth = 0.1) +
   geom_tile(data = tracks_info, aes(x = lon, y = lat, fill = rank)) +
   scale_fill_viridis_c(labels = scales::percent, option = "mako") +
-  guides(fill = guide_legend(title = "% Rank",
+  guides(fill = guide_colorbar(title = "% Rank",
                                frame.colour = "black",
                                ticks.colour = "black")) +
   scale_x_continuous(expand = c(0,0)) +
@@ -164,26 +164,37 @@ rank <- ggplot() +
   labs(x = "",
        y = "")
 
-## EXPORT ######################################################################
-
 # X ----------------------------------------------------------------------------
 p <- cowplot::plot_grid(total_hours,
-                   subsidized_hours,
-                   relative,
-                   rank, align = "hv", labels = c("a)", "b)", "c)", "d)"))
+                        subsidized_hours,
+                        relative,
+                        rank, align = "hv", labels = c("a)", "b)", "c)", "d)"))
+
+## EXPORT ######################################################################
+out_dir <- here("content/figures/")
 
 ggsave(plot = p,
-       filename = here("results", "img", "fig_spatial_attribution.pdf"),
+       filename = here(out_dir, "fig_spatial_attribution.pdf"),
+       width = 10,
+       height = 6)
+
+ggsave(plot = total_hours,
+       filename = here(out_dir, "fig_total_hours_spatial_attribution.pdf"),
+       width = 10,
+       height = 6)
+
+ggsave(plot = subsidized_hours,
+       filename = here(out_dir, "fig_subsidized_hours_spatial_attribution.pdf"),
        width = 10,
        height = 6)
 
 ggsave(plot = relative,
-       filename = here("results", "img", "fig_relative_spatial_attribution.pdf"),
+       filename = here(out_dir, "fig_relative_spatial_attribution.pdf"),
        width = 10,
        height = 6)
 
 ggsave(plot = rank,
-       filename = here("results", "img", "fig_rank_spatial_attribution.pdf"),
+       filename = here(out_dir, "fig_rank_spatial_attribution.pdf"),
        width = 10,
        height = 6)
 
