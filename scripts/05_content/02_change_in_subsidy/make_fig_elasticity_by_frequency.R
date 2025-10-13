@@ -20,7 +20,14 @@ pacman::p_load(
   tidyverse
 )
 
+# Standard errors clustered by economic unit by default
+setFixest_vcov(all = "cluster", no_FE = "iid")
+
 ## Load data -------------------------------------------------------------------
+shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) |> 
+  filter(year <= 2019)
+
+# Models
 elasticity_twfe <- readRDS(file = here("data", "output", "elasticity_twfe_model.rds"))
 subsidized_n_times_models <- readRDS(file = here("data", "output", "subsidized_n_times_elasticity_models.rds")) |> 
   mutate(var = fct_relevel(var, "Fishing time", "Fishing area", "Landings"))

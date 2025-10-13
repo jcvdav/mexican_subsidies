@@ -52,8 +52,9 @@ setFixest_fml(..outcomes = ~c(log(hours), log(fg_area_km), log(live_weight)),
               ..covs = ~log(subsidy_pesos) + n_vessels + total_hp + nino34_m:region)
 
 
-setFixest_vcov(panel = "cluster")
-# Main specification -----------------------------------------------------------
+# Standard errors clustered by economic unit by default
+setFixest_vcov(all = "cluster", no_FE = "iid")
+
 # 1) Main specification --------------------------------------------------------
 # TWFE with economic units subsidized at least twice and that are subsidized
 elasticity_twfe <- feols(fml = ..outcomes ~ ..twfe,

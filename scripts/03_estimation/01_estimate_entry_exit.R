@@ -60,7 +60,9 @@ setFixest_fml(..outcomes = ~c(log(hours), log(fg_area_km), log(live_weight)),
               ..covs = ~treated + n_vessels + total_hp + log(mean_diesel_price_mxn_l) +
                 nino34_m:region)
 
-setFixest_vcov(panel = "cluster")
+# Standard errors clustered by economic unit by default
+setFixest_vcov(all = "cluster", no_FE = "iid")
+
 ## ESTIMATION ##################################################################
 
 # 1) Log-linear specification --------------------------------------------------

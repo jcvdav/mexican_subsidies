@@ -18,19 +18,23 @@ pacman::p_load(
   here,
   tidyverse,
   fixest,
-  modelsummary
+  modelsummary,
+  panelsummary
 )
+
+# Standard errors clustered by economic unit by default
+setFixest_vcov(all = "cluster", no_FE = "iid")
 
 ## Load data -------------------------------------------------------------------
 shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) |> 
   filter(year <= 2019)
 
+## Load models -----------------------------------------------------------------
 model_names <- c("A) Main text specification",
                  "B) Covariates but no fixed effects",
                  "C) Main text specification with all units",
                  "D) Main text specification without modernized units")
 
-## Load models -----------------------------------------------------------------
 ext_twfe <- readRDS(here("data", "output", "ext_model.rds"))
 all_ext_models <- readRDS(file = here("data", "output", "all_ext_models.rds")) |> 
   set_names(model_names)

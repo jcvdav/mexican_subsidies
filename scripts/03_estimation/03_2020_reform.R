@@ -56,7 +56,8 @@ setFixest_fml(..ext_outcomes = ~c(hours == 0, fg_area_km == 0, live_weight == 0)
               ..es_self = ~i(year, "2019") | eu,
               ..post = ~post | eu)
 
-setFixest_vcov(panel = "cluster")
+# Standard errors clustered by economic unit by default
+setFixest_vcov(all = "cluster", no_FE = "iid")
 # ESTIMATION ###################################################################
 
 ## Estimate models -------------------------------------------------------------

@@ -21,7 +21,14 @@ pacman::p_load(
   modelsummary
 )
 
-# Load data --------------------------------------------------------------------
+# Standard errors clustered by economic unit by default
+setFixest_vcov(all = "cluster", no_FE = "iid")
+
+## Load data -------------------------------------------------------------------
+shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) |> 
+  filter(year <= 2019)
+
+# Models
 elasticity_twfe <- readRDS(here("data", "output", "elasticity_twfe_model.rds"))
 
 all_models <- readRDS(file = here("data", "output", "all_elasticity_models.rds")) |> 

@@ -17,13 +17,18 @@
 pacman::p_load(
   here,
   tidyverse,
+  fixest,
   modelsummary
 )
+
+# Standard errors clustered by economic unit by default
+setFixest_vcov(all = "cluster", no_FE = "iid")
 
 ## Load data -------------------------------------------------------------------
 shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) |> 
   mutate(post = 1 * (year >= 2020))
 
+# Models
 models <- c(here("data/output/prepost_reform_model_ext.rds"),
             here("data/output/prepost_reform_model_levels.rds")) |> 
   map(read_rds) |> 
