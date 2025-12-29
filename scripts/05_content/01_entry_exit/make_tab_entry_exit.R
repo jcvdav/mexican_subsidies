@@ -132,7 +132,7 @@ msummary(list("A) Extensive margin" = ext_twfe,
                   Panel A) shows estimates for the extensive margin, where the outcome variables indicate whether a vessel spent time fishing, had fishing grounds, or reported landings.
                   Panel B) shows estimates for the intensive margin, where the outcome variables are time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).
                   Panel C) shows semi-elasticity estimates for log-transformed time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg).
-                  This last panel excludes vessels whose fishing activity or landings were exactly zero, mostly capturing the intensive margin."),
+                  This last panel excludes observations with fishing activity or landings at exactly zero, mostly capturing the intensive margin."),
          escape = F)
 
 # 2) Supplementary tables ------------------------------------------------------

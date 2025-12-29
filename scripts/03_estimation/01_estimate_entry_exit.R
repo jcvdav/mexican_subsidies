@@ -64,46 +64,46 @@ setFixest_fml(..outcomes = ~c(log(hours), log(fg_area_km), log(live_weight)),
 setFixest_vcov(all = "cluster", no_FE = "iid")
 
 ## ESTIMATION ##################################################################
-
-# 1) Log-linear specification --------------------------------------------------
-# 1a) TWFE with economic units whose subsidy status changes only
-semi_elasticity_twfe <-
-  feols(..outcomes ~  ..twfe,
+# 1) Fishing / not fishing -----------------------------------------------------
+# 1a) Main specification
+ext_twfe <-
+  feols(..ext_outcomes ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year,
         subset = ~sometimes == 1) |> 
   set_names(model_names)
 
-etable(semi_elasticity_twfe)
+etable(ext_twfe)
 
-# 1b) Add covariates instead of fixed effects
-semi_elasticity_cov <- 
-  feols(..outcomes ~ ..covs,
+# 1b) Covariates
+ext_cov <-
+  feols(..ext_outcomes ~  ..covs,
         data = shrimp_panel,
         panel.id = ~eu + year,
-        subset = ~sometimes == 1) %>% 
+        subset = ~sometimes == 1) |> 
   set_names(model_names)
 
-etable(semi_elasticity_cov)
+etable(ext_cov)
 
-# 1c) Repeat main estimation but include all economic units
-semi_elasticity_twfe_fs <-
-  feols(..outcomes  ~  ..twfe,
+# 1c) 
+ext_twfe_fs <-
+  feols(..ext_outcomes  ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year) %>% 
+  set_names(model_names) |> 
   set_names(model_names)
 
-etable(semi_elasticity_twfe_fs)
+etable(ext_twfe_fs)
 
-# 1d) Repeat main estimation but exclude economic units who received new vessels
-semi_elasticity_twfe_modern <-
-  feols(..outcomes ~  ..twfe,
+# 3d) Without modern
+ext_twfe_modern <-
+  feols(..ext_outcomes ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year,
         subset = ~sometimes == 1 & modernized == 0) |> 
   set_names(model_names)
 
-etable(semi_elasticity_twfe_modern)
+etable(ext_twfe_modern)
 
 # 2) Estimate in levels --------------------------------------------------------
 # 2a) Main specification
@@ -145,46 +145,46 @@ levels_twfe_modern <-
 
 etable(levels_twfe_modern)
 
-# 3) Fishing / not fishing -----------------------------------------------------
-# 3a) Main specification
-ext_twfe <-
-  feols(..ext_outcomes ~  ..twfe,
+# 3) Log-linear specification --------------------------------------------------
+# 1a) TWFE with economic units whose subsidy status changes only
+semi_elasticity_twfe <-
+  feols(..outcomes ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year,
         subset = ~sometimes == 1) |> 
   set_names(model_names)
 
-etable(ext_twfe)
+etable(semi_elasticity_twfe)
 
-# 3b) Covariates
-ext_cov <-
-  feols(..ext_outcomes ~  ..covs,
+# 1b) Add covariates instead of fixed effects
+semi_elasticity_cov <- 
+  feols(..outcomes ~ ..covs,
         data = shrimp_panel,
         panel.id = ~eu + year,
-        subset = ~sometimes == 1) |> 
+        subset = ~sometimes == 1) %>% 
   set_names(model_names)
 
-etable(ext_cov)
+etable(semi_elasticity_cov)
 
-# 3c) 
-ext_twfe_fs <-
-  feols(..ext_outcomes  ~  ..twfe,
+# 1c) Repeat main estimation but include all economic units
+semi_elasticity_twfe_fs <-
+  feols(..outcomes  ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year) %>% 
-  set_names(model_names) |> 
   set_names(model_names)
 
-etable(ext_twfe_fs)
+etable(semi_elasticity_twfe_fs)
 
-# 3d) Without modern
-ext_twfe_modern <-
-  feols(..ext_outcomes ~  ..twfe,
+# 1d) Repeat main estimation but exclude economic units who received new vessels
+semi_elasticity_twfe_modern <-
+  feols(..outcomes ~  ..twfe,
         data = shrimp_panel,
         panel.id = ~eu + year,
         subset = ~sometimes == 1 & modernized == 0) |> 
   set_names(model_names)
 
-etable(ext_twfe_modern)
+etable(semi_elasticity_twfe_modern)
+
 
 # 4) Restrict sample to EUs subsidized at most n_times -------------------------
 n_eus <- function(model){
@@ -255,20 +255,20 @@ all_ext_models <- list("TWFE sometimes sub." = ext_twfe,
 output_dir <- "data/output"
 
 # Export main specifications of each model group
-saveRDS(object = semi_elasticity_twfe,
-        file = here(output_dir, "semi_elasticity_twfe_model.rds"))
-saveRDS(object = levels_twfe,
-        file = here(output_dir, "levels_model.rds"))
 saveRDS(object = ext_twfe,
         file = here(output_dir, "ext_model.rds"))
+saveRDS(object = levels_twfe,
+        file = here(output_dir, "levels_model.rds"))
+saveRDS(object = semi_elasticity_twfe,
+        file = here(output_dir, "semi_elasticity_twfe_model.rds"))
 
 # Export groups of models
-saveRDS(object = all_semi_elasticity_models,
-        file = here(output_dir, "all_semi_elasticity_models.rds"))
-saveRDS(object = all_level_models,
-        file = here(output_dir, "all_level_models.rds"))
 saveRDS(object = all_ext_models,
         file = here(output_dir, "all_ext_models.rds"))
+saveRDS(object = all_level_models,
+        file = here(output_dir, "all_level_models.rds"))
+saveRDS(object = all_semi_elasticity_models,
+        file = here(output_dir, "all_semi_elasticity_models.rds"))
 
 # Models by n-times subsidized
 saveRDS(object = subsidized_n_times_semi_elasticity_models,
