@@ -29,10 +29,9 @@ shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_pan
   mutate(post = 1 * (year >= 2020))
 
 # Models
-models <- c(here("data/output/prepost_reform_model_ext.rds"),
-            here("data/output/prepost_reform_model_levels.rds")) |> 
-  map(read_rds) |> 
-  set_names(c("A) Extensive margin", "B) Intensive margin"))
+p_exit <- read_rds(here("data/output/prepost_reform_model_p_exit.rds"))
+level_models <- read_rds(here("data/output/prepost_reform_model_levels.rds"))
+
 # PROCESSING ###################################################################
 
 ## Define modelsummary presets ------------------------------------------------
@@ -58,14 +57,29 @@ mean_of_Y <- shrimp_panel |>
             Landings = as.character(round(mean(live_weight, na.rm = T))))
 
 # Assign rows where they should appear in modelsummary table
-attr(mean_of_Y, "position") <- c(5)
+attr(mean_of_Y, "position") <- c(2)
 
 # BUILD TABLES #################################################################
-
-##  ----------------------------------------------------------------
-msummary(models,
+# P of exit
+msummary(p_exit,
          estimate="{estimate} ({std.error}){stars}",
-         shape = "rbind",
+         statistic = NULL,
+         stars = panelsummary:::econ_stars(),
+         coef_omit = omit,
+         coef_rename = coefs,
+         gof_map = gm,
+         output = here("content", "tables", "tab_reform_p_exit.tex"),
+         title = "\\label{tab:prepost_reform_p_exit}Effect of Mexico's \\textit{impromptu}
+         fuel subsidy reform on probability of economic units exiting the fishery.",
+         notes = c("\\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$",
+                   "\\footnotesize The unit of observation is an economic unit by year.
+                   Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
+                  "),
+         escape = F)
+
+##  For change sin outcomes ----------------------------------------------------
+msummary(level_models,
+         estimate="{estimate} ({std.error}){stars}",
          statistic = NULL,
          stars = panelsummary:::econ_stars(),
          coef_omit = omit,
@@ -74,15 +88,8 @@ msummary(models,
          add_rows = mean_of_Y,
          output = here("content", "tables", "tab_reform.tex"),
          title = "\\label{tab:prepost_reform}Effect of Mexico's \\textit{impromptu}
-         fuel subsidy reform on probability of economic units exiting the fishery.",
+         fuel subsidy reform on fishing behavior and fisheries production for vessels that did not exit the fishery.",
          notes = c("\\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$",
                    "\\footnotesize The unit of observation is an economic unit by year.
-                   Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
-                  Panel A) shows estimates for the extensive margin, where the outcome variables indicates whether a vessel spent time fishing, had fishing grounds, or reported landings.
-                  Panel B) shows estimates for the intensive margin, where the outcome variables are time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg)."),
+                   Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level."),
          escape = F)
-
-# EXPORT #######################################################################
-
-## The final step --------------------------------------------------------------
-  
