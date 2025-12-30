@@ -51,7 +51,7 @@ setFixest_dict(
 # Model names so that modelsummary represents them
 model_names <- c("Fishing time", "Fishing area", "Landings")
 
-setFixest_fml(..ext_outcomes = ~c(hours == 0, fg_area_km == 0, live_weight == 0),
+setFixest_fml(..ext_outcomes = ~c(hours > 0, fg_area_km > 0, live_weight > 0),
               ..level_outcomes = ~c(hours, fg_area_km, live_weight),
               ..log_outcomes = ~c(log(hours), log(fg_area_km), log(live_weight)),
               ..es = ~i(year, "2019") | eu,
@@ -125,10 +125,10 @@ length(never_left)
 
 # Exiting fishery altogether
 exit_panel <- shrimp_panel |> 
-  left_join(first_time) |> 
+  left_join(first_time, by = "eu") |> 
   mutate(exited = eu %in% left) |> 
   mutate(exit = 0,
-         exit = ifelse((exited & year >= first_year_out), 1, 0))
+         exit = ifelse((exited & year >= first_year_out), 1, 0)) # If a vessel exited the fishery, this is 1
 
 # ESTIMATION ###################################################################
 ## Estimate models -------------------------------------------------------------
@@ -138,20 +138,20 @@ exit_panel <- shrimp_panel |>
 event_study_exit <- feols(exit ~ ..es,
                           data = exit_panel,
                           panel.id = ~eu + year,
-                          subset = ~n_times_sub == 9)
+                          subset = ~always == 1)
 
 # Pre-post
 prepost_exit <- feols(exit ~ ..post,
                       data = exit_panel,
                       panel.id = ~eu + year,
-                      subset = ~n_times_sub == 9)
+                      subset = ~always == 1 & (!exited | (exited & year <= first_year_out)))
 
 
 # 2) Extensive outcomes
 prepost_ext <- feols(..ext_outcomes ~ ..post,
                      data = exit_panel,
                      panel.id = ~eu + year,
-                     subset = ~n_times_sub == 9 & !exited) |> 
+                     subset = ~always == 1 & !exited) |> 
   set_names(model_names)
 
 # 3) Intensive outcomes, levels
@@ -159,14 +159,14 @@ prepost_ext <- feols(..ext_outcomes ~ ..post,
 event_study_levels <- feols(..level_outcomes ~ ..es,
                             data = exit_panel,
                             panel.id = ~eu + year,
-                            subset = ~n_times_sub == 9 & !exited) |> 
+                            subset = ~always == 1 & !exited) |> 
   set_names(model_names)
 
 # Pre-post
 prepost_levels <- feols(..level_outcomes ~ ..post,
                         data = exit_panel,
                         panel.id = ~eu + year,
-                        subset = ~n_times_sub == 9 & !exited) |> 
+                        subset = ~always == 1 & !exited) |> 
   set_names(model_names)
 
 # 4) Intensive outcomes, logs
@@ -174,7 +174,7 @@ prepost_levels <- feols(..level_outcomes ~ ..post,
 prepost_semi_elasticity <- feols(..log_outcomes ~ ..post,
                                  data = exit_panel,
                                  panel.id = ~eu + year,
-                                 subset = ~n_times_sub == 9 & !exited) |> 
+                                 subset = ~always == 1 & !exited) |> 
   set_names(model_names)
 
 # EXPORT #######################################################################

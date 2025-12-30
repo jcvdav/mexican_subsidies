@@ -84,7 +84,7 @@ my_iplot <- function(model){
 
 ## Generate plots --------------------------------------------------------------
 es_exit <- my_iplot(event_study_exit)
-es_levels <- my_iplot(event_study_self_levels)
+es_levels <- my_iplot(event_study_levels)
 
 plot <- plot_grid(es_exit, es_levels, ncol = 1)
 
