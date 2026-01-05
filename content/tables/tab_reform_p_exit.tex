@@ -1,0 +1,24 @@
+\begin{table}
+\centering
+\begin{talltblr}[         %% tabularray outer open
+caption={\label{tab:prepost_reform_p_exit}Effect of Mexico's \textit{impromptu}
+         fuel subsidy reform on probability of economic units exiting the fishery.},
+note{}={\footnotesize $* p < 0.1, ** p < 0.05, *** p < 0.01$},
+note{ }={\footnotesize The unit of observation is an economic unit by year.
+                   Numbers in parentheses are cluster-robust standard errors, clustered at the economic-unit level.
+                  },
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]},
+column{2}={}{halign=c,},
+column{1}={}{halign=l,},
+hline{3}={1-2}{solid, black, 0.05em},
+}                     %% tabularray inner close
+\toprule
+& (1) \\ \midrule %% TinyTableHeader
+Post & \num{0.075} (\num{0.011})*** \\
+N & \num{1914} \\
+$R^2$ Adj & \num{0.049} \\
+\bottomrule
+\end{talltblr}
+\end{table}
