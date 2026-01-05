@@ -39,11 +39,19 @@ change <- (exp(semi)-1)
 factor <- 1 - change
 
 ## PROCESSING ##################################################################
+active_in_2019 <- shrimp_panel %>% 
+  filter(year == 2019,
+         hours > 0) %>% 
+  pull(eu)
+
+# n_distinct(active_in_2019)
+
 treated_in_2019 <- shrimp_panel %>% 
   filter(year == 2019,
          treated == 1) %>% 
   pull(eu)
 
+# n_distinct(treated_in_2019)
 
 # X ----------------------------------------------------------------------------
 tracks_info <- shrimp_tracks %>% 

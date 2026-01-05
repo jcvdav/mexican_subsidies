@@ -62,7 +62,7 @@ effect_plot <- function(data, var = hours, n = 1){
     stat_summary(geom = "linerange",
                  fun.data = mean_cl_normal,
                  color = "black",
-                 linewidth = 0.25,
+                 linewidth = 0.5,
                  position = pos) +
     stat_summary(geom = "line",
                  fun = mean,
@@ -72,7 +72,7 @@ effect_plot <- function(data, var = hours, n = 1){
                  position = pos) +
     stat_summary(geom = "linerange",
                  fun.data = mean_se,
-                 linewidth = 1,
+                 linewidth = 1.5,
                  color = fill,
                  position = pos) +
     stat_summary(geom = "point",

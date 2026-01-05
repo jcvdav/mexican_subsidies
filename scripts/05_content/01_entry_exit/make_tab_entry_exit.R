@@ -104,10 +104,10 @@ pct_change <- map_dfc(semi_elasticity_twfe, coef_to_pct) |>
   select(var, everything())
 
 # Put together
-extra <- bind_rows(N_eus_ext, mean_of_Y, N_eus_int, N_eus_semi)
+extra <- bind_rows(N_eus_ext, mean_of_Y, N_eus_int, N_eus_semi, pct_change)
 
 # Assign rows where they should appear in modelsummary table
-attr(extra, "position") <- c(2, 6, 7, 11)
+attr(extra, "position") <- c(2, 6, 7, 11, 12)
 
 # VISUALIZE ####################################################################
 
