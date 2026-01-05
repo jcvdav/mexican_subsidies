@@ -1,9 +1,8 @@
 #  Mexican fisheries subsidies
 
-
 ## Dependency graph 
 
-![](makefile-dag.png) 
+![](workflow.png) 
 
 ## Repository structure 
 
