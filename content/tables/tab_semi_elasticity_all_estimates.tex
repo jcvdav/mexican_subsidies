@@ -16,28 +16,29 @@ note{ }={\footnotesize The unit of observation is an economic unit by year.
 ]                     %% tabularray outer close
 {                     %% tabularray inner open
 colspec={Q[]Q[]Q[]Q[]},
-column{2-4}={}{halign=c,},
-cell{1,3-5,7-9,11-13,15-17}{1}={}{halign=l,},
-cell{2,6,10,14}{1}={c=4,}{halign=l,},
+hline{2}={1-4}{solid, black, 0.05em},
+hline{1}={1-4}{solid, black, 0.1em},
+hline{18}={1-4}{solid, black, 0.1em},
+column{2-4}={}{halign=c},
+cell{1,3-5,7-9,11-13,15-17}{1}={}{halign=l},
+cell{2,6,10,14}{1}={c=4}{halign=l},
 }                     %% tabularray inner close
-\toprule
-& Fishing time & Fishing area & Landings \\ \midrule %% TinyTableHeader
-A) Main text specification &  &  &  \\
-Subsidized & 0.341 (0.073)*** & 0.200 (0.063)*** & 0.532 (0.080)*** \\
-N & 1290 & 1287 & 1192 \\
-$R^2$ Adj & 0.726 & 0.739 & 0.757 \\
-B) Covariates but no fixed effects &  &  &  \\
-Subsidized & 0.312 (0.081)*** & 0.290 (0.077)*** & 0.563 (0.076)*** \\
-N & 1292 & 1289 & 1196 \\
-$R^2$ Adj & 0.305 & 0.329 & 0.294 \\
-C) Main text specification with all units &  &  &  \\
-Subsidized & 0.283 (0.064)*** & 0.158 (0.056)*** & 0.485 (0.071)*** \\
-N & 2723 & 2711 & 2530 \\
-$R^2$ Adj & 0.791 & 0.837 & 0.846 \\
-D) Main text specification without modernized units &  &  &  \\
-Subsidized & 0.334 (0.074)*** & 0.202 (0.064)*** & 0.534 (0.081)*** \\
-N & 1272 & 1269 & 1173 \\
-$R^2$ Adj & 0.727 & 0.737 & 0.756 \\
-\bottomrule
+& Fishing time & Fishing area & Landings \\
+A) Main text specification & A) Main text specification & A) Main text specification & A) Main text specification \\
+Subsidized & 0.341 (0.073)*** & 0.211 (0.068)*** & 0.532 (0.080)*** \\
+N & 1290 & 1235 & 1192 \\
+$R^2$ Adj & 0.726 & 0.700 & 0.757 \\
+B) Covariates but no fixed effects & B) Covariates but no fixed effects & B) Covariates but no fixed effects & B) Covariates but no fixed effects \\
+Subsidized & 0.312 (0.081)*** & 0.268 (0.084)*** & 0.563 (0.076)*** \\
+N & 1292 & 1240 & 1196 \\
+$R^2$ Adj & 0.305 & 0.245 & 0.294 \\
+C) Main text specification with all units & C) Main text specification with all units & C) Main text specification with all units & C) Main text specification with all units \\
+Subsidized & 0.283 (0.064)*** & 0.196 (0.060)*** & 0.485 (0.071)*** \\
+N & 2723 & 2629 & 2530 \\
+$R^2$ Adj & 0.791 & 0.783 & 0.846 \\
+D) Main text specification without modernized units & D) Main text specification without modernized units & D) Main text specification without modernized units & D) Main text specification without modernized units \\
+Subsidized & 0.334 (0.074)*** & 0.210 (0.068)*** & 0.534 (0.081)*** \\
+N & 1272 & 1217 & 1173 \\
+$R^2$ Adj & 0.727 & 0.701 & 0.756 \\
 \end{talltblr}
 \end{table}

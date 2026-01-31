@@ -15,32 +15,33 @@ note{ }={\footnotesize The unit of observation is an economic unit by year.
 ]                     %% tabularray outer close
 {                     %% tabularray inner open
 colspec={Q[]Q[]Q[]Q[]},
-column{2-4}={}{halign=c,},
-cell{1,3-5,7-9,11-13,15-17,19-21}{1}={}{halign=l,},
-cell{2,6,10,14,18}{1}={c=4,}{halign=l,},
+hline{2}={1-4}{solid, black, 0.05em},
+hline{1}={1-4}{solid, black, 0.1em},
+hline{22}={1-4}{solid, black, 0.1em},
+column{2-4}={}{halign=c},
+cell{1,3-5,7-9,11-13,15-17,19-21}{1}={}{halign=l},
+cell{2,6,10,14,18}{1}={c=4}{halign=l},
 }                     %% tabularray inner close
-\toprule
-& Fishing time & Fishing area & Landings \\ \midrule %% TinyTableHeader
-A) Main text specification &  &  &  \\
-log(subsidy amount[MXP]) & 0.139 (0.021)*** & 0.112 (0.018)*** & 0.198 (0.018)*** \\
-N & 2240 & 2238 & 2246 \\
-$R^2$ Adj & 0.850 & 0.877 & 0.876 \\
-B) Always subsidized &  &  &  \\
-log(subsidy amount[MXP]) & 0.150 (0.030)*** & 0.090 (0.026)*** & 0.151 (0.025)*** \\
-N & 1278 & 1277 & 1278 \\
-$R^2$ Adj & 0.884 & 0.904 & 0.905 \\
-C) Sometimes subsidized &  &  &  \\
-log(subsidy amount[MXP]) & 0.129 (0.031)*** & 0.130 (0.027)*** & 0.231 (0.026)*** \\
-N & 962 & 961 & 968 \\
-$R^2$ Adj & 0.749 & 0.796 & 0.809 \\
-D) Removing modernized &  &  &  \\
-log(subsidy amount[MXP]) & 0.135 (0.020)*** & 0.110 (0.018)*** & 0.196 (0.018)*** \\
-N & 2208 & 2206 & 2214 \\
-$R^2$ Adj & 0.850 & 0.876 & 0.875 \\
-D) Covariates but no fixed effects &  &  &  \\
-log(subsidy amount[MXP]) & 0.206 (0.022)*** & 0.196 (0.020)*** & 0.374 (0.021)*** \\
-N & 2242 & 2240 & 2247 \\
-$R^2$ Adj & 0.517 & 0.532 & 0.540 \\
-\bottomrule
+& Fishing time & Fishing area & Landings \\
+A) Main text specification & A) Main text specification & A) Main text specification & A) Main text specification \\
+log(subsidy amount[MXP]) & 0.139 (0.021)*** & 0.147 (0.022)*** & 0.198 (0.018)*** \\
+N & 2240 & 2202 & 2246 \\
+$R^2$ Adj & 0.850 & 0.818 & 0.876 \\
+B) Always subsidized & B) Always subsidized & B) Always subsidized & B) Always subsidized \\
+log(subsidy amount[MXP]) & 0.150 (0.030)*** & 0.096 (0.028)*** & 0.151 (0.025)*** \\
+N & 1278 & 1271 & 1278 \\
+$R^2$ Adj & 0.884 & 0.828 & 0.905 \\
+C) Sometimes subsidized & C) Sometimes subsidized & C) Sometimes subsidized & C) Sometimes subsidized \\
+log(subsidy amount[MXP]) & 0.129 (0.031)*** & 0.187 (0.033)*** & 0.231 (0.026)*** \\
+N & 962 & 931 & 968 \\
+$R^2$ Adj & 0.749 & 0.746 & 0.809 \\
+D) Removing modernized & D) Removing modernized & D) Removing modernized & D) Removing modernized \\
+log(subsidy amount[MXP]) & 0.135 (0.020)*** & 0.143 (0.022)*** & 0.196 (0.018)*** \\
+N & 2208 & 2170 & 2214 \\
+$R^2$ Adj & 0.850 & 0.819 & 0.875 \\
+D) Covariates but no fixed effects & D) Covariates but no fixed effects & D) Covariates but no fixed effects & D) Covariates but no fixed effects \\
+log(subsidy amount[MXP]) & 0.206 (0.022)*** & 0.173 (0.019)*** & 0.374 (0.021)*** \\
+N & 2242 & 2206 & 2247 \\
+$R^2$ Adj & 0.517 & 0.374 & 0.540 \\
 \end{talltblr}
 \end{table}

@@ -85,9 +85,9 @@ mex_zoom2 <- mex |>
 # Find clusters
 clusters <- track |> 
   st_transform(crs = "+proj=lcc +lat_0=12 +lon_0=-102 +lat_1=17.5 +lat_2=29.5 +x_0=2500000 +y_0=0") |> 
-  st_distance() |> 
-  dbscan(eps = 100e3, # Distance in meters
-         minPts = 6) # Minimum points per cluster)
+  st_coordinates() |> 
+  dbscan(eps = 25e3, # Distance in meters
+         minPts = 50) # Minimum points per cluster)
 
 # Calculate convex hull and area of each cluster
 results <- track |> 

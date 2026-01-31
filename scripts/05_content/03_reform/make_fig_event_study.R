@@ -25,8 +25,7 @@ pacman::p_load(
 setFixest_vcov(all = "cluster", no_FE = "iid")
 
 ## Load data -------------------------------------------------------------------
-shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) |> 
-  mutate(post = 1 * (year >= 2020))
+exit_panel <- read_rds(file = here("data/estimation_panels/exit_panel.rds"))
 
 ## Load models -----------------------------------------------------------------
 event_study_exit <- read_rds(file = here("data/output/es_self_reform_model_p_exit.rds"))

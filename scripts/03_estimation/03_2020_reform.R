@@ -180,6 +180,9 @@ prepost_semi_elasticity <- feols(..log_outcomes ~ ..post,
 # EXPORT #######################################################################
 
 ## Export models ---------------------------------------------------------------
+# Panel needs to be exported and made available for other environments
+write_rds(x = exit_panel,
+          file = here("data/estimation_panels/exit_panel.rds"))
 
 # For figure
 write_rds(x = event_study_exit,

@@ -93,6 +93,6 @@ p1 <- ggplot(mdl_raw,
 
 ## The final step --------------------------------------------------------------
 ggsave(plot = p1,
-       filename = file.path("content/figures/fig_mdl_plot.pdf"),
+       filename = here("content/figures/fig_mdl_plot.pdf"),
        width = 5,
        height = 3.5)

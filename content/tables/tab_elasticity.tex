@@ -12,17 +12,18 @@ note{ }={\footnotesize The unit of observation is an economic unit by year.
 ]                     %% tabularray outer close
 {                     %% tabularray inner open
 colspec={Q[]Q[]Q[]Q[]},
-column{2-4}={}{halign=c,},
-column{1}={}{halign=l,},
+hline{2}={1-4}{solid, black, 0.05em},
 hline{3}={1-4}{solid, black, 0.05em},
+hline{1}={1-4}{solid, black, 0.1em},
+hline{7}={1-4}{solid, black, 0.1em},
+column{2-4}={}{halign=c},
+column{1}={}{halign=l},
 }                     %% tabularray inner close
-\toprule
-& Fishing time & Fishing area & Landings \\ \midrule %% TinyTableHeader
-log(subsidy amount[MXP]) & \num{0.139} (\num{0.021})*** & \num{0.112} (\num{0.018})*** & \num{0.198} (\num{0.018})*** \\
-\%Change & 0.14\% & 0.11\% & 0.20\% \\
-$N_{eu}$ & 297 & 297 & 295 \\
-N & \num{2240} & \num{2238} & \num{2246} \\
-$R^2$ Adj & \num{0.850} & \num{0.877} & \num{0.876} \\
-\bottomrule
+& Fishing time & Fishing area & Landings \\
+log(subsidy amount[MXP]) & \num{0.139} (\num{0.021})*** & \num{0.147} (\num{0.022})*** & \num{0.198} (\num{0.018})*** \\
+\%Change & 0.14\% & 0.15\% & 0.20\% \\
+$N_{eu}$ & 297 & 292 & 295 \\
+N & \num{2240} & \num{2202} & \num{2246} \\
+$R^2$ Adj & \num{0.850} & \num{0.818} & \num{0.876} \\
 \end{talltblr}
 \end{table}

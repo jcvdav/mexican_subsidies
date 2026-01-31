@@ -28,6 +28,8 @@ setFixest_vcov(all = "cluster", no_FE = "iid")
 shrimp_panel <- readRDS(here("data", "estimation_panels", "shrimp_estimation_panel.rds")) |> 
   mutate(post = 1 * (year >= 2020))
 
+exit_panel <- read_rds(file = here("data/estimation_panels/exit_panel.rds"))
+
 # Models
 p_exit <- read_rds(here("data/output/prepost_reform_model_p_exit.rds"))
 models <- c(here("data/output/prepost_reform_model_ext.rds"),
