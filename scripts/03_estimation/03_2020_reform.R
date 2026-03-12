@@ -67,6 +67,8 @@ setFixest_vcov(all = "cluster", no_FE = "iid")
 # Type 2 - Ones that left and came out
 # Type 3 - Ones that never left
 
+n_times <- c("always")
+
 # First time out
 first_time <- shrimp_panel |> 
   filter(n_times_sub == 9,
@@ -121,14 +123,14 @@ length(left)
 length(left_and_came)
 length(never_left)
 
-(length(left) + length(left_and_came) + length(never_left)) == shrimp_panel |> filter(n_times_sub == 9) |> pull(eu) |> n_distinct()
+(length(left) + length(left_and_came) + length(never_left)) == shrimp_panel |> filter(subsidy_frequency == "always") |> pull(eu) |> n_distinct()
 
 # Exiting fishery altogether
 exit_panel <- shrimp_panel |> 
   left_join(first_time, by = "eu") |> 
   mutate(exited = eu %in% left) |> 
   mutate(exit = 0,
-         exit = ifelse((exited & year >= first_year_out), 1, 0)) # If a vessel exited the fishery, this is 1
+         exit = ifelse((exited & year >= first_year_out), 1, 0))  # If a vessel exited the fishery, this is 1
 
 # ESTIMATION ###################################################################
 ## Estimate models -------------------------------------------------------------
@@ -138,13 +140,18 @@ exit_panel <- shrimp_panel |>
 event_study_exit <- feols(exit ~ ..es,
                           data = exit_panel,
                           panel.id = ~eu + year,
-                          subset = ~always == 1)
+                          subset = ~always == 1 & (!exited | (exited & year <= first_year_out)))
 
 # Pre-post
 prepost_exit <- feols(exit ~ ..post,
                       data = exit_panel,
                       panel.id = ~eu + year,
                       subset = ~always == 1 & (!exited | (exited & year <= first_year_out)))
+# Pre-post without 2020
+prepost_exit_2020 <- feols(exit ~ ..post,
+                           data = exit_panel |> filter(!year == 2020),
+                           panel.id = ~eu + year,
+                           subset = ~always == 1 & (!exited | (exited & year <= first_year_out)))
 
 
 # 2) Extensive outcomes
@@ -193,6 +200,8 @@ write_rds(x = event_study_levels,
 # For tables
 write_rds(x = prepost_exit,
           file = here("data/output/prepost_reform_model_p_exit.rds"))
+write_rds(x = prepost_exit_2020,
+          file = here("data/output/prepost_reform_model_p_exit_2020.rds"))
 write_rds(x = prepost_ext,
           file = here("data/output/prepost_reform_model_ext.rds"))
 write_rds(x = prepost_levels,
