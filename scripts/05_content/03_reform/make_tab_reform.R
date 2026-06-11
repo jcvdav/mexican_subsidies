@@ -21,6 +21,8 @@ pacman::p_load(
   modelsummary
 )
 
+source(here("scripts", "00_Setup.R"))
+
 # Standard errors clustered by economic unit by default
 setFixest_vcov(all = "cluster", no_FE = "iid")
 
@@ -102,4 +104,6 @@ msummary(models,
                    Panel A) shows estimates for the extensive margin, where the outcome variables indicate whether a vessel spent time fishing, had fishing grounds, or reported landings.
                    Panel B) shows estimates for the intensive margin, where the outcome variables are time fishing (hours), fishing area ($\\text{km}^2$), and landings (kg)."),
          escape = F)
+
+add_panel_spacing(here("content", "tables", "tab_reform.tex"))
 

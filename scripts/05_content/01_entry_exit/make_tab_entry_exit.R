@@ -22,6 +22,8 @@ pacman::p_load(
   panelsummary
 )
 
+source(here("scripts", "00_Setup.R"))
+
 # Standard errors clustered by economic unit by default
 setFixest_vcov(all = "cluster", no_FE = "iid")
 
@@ -135,6 +137,8 @@ msummary(list("A) Extensive margin" = ext_twfe,
                   This last panel excludes observations with fishing activity or landings at exactly zero, mostly capturing the intensive margin."),
          escape = F)
 
+add_panel_spacing(here("content", "tables", "tab_main_entry_exit.tex"))
+
 # 2) Supplementary tables ------------------------------------------------------
 ## Now a table for all levels models
 msummary(models = all_ext_models,
@@ -161,6 +165,8 @@ msummary(models = all_ext_models,
                   removes vessels that received a fleet modernization subsidy."),
          escape = F)
 
+add_panel_spacing(here("content", "tables", "tab_ext_all_estimates.tex"))
+
 ## Now a table for all levels models
 msummary(models = all_level_models,
          shape = "rbind",
@@ -185,6 +191,8 @@ msummary(models = all_level_models,
                   removes vessels that received a fleet modernization subsidy."),
          escape = F)
 
+add_panel_spacing(here("content", "tables", "tab_levels_all_estimates.tex"))
+
 ## Now a table for all semi-elasticity models
 msummary(models = all_semi_elasticity_models,
          shape = "rbind",
@@ -208,4 +216,6 @@ msummary(models = all_semi_elasticity_models,
                   Panel D) uses the same two-way fixed effects estimation as in A), but
                   removes vessels that received a fleet modernization subsidy."),
          escape = F)
+
+add_panel_spacing(here("content", "tables", "tab_semi_elasticity_all_estimates.tex"))
 

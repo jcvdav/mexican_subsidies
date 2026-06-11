@@ -21,6 +21,8 @@ pacman::p_load(
   modelsummary
 )
 
+source(here("scripts", "00_Setup.R"))
+
 # Standard errors clustered by economic unit by default
 setFixest_vcov(all = "cluster", no_FE = "iid")
 
@@ -116,7 +118,5 @@ msummary(models = all_models,
                   covariates for number of vessels, total engine power, and nino3.4 index interacted by region."),
          escape = F)
 
-
-
-
+add_panel_spacing(here("content", "tables", "tab_elasticity_all_estimates.tex"))
 
