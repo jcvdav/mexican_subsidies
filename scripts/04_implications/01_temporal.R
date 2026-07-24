@@ -41,7 +41,7 @@ calc_semielasticity_counterfactual <- function(model, var_name) {
   var_col <- case_when(
     var_name == "Fishing time" ~ "hours",
     var_name == "Fishing area" ~ "fg_area_km", 
-    var_name == "Landings" ~ "landed_weight"
+    var_name == "Landings" ~ "live_weight"
   )
   
   model_idx <- case_when(
@@ -54,9 +54,16 @@ calc_semielasticity_counterfactual <- function(model, var_name) {
     stop("Variable name not recognized")
   }
   
-  # Extract coefficient and calculate % change
+  # Extract coefficient and calculate the share of OBSERVED subsidized activity that is
+  # attributable to the subsidy.
+  # The model is log(y) = b * subsidized + ..., so y_observed = y_counterfactual * exp(b),
+  # which means y_counterfactual = y_observed * exp(-b) and the attributable share is
+  # 1 - exp(-b). NOTE: this is NOT exp(b) - 1. That quantity is the % by which a subsidy
+  # RAISES activity relative to the counterfactual (40.7% for fishing time), and it is the
+  # right number for the regression table, but using it here would overstate the
+  # attributable share (1 - exp(-0.342) = 29.0%, not 40.7%).
   semi_coef <- coef(model[[model_idx]])[[1]]
-  change <- as.numeric(exp(semi_coef) - 1)
+  change <- as.numeric(1 - exp(-semi_coef))
   
   # Calculate counterfactual
   result <- shrimp_panel %>%
@@ -90,7 +97,7 @@ calc_elasticity_counterfactual <- function(model, var_name, pct_reductions = c(0
   var_col <- case_when(
     var_name == "Fishing time" ~ "hours",
     var_name == "Fishing area" ~ "fg_area_km", 
-    var_name == "Landings" ~ "landed_weight"
+    var_name == "Landings" ~ "live_weight"
   )
   
   model_idx <- case_when(
@@ -195,9 +202,11 @@ generate_counterfactual_summary <- function(data, var_col) {
 plot_counterfactual_scenarios <- function(remove_data, reduce_data, var_col, x_label, y_label, labels = NULL, legend = F) {
   
   remove_data <- remove_data |> 
+    # NOTE: "-subsidy" is the portion attributable to the subsidy and "-baseline" is what
+    # would have happened anyway. Do not swap these two labels.
     mutate(treated = case_when(treated == "Not subsidized-baseline" ~ "Not subsidized",
-                               treated == "Subsidized-subsidy" ~ "Subsidized",
-                               treated == "Subsidized-baseline" ~ "Induced by subsidies"),
+                               treated == "Subsidized-baseline" ~ "Subsidized",
+                               treated == "Subsidized-subsidy" ~ "Induced by subsidies"),
            treated = fct_relevel(treated, "Not subsidized", "Subsidized", "Induced by subsidies"),
            !!sym(var_col) := !!sym(var_col) / 1e6)
   
@@ -220,7 +229,7 @@ palette <- c(
       "Induced by subsidies" = "#CC8D62"
     )
     
-  } else if (var_col == "landed_weight") {
+  } else if (var_col == "live_weight") {
     # Purples for landings
 palette <- c(
   "Not subsidized" = "#B3B3B3",
@@ -325,8 +334,35 @@ summary_hours
 # For landings
 alternative_landings_remove <- calc_semielasticity_counterfactual(semi_mod, "Landings")
 alternative_landings_reduce <- calc_elasticity_counterfactual(elasticity_mod, "Landings")
-summary_landings <- generate_counterfactual_summary(alternative_landings_remove, "landed_weight")
+summary_landings <- generate_counterfactual_summary(alternative_landings_remove, "live_weight")
 summary_landings
+
+## EXPORT SUMMARY NUMBERS ------------------------------------------------------
+# These are the numbers quoted in the manuscript text (Section "Historical impacts of
+# subsidies"). They used to exist only as console output, which is how a sign error in the
+# counterfactual survived. Persist them so the prose can be checked against a file.
+
+# Mean annual avoided activity under each partial-reduction scenario (panels b and d)
+reduction_scenarios <- bind_rows(
+  alternative_hours_reduce |>
+    group_by(pct) |>
+    summarize(mean = mean(hours, na.rm = TRUE), .groups = "drop") |>
+    mutate(outcome = "hours"),
+  alternative_landings_reduce |>
+    group_by(pct) |>
+    summarize(mean = mean(live_weight, na.rm = TRUE), .groups = "drop") |>
+    mutate(outcome = "live_weight")
+) |>
+  transmute(outcome, var = paste0("Reduction_", pct * 100, "pct"), mean, sd = NA_real_)
+
+attribution_summary <- bind_rows(
+  summary_hours |> mutate(outcome = "hours"),
+  summary_landings |> mutate(outcome = "live_weight")
+) |>
+  select(outcome, var, mean, sd) |>
+  bind_rows(reduction_scenarios)
+
+write_csv(attribution_summary, here("data", "output", "attribution_summary.csv"))
 
 ## VISUALIZE ###################################################################
 # Generate combined plots showing temporal attribution of fishing activity
@@ -341,7 +377,7 @@ p1 <- plot_counterfactual_scenarios(remove_data = alternative_hours_remove,
 
 p2 <- plot_counterfactual_scenarios(remove_data = alternative_landings_remove,
                                     reduce_data = alternative_landings_reduce,
-                                    var_col = "landed_weight",
+                                    var_col = "live_weight",
                                     labels = c("c)", "d)"),
                                     x_label = "Year",
                                     y_label = "Landings\n(Thousand tons)")

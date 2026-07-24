@@ -34,9 +34,13 @@ continent <- rnaturalearth::ne_countries(continent = "North America", returnclas
 
 res <- 0.1
 
+# The model is log(hours) = semi * subsidized + ..., so the counterfactual (un-subsidized)
+# activity of a treated pixel is hours * exp(-semi), and the share attributable to the
+# subsidy is 1 - exp(-semi) = 29.0%. This is NOT exp(semi) - 1 = 40.7%, which is the % by
+# which a subsidy raises activity relative to that counterfactual.
 semi <- coef(semi_mod$`Fishing time`)[[1]]
-change <- (exp(semi)-1)
-factor <- 1 - change
+factor <- exp(-semi)
+change <- 1 - factor
 
 ## PROCESSING ##################################################################
 active_in_2019 <- shrimp_panel %>% 
